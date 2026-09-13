@@ -37,7 +37,7 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
     apellidoMaterno: '',
     edad: '',
     fechaNacimiento: '',
-    genero: 'femenino',
+    genero: '',
     fechaPrimeraSesion: '',
     email: '',
   });
@@ -75,35 +75,142 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
   };
 
   const handleRegister = () => {
-    // 1. Validación de campos obligatorios básicos
-    if (
-      !form.nombre.trim() ||
-      !form.apellidoPaterno.trim() ||
-      !form.apellidoMaterno.trim() ||
-      !form.email.trim()
-    ) {
-      Alert.alert('Datos incompletos', 'Por favor complete todos los campos obligatorios para continuar.');
+
+    // 1. Validación de todos los campos y generacion de alertas 
+
+  const nombre = form.nombre.trim();
+  const apellidoPaterno = form.apellidoPaterno.trim();
+  const apellidoMaterno = form.apellidoMaterno.trim();
+
+    //Nombre
+    if (!nombre) {
+     Alert.alert('Nombre requerido', 'Escribe el nombre del paciente.');
+     return;
+    }
+
+     if (nombre.length < 2 || nombre.length > 40) {
+    Alert.alert('Nombre inválido', 'El nombre debe tener entre 2 y 40 caracteres.');
+    return;
+    }
+
+    if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(nombre)) {
+      Alert.alert('Nombre inválido', 'El nombre no debe contener números ni símbolos.');
+      return;
+    }
+    
+
+
+    //Apellido Paterno
+    if (!apellidoPaterno) {
+      Alert.alert('Apellido Paterno requerido', 'Escribe el apellido paterno del paciente.');
       return;
     }
 
-    // 2. Validación de Correo Electrónico
-    if (!form.email.includes('@') || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      Alert.alert('Correo inválido', 'El correo electrónico debe contener un "@" y un dominio válido (ej. paciente@email.com).');
+    if (apellidoPaterno.length < 2 || apellidoPaterno.length > 40) {
+      Alert.alert('Apellido paterno inválido', 'Debe tener entre 2 y 40 caracteres.');
+       return;
+    }
+
+    if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(apellidoPaterno)) {
+     Alert.alert('Apellido paterno inválido', 'No debe incluir números ni símbolos.');
       return;
     }
 
-    // 3. Validación de fechas
+
+
+
+    //Apellido Materno
+    if (!apellidoMaterno) {
+      Alert.alert('Apellido Materno requerido', 'Escribe el apellido materno del paciente.');
+      return;
+    }
+
+    if (apellidoMaterno.length < 2 || apellidoMaterno.length > 40) {
+      Alert.alert('Apellido materno inválido', 'Debe tener entre 2 y 40 caracteres.');
+     return;
+    }
+
+    if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(apellidoMaterno)) {
+      Alert.alert('Apellido materno inválido', 'No debe incluir números ni símbolos.');
+      return;
+    }
+
+
+
+
+    //Fecha de Nacimiento
     if (!form.fechaNacimiento) {
-      Alert.alert('Fecha requerida', 'Por favor seleccione la fecha de nacimiento en el calendario.');
-      return;
-    }
-    if (!form.fechaPrimeraSesion) {
-      Alert.alert('Fecha requerida', 'Por favor seleccione la fecha de la primera sesión.');
+      Alert.alert('Fecha requerida', 'Selecciona la fecha de nacimiento.');
       return;
     }
 
+    const fechaNacimiento = new Date(form.fechaNacimiento);
+    const hoy = new Date();
+
+    if (fechaNacimiento > hoy) {
+      Alert.alert('Fecha inválida', 'La fecha de nacimiento no puede ser futura.');
+      return;
+    }
+
+
+
+
+    //Edad
+    if (!form.edad || Number(form.edad) < 16) {
+      Alert.alert('Edad inválida', 'El paciente debe tener al menos 16 años.');
+      return;
+    }
+
+
+
+    //Género
+    if (!form.genero) {
+      Alert.alert('Género requerido', 'Selecciona un género para continuar.');
+       return;
+    }
+
+
+
+    //Fecha de Primera Sesión
+     if (!form.fechaPrimeraSesion) {
+      Alert.alert('Fecha requerida', 'Selecciona la fecha de la primera sesión.');
+      return;
+    }
+
+    const fechaPrimeraSesion = new Date(form.fechaPrimeraSesion);
+
+    if (fechaPrimeraSesion > hoy) {
+      Alert.alert('Fecha inválida', 'La fecha de la primera sesión no puede ser futura.');
+      return;
+    }
+
+    if (fechaPrimeraSesion < fechaNacimiento) {
+      Alert.alert('Fecha inválida', 'La primera sesión no puede ser anterior a la fecha de nacimiento.');
+      return;
+    }
+
+
+
+
+    //Email
+   const email = form.email.trim().toLowerCase();
+
+    if (!email) {
+      Alert.alert('Email requerido', 'Escribe el correo del paciente.');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      Alert.alert('Correo inválido', 'El correo debe tener formato válido.');
+      return;
+    }
+
+   
+    //Me indicará cuando se registró el paciente, fecha y hora de registro para la columna created_at en MySQL
     const now = new Date();
     const createdAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+    
 
     // Objeto estructurado para MySQL (`pacientes`) sin contraseña
     const mySqlPatientRecord: MySqlPatientRecord = {
@@ -112,7 +219,7 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
       apellido_materno: form.apellidoMaterno.trim(),
       edad: parseInt(form.edad, 10) || 0,
       fecha_nacimiento: form.fechaNacimiento,        // Columna DATE en MySQL
-      genero: form.genero,                            // ENUM('masculino','femenino','otro')
+      genero: form.genero as Gender,                  // ENUM('masculino','femenino','otro')
       fecha_primera_sesion: form.fechaPrimeraSesion,    // Columna DATE en MySQL
       email: form.email.trim().toLowerCase(),
       created_at: createdAt,                          // DATETIME en MySQL
