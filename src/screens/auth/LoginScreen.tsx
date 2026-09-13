@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { MOCK_USERS, UserRole } from '../constants/auth';
+import { MOCK_USERS, UserRole } from '../../constants/auth';
 
 interface LoginScreenProps {
   onBack: () => void;
@@ -85,7 +85,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           {/* Encabezado Institucional */}
           <View style={styles.header}>
             <Image
-              source={require('../../assets/logo.png')}
+              source={require('../../../assets/logo.png')}
               style={styles.logoImage}
               resizeMode="contain"
             />

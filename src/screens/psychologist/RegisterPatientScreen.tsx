@@ -13,12 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { DatePickerModal } from '../components/DatePickerModal';
+import { DatePickerModal } from '../../components/DatePickerModal';
 import {
   Gender,
   PatientRegistrationForm,
   MySqlPatientRecord,
-} from '../types/patient';
+} from '../../types/patient';
 
 interface RegisterPatientScreenProps {
   onBack: () => void;
@@ -276,7 +276,7 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
           {/* Encabezado Institucional */}
           <View style={styles.header}>
             <Image
-              source={require('../../assets/logo.png')}
+              source={require('../../../assets/logo.png')}
               style={styles.logoImage}
               resizeMode="contain"
             />

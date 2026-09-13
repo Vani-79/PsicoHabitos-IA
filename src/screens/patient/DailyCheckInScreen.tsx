@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { HabitKey, DailyHabitRatings, MySqlDailyHabitRecord } from '../types/habits';
+import { HabitKey, DailyHabitRatings, MySqlDailyHabitRecord } from '../../types/habits';
 import {
   HABIT_CATALOG,
   HABIT_KEYS,
@@ -22,8 +22,8 @@ import {
   INITIAL_HABITS_STATE,
   getRatingColor,
   getRatingLabel,
-} from '../constants/habits';
-import { PatientBottomNav, PatientTab } from '../components/PatientBottomNav';
+} from '../../constants/habits';
+import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
 
 interface DailyCheckInScreenProps {
   onBack?: () => void;

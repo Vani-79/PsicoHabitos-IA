@@ -29,7 +29,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartLogin }) =>
         {/* Sección Superior: Logo y Marca */}
         <View style={styles.logoSection}>
           <Image
-            source={require('../../assets/logo.png')}
+            source={require('../../../assets/logo.png')}
             style={styles.logoImage}
             resizeMode="contain"
           />
@@ -50,7 +50,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartLogin }) =>
           <View style={styles.featureCard}>
             <View style={styles.featureIconContainer}>
               <Image
-                source={require('../../assets/h.o.p.e.png')}
+                source={require('../../../assets/h.o.p.e.png')}
                 style={styles.hopeFeatureIcon}
                 resizeMode="contain"
               />

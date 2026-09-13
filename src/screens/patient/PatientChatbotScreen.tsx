@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { PatientBottomNav, PatientTab } from '../components/PatientBottomNav';
+import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
 
 interface PatientChatbotScreenProps {
   onBack: () => void;
@@ -30,7 +30,7 @@ export const PatientChatbotScreen: React.FC<PatientChatbotScreenProps> = ({
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
           <Image
-            source={require('../../assets/h.o.p.e.png')}
+            source={require('../../../assets/h.o.p.e.png')}
             style={styles.headerHopeIcon}
             resizeMode="contain"
           />
@@ -48,7 +48,7 @@ export const PatientChatbotScreen: React.FC<PatientChatbotScreenProps> = ({
         <View style={styles.chatCard}>
           <View style={styles.avatarContainer}>
             <Image
-              source={require('../../assets/h.o.p.e.png')}
+              source={require('../../../assets/h.o.p.e.png')}
               style={styles.avatarImage}
               resizeMode="contain"
             />
