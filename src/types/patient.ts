@@ -6,7 +6,7 @@ export interface PatientRegistrationForm {
   apellidoMaterno: string;
   edad: string;
   fechaNacimiento: string;     // Formato 'YYYY-MM-DD'
-  genero: Gender;
+  genero: Gender | '';
   fechaPrimeraSesion: string;  // Formato 'YYYY-MM-DD'
   email: string;
   password?: string;
