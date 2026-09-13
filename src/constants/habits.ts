@@ -13,20 +13,26 @@ export const RATING_SCALE: RatingScaleItem[] = [
 ];
 
 export const UNRATED_COLOR = '#EFEFEF';
+export const WATER_RATED_COLOR = '#2563EB';
 
 /**
  * Obtiene el color de fondo para la tarjeta según el puntaje registrado.
+ * Para el hábito de agua (hidratación), retorna un color azul neutro.
  */
-export const getRatingColor = (rating: number | null): string => {
+export const getRatingColor = (rating: number | null, habitKey?: HabitKey | null): string => {
   if (rating === null) return UNRATED_COLOR;
+  if (habitKey === 'hidratacion') return WATER_RATED_COLOR;
   const match = RATING_SCALE.find((item) => item.value === rating);
   return match ? match.color : UNRATED_COLOR;
 };
 
 /**
- * Devuelve la etiqueta correspondiente (conducta vs. ansiedad vs. estrés).
+ * Devuelve la etiqueta correspondiente (conducta vs. ansiedad vs. estrés vs. litros de agua).
  */
 export const getRatingLabel = (value: number, habitKey?: HabitKey | null): string => {
+  if (habitKey === 'hidratacion') {
+    return value === 1 ? '1 Litro' : `${value} Litros`;
+  }
   const match = RATING_SCALE.find((item) => item.value === value);
   if (!match) return '';
   if (habitKey === 'ansiedad') return match.anxietyLabel;
@@ -56,7 +62,7 @@ export const HABIT_CATALOG: Record<HabitKey, HabitDefinition> = {
     key: 'hidratacion',
     label: 'Hidratación',
     category: 'lifestyle',
-    question: '¿Cómo estuvo tu hidratación hoy?',
+    question: '¿Cuántos litros de agua tomaste hoy?',
     image: require('../../assets/hidratacion.png'),
   },
   ansiedad: {
@@ -70,7 +76,7 @@ export const HABIT_CATALOG: Record<HabitKey, HabitDefinition> = {
     key: 'sueno',
     label: 'Sueño',
     category: 'lifestyle',
-    question: '¿Cómo evaluaste tu descanso y sueño?',
+    question: '¿Cómo evalúas tu descanso?                         ¿Cuántas horas dormiste?',
     image: require('../../assets/sueno.png'),
   },
   estres: {
@@ -97,5 +103,6 @@ export const INITIAL_HABITS_STATE: DailyHabitRatings = {
   hidratacion: null,
   ansiedad: null,
   sueno: null,
+  sueno_horas: null,
   estres: null,
 };
