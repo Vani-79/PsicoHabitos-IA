@@ -1,4 +1,5 @@
 import React from 'react';
+import { MySqlPatientRecord } from '../../types/patient';
 import {
   StyleSheet,
   Text,
@@ -11,15 +12,19 @@ import { Ionicons } from '@expo/vector-icons';
 
 interface PsychologistDashboardScreenProps {
   doctorName: string;
+  patients: MySqlPatientRecord[];
   onLogout: () => void;
   onRegisterPatient: () => void;
 }
 
 export const PsychologistDashboardScreen: React.FC<PsychologistDashboardScreenProps> = ({
   doctorName,
+  patients,
   onLogout,
   onRegisterPatient,
 }) => {
+  const recentPatients = patients.slice(-5).reverse();
+  
   return (
     <SafeAreaView style={styles.container}>
       {/* Barra Superior */}
@@ -39,7 +44,7 @@ export const PsychologistDashboardScreen: React.FC<PsychologistDashboardScreenPr
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Contenedor Principal con el Botón de Registrar Nuevo Paciente */}
+        {/* Sección de registro de pacientes */}
         <View style={styles.actionSection}>
           <TouchableOpacity
             style={styles.registerPatientButton}
@@ -58,12 +63,94 @@ export const PsychologistDashboardScreen: React.FC<PsychologistDashboardScreenPr
             <Ionicons name="chevron-forward" size={24} color="#A8DED3" />
           </TouchableOpacity>
         </View>
+
+        {/* Sección de Pacientes Registrados */}
+        <View style={styles.patientsSection}>
+        <Text style={styles.sectionTitle}>Pacientes recientes</Text>
+        <Text style={styles.sectionSubtitle}>Últimos 5 pacientes registrados</Text>
+        {recentPatients.map((patient, index) => (
+    <View
+      key={`${patient.email}-${index}`}
+      style={styles.patientCard}
+    >
+      <View style={styles.patientAccent} />
+      <Text style={styles.patientName}>
+        {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno}
+      </Text>
+
+      <Text style={styles.patientDetail}>
+        {patient.edad} años
+      </Text>
+
+      <Text style={styles.patientDetail}>
+        Correo: {patient.email}
+      </Text>
+
+      <Text style={styles.patientDetail}>
+        Primera sesión: {patient.fecha_primera_sesion}
+      </Text>
+    </View>
+  ))}
+</View>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
+
+
 const styles = StyleSheet.create({
+  patientsSection: {
+  marginTop: 28,
+},
+
+sectionSubtitle: {
+  marginBottom: 12,
+  fontSize: 14,
+  color: '#6B7280',
+},
+
+sectionTitle: {
+  marginBottom: 12,
+  fontSize: 20,
+  fontWeight: '800',
+  color: '#1F2937',
+},
+
+patientCard: {
+  marginBottom: 12,
+  padding: 16,
+  borderTopRightRadius: 16,
+  borderBottomRightRadius: 16,
+  borderTopLeftRadius: 0,
+  borderBottomLeftRadius: 0,
+  backgroundColor: '#FFFFFF',
+  borderWidth: 1,
+  borderColor: '#6cb59388',
+  overflow: 'hidden',
+  position: 'relative',
+},
+
+patientAccent: {
+  position: 'absolute',
+  left: 0,
+  top: 0,
+  bottom: 0,
+  width: 8,
+  backgroundColor: '#6CB593',
+},
+
+patientName: {
+  fontSize: 16,
+  fontWeight: '700',
+  color: '#1F2937',
+},
+
+patientDetail: {
+  marginTop: 5,
+  fontSize: 14,
+  color: '#60756D',
+},
   container: {
     flex: 1,
     backgroundColor: '#F8FAF9',
