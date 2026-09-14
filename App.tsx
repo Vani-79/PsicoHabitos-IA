@@ -28,7 +28,9 @@ export type AppScreen =
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('welcome');
   const [activeUserName, setActiveUserName] = useState<string>('Carlos');
+  const [patients, setPatients] = useState<MySqlPatientRecord[]>([]);
 
+  
   const handleLoginSuccess = (email: string, role: UserRole, name: string) => {
     setActiveUserName(name);
     if (role === 'psicologo') {
@@ -117,6 +119,7 @@ export default function App() {
       {currentScreen === 'psychologist-dashboard' && (
         <PsychologistDashboardScreen
           doctorName={activeUserName}
+          patients={patients}
           onLogout={() => setCurrentScreen('welcome')}
           onRegisterPatient={() => setCurrentScreen('psychologist-register-patient')}
         />
@@ -125,8 +128,9 @@ export default function App() {
       {currentScreen === 'psychologist-register-patient' && (
         <RegisterPatientScreen
           onBack={() => setCurrentScreen('psychologist-dashboard')}
-          onRegisterSuccess={(_record: MySqlPatientRecord) => {
-            setCurrentScreen('psychologist-dashboard');
+          onRegisterSuccess={(record: MySqlPatientRecord) => {
+           setPatients((currentPatients) => [...currentPatients, record]);
+           setCurrentScreen('psychologist-dashboard');
           }}
         />
       )}
