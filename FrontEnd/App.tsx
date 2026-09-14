@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { WelcomeScreen } from './src/screens/auth/WelcomeScreen';
@@ -13,6 +13,7 @@ import { RegisterPatientScreen } from './src/screens/psychologist/RegisterPatien
 import { UserRole } from './src/constants/auth';
 import { MySqlPatientRecord } from './src/types/patient';
 import { PatientTab } from './src/components/PatientBottomNav';
+import { patientService } from './src/services';
 
 export type AppScreen =
   | 'welcome'
@@ -28,12 +29,22 @@ export type AppScreen =
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('welcome');
   const [activeUserName, setActiveUserName] = useState<string>('Carlos');
+  const [activeUserEmail, setActiveUserEmail] = useState<string>('');
   const [patients, setPatients] = useState<MySqlPatientRecord[]>([]);
 
-  
-  const handleLoginSuccess = (email: string, role: UserRole, name: string) => {
+  const handlePatientRegistration = async (record: MySqlPatientRecord) => {
+    await patientService.registerPatient(record, activeUserEmail);
+    const updated = await patientService.getRecentPatients(5, activeUserEmail);
+    setPatients(updated);
+    setCurrentScreen('psychologist-dashboard');
+  };
+
+  const handleLoginSuccess = async (email: string, role: UserRole, name: string) => {
     setActiveUserName(name);
+    setActiveUserEmail(email);
     if (role === 'psicologo') {
+      const psychologistPatients = await patientService.getRecentPatients(5, email);
+      setPatients(psychologistPatients);
       setCurrentScreen('psychologist-dashboard');
     } else {
       setCurrentScreen('habits');
@@ -79,6 +90,7 @@ export default function App() {
       {currentScreen === 'habits' && (
         <DailyCheckInScreen
           userName={activeUserName}
+          userEmail={activeUserEmail}
           onBack={() => setCurrentScreen('welcome')}
           onNavigateTab={handlePatientTabNavigate}
         />
@@ -128,10 +140,7 @@ export default function App() {
       {currentScreen === 'psychologist-register-patient' && (
         <RegisterPatientScreen
           onBack={() => setCurrentScreen('psychologist-dashboard')}
-          onRegisterSuccess={(record: MySqlPatientRecord) => {
-           setPatients((currentPatients) => [...currentPatients, record]);
-           setCurrentScreen('psychologist-dashboard');
-          }}
+          onRegisterSuccess={handlePatientRegistration}
         />
       )}
     </SafeAreaProvider>

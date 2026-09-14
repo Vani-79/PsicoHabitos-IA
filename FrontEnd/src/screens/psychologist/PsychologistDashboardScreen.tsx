@@ -24,7 +24,7 @@ export const PsychologistDashboardScreen: React.FC<PsychologistDashboardScreenPr
   onRegisterPatient,
 }) => {
   const recentPatients = patients.slice(-5).reverse();
-  
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Barra Superior */}
@@ -66,32 +66,47 @@ export const PsychologistDashboardScreen: React.FC<PsychologistDashboardScreenPr
 
         {/* Sección de Pacientes Registrados */}
         <View style={styles.patientsSection}>
-        <Text style={styles.sectionTitle}>Pacientes recientes</Text>
-        <Text style={styles.sectionSubtitle}>Últimos 5 pacientes registrados</Text>
-        {recentPatients.map((patient, index) => (
-    <View
-      key={`${patient.email}-${index}`}
-      style={styles.patientCard}
-    >
-      <View style={styles.patientAccent} />
-      <Text style={styles.patientName}>
-        {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno}
-      </Text>
+          <Text style={styles.sectionTitle}>Pacientes</Text>
+          <Text style={styles.sectionSubtitle}>
+            {recentPatients.length > 0
+              ? 'Últimos pacientes asignados a tu consulta'
+              : 'Pacientes asignados a tu consulta'}
+          </Text>
 
-      <Text style={styles.patientDetail}>
-        {patient.edad} años
-      </Text>
+          {recentPatients.length === 0 ? (
+            <View style={styles.emptyStateCard}>
+              <Ionicons name="people-outline" size={44} color="#9CA3AF" />
+              <Text style={styles.emptyStateTitle}>Aún no tienes pacientes asignados</Text>
+              <Text style={styles.emptyStateText}>
+                Presiona el botón "Registrar Nuevo Paciente" de arriba para crear una ficha clínica y comenzar la atención.
+              </Text>
+            </View>
+          ) : (
+            recentPatients.map((patient, index) => (
+              <View
+                key={`${patient.email}-${index}`}
+                style={styles.patientCard}
+              >
+                <View style={styles.patientAccent} />
+                <Text style={styles.patientName}>
+                  {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno}
+                </Text>
 
-      <Text style={styles.patientDetail}>
-        Correo: {patient.email}
-      </Text>
+                <Text style={styles.patientDetail}>
+                  {patient.edad} años
+                </Text>
 
-      <Text style={styles.patientDetail}>
-        Primera sesión: {patient.fecha_primera_sesion}
-      </Text>
-    </View>
-  ))}
-</View>
+                <Text style={styles.patientDetail}>
+                  Correo: {patient.email}
+                </Text>
+
+                <Text style={styles.patientDetail}>
+                  Primera sesión: {patient.fecha_primera_sesion}
+                </Text>
+              </View>
+            ))
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -101,56 +116,56 @@ export const PsychologistDashboardScreen: React.FC<PsychologistDashboardScreenPr
 
 const styles = StyleSheet.create({
   patientsSection: {
-  marginTop: 28,
-},
+    marginTop: 28,
+  },
 
-sectionSubtitle: {
-  marginBottom: 12,
-  fontSize: 14,
-  color: '#6B7280',
-},
+  sectionSubtitle: {
+    marginBottom: 12,
+    fontSize: 14,
+    color: '#6B7280',
+  },
 
-sectionTitle: {
-  marginBottom: 12,
-  fontSize: 20,
-  fontWeight: '800',
-  color: '#1F2937',
-},
+  sectionTitle: {
+    marginBottom: 12,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1F2937',
+  },
 
-patientCard: {
-  marginBottom: 12,
-  padding: 16,
-  borderTopRightRadius: 16,
-  borderBottomRightRadius: 16,
-  borderTopLeftRadius: 0,
-  borderBottomLeftRadius: 0,
-  backgroundColor: '#FFFFFF',
-  borderWidth: 1,
-  borderColor: '#6cb59388',
-  overflow: 'hidden',
-  position: 'relative',
-},
+  patientCard: {
+    marginBottom: 12,
+    padding: 16,
+    borderTopRightRadius: 16,
+    borderBottomRightRadius: 16,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#6cb59388',
+    overflow: 'hidden',
+    position: 'relative',
+  },
 
-patientAccent: {
-  position: 'absolute',
-  left: 0,
-  top: 0,
-  bottom: 0,
-  width: 8,
-  backgroundColor: '#6CB593',
-},
+  patientAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 8,
+    backgroundColor: '#6CB593',
+  },
 
-patientName: {
-  fontSize: 16,
-  fontWeight: '700',
-  color: '#1F2937',
-},
+  patientName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
 
-patientDetail: {
-  marginTop: 5,
-  fontSize: 14,
-  color: '#60756D',
-},
+  patientDetail: {
+    marginTop: 5,
+    fontSize: 14,
+    color: '#60756D',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F8FAF9',
@@ -225,5 +240,32 @@ patientDetail: {
     color: '#D1E7DD',
     fontSize: 12.5,
     marginTop: 3,
+  },
+  emptyStateCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+    marginTop: 6,
+  },
+  emptyStateTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#374151',
+    marginTop: 12,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  emptyStateText: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 18,
+    maxWidth: 280,
   },
 });

@@ -7,14 +7,24 @@ export interface TestUser {
 }
 
 export const MOCK_USERS: Record<string, TestUser> = {
+  'roberto@gmail.com': {
+    email: 'roberto@gmail.com',
+    role: 'psicologo',
+    name: 'Dr. Roberto Gonzales',
+  },
+  'carlos@gmail.com': {
+    email: 'carlos@gmail.com',
+    role: 'paciente',
+    name: 'Carlos Lopez',
+  },
   'paciente1@gmail.com': {
     email: 'paciente1@gmail.com',
     role: 'paciente',
-    name: 'Carlos (Paciente)',
+    name: 'Carlos Lopez',
   },
   'psicologo1@gmail.com': {
     email: 'psicologo1@gmail.com',
     role: 'psicologo',
-    name: 'Dra. María González',
+    name: 'Dr. Roberto Gonzales',
   },
 };
