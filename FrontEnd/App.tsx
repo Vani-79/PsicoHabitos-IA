@@ -33,10 +33,13 @@ export default function App() {
   const [patients, setPatients] = useState<MySqlPatientRecord[]>([]);
 
   const handlePatientRegistration = async (record: MySqlPatientRecord) => {
-    await patientService.registerPatient(record, activeUserEmail);
-    const updated = await patientService.getRecentPatients(5, activeUserEmail);
-    setPatients(updated);
-    setCurrentScreen('psychologist-dashboard');
+    const res = await patientService.registerPatient(record, activeUserEmail);
+    if (res.success) {
+      const updated = await patientService.getRecentPatients(5, activeUserEmail);
+      setPatients(updated);
+      setCurrentScreen('psychologist-dashboard');
+    }
+    return res;
   };
 
   const handleLoginSuccess = async (email: string, role: UserRole, name: string) => {

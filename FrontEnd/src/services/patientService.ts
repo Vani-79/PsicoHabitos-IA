@@ -24,25 +24,23 @@ export const patientService = {
         body: JSON.stringify({ ...record, doctorEmail }),
       });
 
-      if (response.ok) {
-        const json = await response.json();
+      const json = await response.json().catch(() => null);
+
+      if (response.ok && json && json.success) {
         return json;
       }
+
+      return {
+        success: false,
+        error: json?.error || 'Error al registrar el paciente en el servidor.',
+      };
     } catch (err) {
-      console.warn('[patientService] Backend no alcanzable, usando fallback en memoria:', err);
+      console.warn('[patientService] Backend no alcanzable:', err);
+      return {
+        success: false,
+        error: 'No se pudo conectar con el servidor para registrar al paciente.',
+      };
     }
-
-    // Fallback de respaldo en memoria para desarrollo sin servidor activo
-    const idx = localMemoryFallback.findIndex(
-      (p) => p.email.toLowerCase() === record.email.toLowerCase()
-    );
-    if (idx >= 0) {
-      localMemoryFallback[idx] = record;
-    } else {
-      localMemoryFallback = [...localMemoryFallback, record];
-    }
-
-    return { success: true, data: record };
   },
 
   /**

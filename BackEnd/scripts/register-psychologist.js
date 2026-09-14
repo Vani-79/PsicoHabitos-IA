@@ -7,13 +7,11 @@ async function main() {
   const nombre = args[0] || process.env.PSICO_NOMBRE;
   const apellidos = args[1] || process.env.PSICO_APELLIDOS;
   const email = args[2] || process.env.PSICO_EMAIL;
-  const especialidad = args[3] || 'Psicología Clínica y Cognitivo Conductual';
-  const telefono = args[4] || null;
 
   if (!nombre || !apellidos || !email) {
     console.log(`
 Uso del comando:
-  node scripts/register-psychologist.js "<Nombre>" "<Apellidos>" "<Correo>" ["<Especialidad>"] ["<Teléfono>"]
+  node scripts/register-psychologist.js "<Nombre>" "<Apellidos>" "<Correo>"
 
 Ejemplo:
   node scripts/register-psychologist.js "Claudia" "Rojas Mery" "claudia.rojas@gmail.com"
@@ -34,28 +32,31 @@ Ejemplo:
   });
 
   try {
-    // 1. Crear o actualizar en usuarios
-    const [uResult] = await conn.query(
-      `INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) 
-       VALUES (?, NULL, 'psicologo', TRUE, TRUE)
-       ON DUPLICATE KEY UPDATE rol = 'psicologo'`,
+    // 1. Validar si el correo ya existe
+    const [existingUsers] = await conn.query(
+      'SELECT id, rol FROM usuarios WHERE email = ? LIMIT 1',
       [targetEmail]
     );
 
-    const usuarioId =
-      uResult.insertId ||
-      (await conn.query('SELECT id FROM usuarios WHERE email = ? LIMIT 1', [targetEmail]))[0][0]?.id;
+    if (existingUsers.length > 0) {
+      console.error(`❌ Error: El correo "${targetEmail}" ya se encuentra registrado en el sistema (rol: ${existingUsers[0].rol}).`);
+      process.exit(1);
+    }
 
-    // 2. Insertar o actualizar en psicologos
+    // 2. Crear en usuarios
+    const [uResult] = await conn.query(
+      `INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) 
+       VALUES (?, NULL, 'psicologo', TRUE, TRUE)`,
+      [targetEmail]
+    );
+
+    const usuarioId = uResult.insertId;
+
+    // 3. Insertar en psicologos
     await conn.query(
-      `INSERT INTO psicologos (usuario_id, nombre, apellidos, especialidad, telefono) 
-       VALUES (?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE 
-        nombre = VALUES(nombre),
-        apellidos = VALUES(apellidos),
-        especialidad = VALUES(especialidad),
-        telefono = VALUES(telefono)`,
-      [usuarioId, nombre.trim(), apellidos.trim(), especialidad, telefono]
+      `INSERT INTO psicologos (usuario_id, nombre, apellidos) 
+       VALUES (?, ?, ?)`,
+      [usuarioId, nombre.trim(), apellidos.trim()]
     );
 
     console.log(`✅ [Base de Datos] Especialista guardado con éxito (Usuario ID: ${usuarioId}).`);

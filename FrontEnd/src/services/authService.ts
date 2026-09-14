@@ -116,7 +116,7 @@ export const authService = {
       data: {
         email: targetEmail,
         role: (isPsychologist ? 'psicologo' : 'paciente') as UserRole,
-        name: isPsychologist ? `Dr. ${capitalized}` : capitalized,
+        name: isPsychologist ? `Ps. ${capitalized}` : capitalized,
       },
     };
   },
@@ -124,7 +124,11 @@ export const authService = {
   /**
    * Crea la contraseña inicial para un usuario registrado sin contraseña e inicia sesión directamente.
    */
-  async createInitialPassword(email: string, password: string): Promise<ApiResponse<TestUser>> {
+  async createInitialPassword(
+    email: string,
+    password: string,
+    acceptedTerms: boolean = true
+  ): Promise<ApiResponse<TestUser>> {
     const targetEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
 
@@ -132,7 +136,11 @@ export const authService = {
       const response = await fetch(`${API_CONFIG.BASE_URL}/auth/create-initial-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: targetEmail, password: cleanPassword }),
+        body: JSON.stringify({
+          email: targetEmail,
+          password: cleanPassword,
+          acceptedTerms,
+        }),
       });
 
       const json = await response.json().catch(() => null);

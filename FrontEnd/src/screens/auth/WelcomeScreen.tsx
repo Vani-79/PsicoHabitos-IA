@@ -6,17 +6,16 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
-  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LegalConsentModal } from '../../components/LegalConsentModal';
 
 interface WelcomeScreenProps {
   onStartLogin: () => void;
 }
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartLogin }) => {
-  const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
 
   return (
@@ -93,134 +92,47 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartLogin }) =>
         {/* Sección Inferior: Botón de Inicio y Seguridad */}
         <View style={styles.buttonSection}>
           <TouchableOpacity
-            style={[
-              styles.loginButton,
-              !acceptedTerms && styles.loginButtonDisabled,
-            ]}
-            onPress={() => {
-              if (!acceptedTerms) {
-                setModalVisible(true);
-                return;
-              }
-              onStartLogin();
-            }}
-            activeOpacity={acceptedTerms ? 0.85 : 0.95}
+            style={styles.loginButton}
+            onPress={onStartLogin}
+            activeOpacity={0.85}
           >
-            <Text
-              style={[
-                styles.loginButtonText,
-                !acceptedTerms && styles.loginButtonTextDisabled,
-              ]}
-            >
-              Iniciar Sesión
-            </Text>
+            <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
             <Ionicons
               name="arrow-forward"
               size={22}
-              color={acceptedTerms ? '#FFFFFF' : '#D1DFD8'}
+              color="#FFFFFF"
               style={styles.buttonIcon}
             />
           </TouchableOpacity>
 
           {/* Hipervínculo interactivo de términos y condiciones */}
           <TouchableOpacity
-            style={[
-              styles.securityBadge,
-              !acceptedTerms ? styles.securityBadgePending : styles.securityBadgeAccepted,
-            ]}
+            style={styles.securityBadge}
             onPress={() => setModalVisible(true)}
             activeOpacity={0.7}
           >
             <Ionicons
-              name={acceptedTerms ? 'shield-checkmark' : 'shield-checkmark-outline'}
+              name="shield-checkmark"
               size={15}
-              color={acceptedTerms ? '#8E9E96' : '#10B981'}
+              color="#10B981"
             />
-            <Text
-              style={[
-                styles.securityText,
-                !acceptedTerms ? styles.securityTextPending : styles.securityTextAccepted,
-              ]}
-            >
-              {acceptedTerms
-                ? '✓ Espacio seguro y confidencial (Aceptado)'
-                : 'Espacio seguro y confidencial'}
+            <Text style={styles.securityText}>
+              Espacio seguro y confidencial (Ley N° 21.719)
             </Text>
           </TouchableOpacity>
 
-          {!acceptedTerms && (
-            <Text style={styles.termsHintText}>
-              (Toca para leer y aceptar los términos)
-            </Text>
-          )}
+          <Text style={styles.termsHintText}>
+            (Toca para leer las políticas de privacidad y confidencialidad)
+          </Text>
         </View>
       </ScrollView>
 
       {/* Pop-up / Modal: Ley 21.719 y Confidencialidad */}
-      <Modal
+      <LegalConsentModal
         visible={modalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalIconCircle}>
-              <Ionicons name="shield-checkmark" size={32} color="#0F613B" />
-            </View>
-
-            <Text style={styles.modalTitle}>Protección de Datos y Privacidad</Text>
-
-            <View style={styles.modalLawBadge}>
-              <Ionicons name="document-text-outline" size={13} color="#0F613B" />
-              <Text style={styles.modalLawBadgeText}>Ley N° 21.719</Text>
-            </View>
-
-            <View style={styles.modalContentBox}>
-              <Text style={styles.modalParagraph}>
-                Esta aplicación se rige estrictamente bajo la{' '}
-                <Text style={styles.modalBoldText}>
-                  Ley de Protección de Datos Personales N° 21.719
-                </Text>
-                .
-              </Text>
-
-              <Text style={styles.modalParagraph}>
-                Toda la información registrada sobre tu bienestar, hábitos diarios, emociones y reflexiones es de carácter{' '}
-                <Text style={styles.modalBoldText}>estrictamente confidencial</Text>.
-              </Text>
-
-              <Text style={styles.modalParagraph}>
-                Tus datos serán{' '}
-                <Text style={styles.modalBoldText}>
-                  única y exclusivamente manejados y utilizados por tu psicólogo tratante
-                </Text>{' '}
-                con el fin de acompañar y orientar tu proceso terapéutico.
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.modalAcceptButton}
-              onPress={() => {
-                setAcceptedTerms(true);
-                setModalVisible(false);
-              }}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" style={{ marginRight: 6 }} />
-              <Text style={styles.modalAcceptButtonText}>Acepto los términos y condiciones</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setModalVisible(false)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.modalCloseButtonText}>Cerrar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setModalVisible(false)}
+        showAcceptButton={false}
+      />
     </SafeAreaView>
   );
 };
