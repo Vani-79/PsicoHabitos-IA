@@ -18,9 +18,10 @@ USE psicohabitos_db;
 CREATE TABLE IF NOT EXISTS usuarios (
   id INT AUTO_INCREMENT PRIMARY KEY,
   email VARCHAR(120) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NULL,
   rol ENUM('psicologo', 'paciente', 'admin') NOT NULL,
   activo BOOLEAN NOT NULL DEFAULT TRUE,
+  debe_crear_password BOOLEAN NOT NULL DEFAULT FALSE,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_usuarios_email (email),
   INDEX idx_usuarios_rol (rol)
@@ -215,25 +216,25 @@ CREATE TABLE IF NOT EXISTS consentimientos_legales (
 -- DATOS SEMILLA DE PRUEBA (Para validar el funcionamiento del sistema)
 -- ------------------------------------------------------------------------------
 
--- Usuarios de prueba iniciales
-INSERT INTO usuarios (id, email, password_hash, rol, activo) VALUES
-  (1, 'psicologo1@gmail.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPt.s8Kqu', 'psicologo', 1),
-  (2, 'paciente1@gmail.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPt.s8Kqu', 'paciente', 1)
-ON DUPLICATE KEY UPDATE email=VALUES(email);
+-- Usuarios de prueba iniciales (Contraseña de prueba: Psico123@)
+INSERT INTO usuarios (id, email, password_hash, rol, activo, debe_crear_password) VALUES
+  (1, 'roberto@gmail.com', '$2a$10$tZc1q.7w4s6oR8V4hK4uJeL7kG3A6w.bHhP4X0XzC8VwK1Jc/hY6q', 'psicologo', 1, 0),
+  (2, 'carlos@gmail.com', '$2a$10$tZc1q.7w4s6oR8V4hK4uJeL7kG3A6w.bHhP4X0XzC8VwK1Jc/hY6q', 'paciente', 1, 0)
+ON DUPLICATE KEY UPDATE email=VALUES(email), password_hash=VALUES(password_hash);
 
--- Perfil psicólogo (Dra. María González)
+-- Perfil psicólogo (Dr. Roberto Gonzales)
 INSERT INTO psicologos (id, usuario_id, nombre, apellidos, especialidad, telefono) VALUES
-  (1, 1, 'María', 'González Ramos', 'Psicología Clínica y Cognitivo Conductual', '+56 9 8765 4321')
+  (1, 1, 'Roberto', 'Gonzales', 'Psicología Clínica y Cognitivo Conductual', '+56 9 8765 4321')
 ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
 
--- Perfil paciente (Carlos Pérez Soto)
+-- Perfil paciente (Carlos Lopez Gomez)
 INSERT INTO pacientes (id, usuario_id, nombre, apellido_paterno, apellido_materno, edad, fecha_nacimiento, genero, email) VALUES
-  (1, 2, 'Carlos', 'Pérez', 'Soto', 28, '1998-04-15', 'masculino', 'paciente1@gmail.com')
+  (1, 2, 'Carlos', 'Lopez', 'Gomez', 21, '2005-04-01', 'masculino', 'carlos@gmail.com')
 ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
 
--- Vínculo Dra. María con Carlos
+-- Vínculo Dr. Roberto con Carlos
 INSERT INTO relacion_psicologo_paciente (id, psicologo_id, paciente_id, fecha_primera_sesion, estado, notas_clinicas) VALUES
-  (1, 1, 1, '2026-09-01', 'activo', 'Paciente inicia tratamiento para manejo de estrés y optimización de hábitos de descanso.')
+  (1, 1, 1, '2026-09-11', 'activo', 'Paciente inicial registrado para atención psicológica.')
 ON DUPLICATE KEY UPDATE estado=VALUES(estado);
 
 -- Check-in de hábitos de muestra

@@ -29,25 +29,22 @@ export type AppScreen =
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('welcome');
   const [activeUserName, setActiveUserName] = useState<string>('Carlos');
+  const [activeUserEmail, setActiveUserEmail] = useState<string>('');
   const [patients, setPatients] = useState<MySqlPatientRecord[]>([]);
 
-  useEffect(() => {
-    // Carga inicial de pacientes desde el servicio
-    patientService.getRecentPatients().then((list) => {
-      setPatients(list);
-    });
-  }, []);
-
   const handlePatientRegistration = async (record: MySqlPatientRecord) => {
-    await patientService.registerPatient(record);
-    const updated = await patientService.getRecentPatients();
+    await patientService.registerPatient(record, activeUserEmail);
+    const updated = await patientService.getRecentPatients(5, activeUserEmail);
     setPatients(updated);
     setCurrentScreen('psychologist-dashboard');
   };
 
-  const handleLoginSuccess = (email: string, role: UserRole, name: string) => {
+  const handleLoginSuccess = async (email: string, role: UserRole, name: string) => {
     setActiveUserName(name);
+    setActiveUserEmail(email);
     if (role === 'psicologo') {
+      const psychologistPatients = await patientService.getRecentPatients(5, email);
+      setPatients(psychologistPatients);
       setCurrentScreen('psychologist-dashboard');
     } else {
       setCurrentScreen('habits');
@@ -93,6 +90,7 @@ export default function App() {
       {currentScreen === 'habits' && (
         <DailyCheckInScreen
           userName={activeUserName}
+          userEmail={activeUserEmail}
           onBack={() => setCurrentScreen('welcome')}
           onNavigateTab={handlePatientTabNavigate}
         />

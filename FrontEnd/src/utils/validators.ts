@@ -14,7 +14,7 @@ export interface ValidationResult {
 /**
  * Expresión regular para validar correos electrónicos estándar.
  */
-export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const EMAIL_REGEX = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
 
 /**
  * Expresión regular para verificar cadenas que solo contengan letras (con tildes en español y 'ñ') y espacios.
@@ -49,6 +49,47 @@ export function isValidEmail(email: string): boolean {
 export function isValidAge(age: string | number, minAge = 16): boolean {
   const parsed = typeof age === 'number' ? age : parseInt(age, 10);
   return !isNaN(parsed) && parsed >= minAge;
+}
+
+/**
+ * Expresión regular que exige:
+ * - Mínimo 8 caracteres
+ * - Al menos una letra mayúscula
+ * - Al menos una letra minúscula
+ * - Al menos un número
+ * - Al menos un carácter especial
+ */
+export const PASSWORD_COMPLEXITY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
+/**
+ * Valida de forma detallada si una contraseña cumple con los requisitos de seguridad:
+ * Mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.
+ */
+export function validatePasswordComplexity(password: string): { isValid: boolean; error?: string } {
+  const clean = password.trim();
+  if (clean.length < 8) {
+    return { isValid: false, error: 'La contraseña debe tener al menos 8 caracteres.' };
+  }
+  if (!/[A-Z]/.test(clean)) {
+    return { isValid: false, error: 'La contraseña debe contener al menos una letra mayúscula.' };
+  }
+  if (!/[a-z]/.test(clean)) {
+    return { isValid: false, error: 'La contraseña debe contener al menos una letra minúscula.' };
+  }
+  if (!/\d/.test(clean)) {
+    return { isValid: false, error: 'La contraseña debe contener al menos un número.' };
+  }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(clean)) {
+    return { isValid: false, error: 'La contraseña debe contener al menos un carácter especial (ej. @, #, $, !).' };
+  }
+  return { isValid: true };
+}
+
+/**
+ * Comprueba si una contraseña cumple con todos los requisitos de complejidad.
+ */
+export function isValidPassword(password: string): boolean {
+  return validatePasswordComplexity(password).isValid;
 }
 
 /**

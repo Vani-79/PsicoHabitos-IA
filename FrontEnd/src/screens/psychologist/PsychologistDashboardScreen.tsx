@@ -67,30 +67,45 @@ export const PsychologistDashboardScreen: React.FC<PsychologistDashboardScreenPr
         {/* Sección de Pacientes Registrados */}
         <View style={styles.patientsSection}>
           <Text style={styles.sectionTitle}>Pacientes</Text>
-          <Text style={styles.sectionSubtitle}>Últimos 5 pacientes registrados</Text>
-          {recentPatients.map((patient, index) => (
-            <View
-              key={`${patient.email}-${index}`}
-              style={styles.patientCard}
-            >
-              <View style={styles.patientAccent} />
-              <Text style={styles.patientName}>
-                {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno}
-              </Text>
+          <Text style={styles.sectionSubtitle}>
+            {recentPatients.length > 0
+              ? 'Últimos pacientes asignados a tu consulta'
+              : 'Pacientes asignados a tu consulta'}
+          </Text>
 
-              <Text style={styles.patientDetail}>
-                {patient.edad} años
-              </Text>
-
-              <Text style={styles.patientDetail}>
-                Correo: {patient.email}
-              </Text>
-
-              <Text style={styles.patientDetail}>
-                Primera sesión: {patient.fecha_primera_sesion}
+          {recentPatients.length === 0 ? (
+            <View style={styles.emptyStateCard}>
+              <Ionicons name="people-outline" size={44} color="#9CA3AF" />
+              <Text style={styles.emptyStateTitle}>Aún no tienes pacientes asignados</Text>
+              <Text style={styles.emptyStateText}>
+                Presiona el botón "Registrar Nuevo Paciente" de arriba para crear una ficha clínica y comenzar la atención.
               </Text>
             </View>
-          ))}
+          ) : (
+            recentPatients.map((patient, index) => (
+              <View
+                key={`${patient.email}-${index}`}
+                style={styles.patientCard}
+              >
+                <View style={styles.patientAccent} />
+                <Text style={styles.patientName}>
+                  {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno}
+                </Text>
+
+                <Text style={styles.patientDetail}>
+                  {patient.edad} años
+                </Text>
+
+                <Text style={styles.patientDetail}>
+                  Correo: {patient.email}
+                </Text>
+
+                <Text style={styles.patientDetail}>
+                  Primera sesión: {patient.fecha_primera_sesion}
+                </Text>
+              </View>
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -225,5 +240,32 @@ const styles = StyleSheet.create({
     color: '#D1E7DD',
     fontSize: 12.5,
     marginTop: 3,
+  },
+  emptyStateCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+    marginTop: 6,
+  },
+  emptyStateTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#374151',
+    marginTop: 12,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  emptyStateText: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 18,
+    maxWidth: 280,
   },
 });
