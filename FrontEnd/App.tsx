@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { WelcomeScreen } from './src/screens/auth/WelcomeScreen';
@@ -13,6 +13,7 @@ import { RegisterPatientScreen } from './src/screens/psychologist/RegisterPatien
 import { UserRole } from './src/constants/auth';
 import { MySqlPatientRecord } from './src/types/patient';
 import { PatientTab } from './src/components/PatientBottomNav';
+import { patientService } from './src/services';
 
 export type AppScreen =
   | 'welcome'
@@ -30,7 +31,20 @@ export default function App() {
   const [activeUserName, setActiveUserName] = useState<string>('Carlos');
   const [patients, setPatients] = useState<MySqlPatientRecord[]>([]);
 
-  
+  useEffect(() => {
+    // Carga inicial de pacientes desde el servicio
+    patientService.getRecentPatients().then((list) => {
+      setPatients(list);
+    });
+  }, []);
+
+  const handlePatientRegistration = async (record: MySqlPatientRecord) => {
+    await patientService.registerPatient(record);
+    const updated = await patientService.getRecentPatients();
+    setPatients(updated);
+    setCurrentScreen('psychologist-dashboard');
+  };
+
   const handleLoginSuccess = (email: string, role: UserRole, name: string) => {
     setActiveUserName(name);
     if (role === 'psicologo') {
@@ -128,10 +142,7 @@ export default function App() {
       {currentScreen === 'psychologist-register-patient' && (
         <RegisterPatientScreen
           onBack={() => setCurrentScreen('psychologist-dashboard')}
-          onRegisterSuccess={(record: MySqlPatientRecord) => {
-           setPatients((currentPatients) => [...currentPatients, record]);
-           setCurrentScreen('psychologist-dashboard');
-          }}
+          onRegisterSuccess={handlePatientRegistration}
         />
       )}
     </SafeAreaProvider>

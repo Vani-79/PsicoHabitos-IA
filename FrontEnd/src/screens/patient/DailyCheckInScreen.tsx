@@ -24,6 +24,8 @@ import {
   getRatingLabel,
 } from '../../constants/habits';
 import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
+import { formatToMySqlDate, formatToMySqlDateTime } from '../../utils/date';
+import { habitService } from '../../services';
 
 interface DailyCheckInScreenProps {
   onBack?: () => void;
@@ -41,13 +43,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   const insets = useSafeAreaInsets();
 
   // Fecha estipulada en formato estándar MySQL 'YYYY-MM-DD' (para columna tipo DATE)
-  const recordDate = useMemo(() => {
-    const currentDate = new Date();
-    const year = currentDate.getFullYear();
-    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const day = String(currentDate.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }, []);
+  const recordDate = useMemo(() => formatToMySqlDate(), []);
 
   const [habits, setHabits] = useState<DailyHabitRatings>(INITIAL_HABITS_STATE);
   const [isConfirmed, setIsConfirmed] = useState(false);
@@ -138,7 +134,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
     extrapolate: 'clamp',
   });
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (registeredCount < 6) {
       Alert.alert(
         'Hábitos incompletos',
@@ -147,8 +143,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
       return;
     }
 
-    const now = new Date();
-    const confirmedAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    const confirmedAt = formatToMySqlDateTime();
 
     // Registro estipulado con tipos nativos para MySQL (DATE y DATETIME)
     const mySqlRecord: MySqlDailyHabitRecord = {
@@ -164,7 +159,8 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
       confirmed_at: confirmedAt,   // DATETIME en MySQL: 'YYYY-MM-DD HH:MM:SS'
     };
 
-    console.log('Registro estipulado y preparado para MySQL:', mySqlRecord);
+    // Procesamiento desacoplado mediante la capa de servicios
+    await habitService.saveDailyCheckIn(mySqlRecord);
 
     if (onSaveRecord) {
       onSaveRecord(mySqlRecord);

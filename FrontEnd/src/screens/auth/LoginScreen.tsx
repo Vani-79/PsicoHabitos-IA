@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { MOCK_USERS, UserRole } from '../../constants/auth';
+import { UserRole } from '../../constants/auth';
+import { authService } from '../../services';
 
 interface LoginScreenProps {
   onBack: () => void;
@@ -29,7 +30,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const targetEmail = email.trim().toLowerCase();
 
     if (!targetEmail) {
@@ -41,23 +42,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       return;
     }
 
-    // Nota: Por ahora no se exige contraseña, permitiendo ingresar con el campo vacío
-    // ya que la autenticación formal se validará posteriormente con la base de datos MySQL.
-
-    // Comprobación de usuarios de prueba o detección automática de rol
-    const mockUser = MOCK_USERS[targetEmail];
-    if (mockUser) {
-      onLoginSuccess(mockUser.email, mockUser.role, mockUser.name);
+    const response = await authService.login(targetEmail, password);
+    if (response.success && response.data) {
+      onLoginSuccess(response.data.email, response.data.role, response.data.name);
     } else {
-      // Para otros correos ingresados:
-      const nameFromEmail = targetEmail.split('@')[0];
-      const capitalized = nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
-      const isPsychologist = targetEmail.includes('psicolog');
-      onLoginSuccess(
-        targetEmail,
-        isPsychologist ? 'psicologo' : 'paciente',
-        isPsychologist ? `Lic. ${capitalized}` : capitalized
-      );
+      Alert.alert('Error de acceso', response.error || 'No fue posible iniciar sesión.');
     }
   };
 
