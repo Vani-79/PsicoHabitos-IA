@@ -164,37 +164,47 @@ patientRouter.post('/', async (req: Request, res: Response): Promise<void> => {
 
     const targetEmail = String(email).trim().toLowerCase();
 
-    // 1. Crear o recuperar cuenta en tabla `usuarios` con debe_crear_password = TRUE
-    let usuarioId: number | null = null;
+    // 1. Validar que el correo no pertenezca a un usuario existente (psicólogo u otro paciente)
     const [existingUsers] = await pool.query<RowDataPacket[]>(
-      'SELECT id, debe_crear_password FROM usuarios WHERE email = ? LIMIT 1',
+      'SELECT id, rol FROM usuarios WHERE email = ? LIMIT 1',
       [targetEmail]
     );
 
     if (existingUsers.length > 0) {
-      usuarioId = existingUsers[0].id;
-    } else {
-      const [userResult] = await pool.query<ResultSetHeader>(
-        `INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) 
-         VALUES (?, NULL, 'paciente', TRUE, TRUE)`,
-        [targetEmail]
-      );
-      usuarioId = userResult.insertId;
+      const rolEncontrado = existingUsers[0].rol === 'psicologo' ? 'un especialista / psicólogo' : 'un paciente';
+      res.status(409).json({
+        success: false,
+        error: `El correo "${targetEmail}" ya se encuentra registrado en el sistema como ${rolEncontrado}. Por favor utiliza un correo diferente.`,
+      });
+      return;
     }
 
-    // 2. Insertar o actualizar ficha en tabla `pacientes` asociando usuario_id
+    const [existingPatients] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM pacientes WHERE email = ? LIMIT 1',
+      [targetEmail]
+    );
+
+    if (existingPatients.length > 0) {
+      res.status(409).json({
+        success: false,
+        error: `Ya existe una ficha clínica registrada para el correo "${targetEmail}".`,
+      });
+      return;
+    }
+
+    // 2. Crear cuenta en tabla `usuarios` con rol 'paciente' y debe_crear_password = TRUE
+    const [userResult] = await pool.query<ResultSetHeader>(
+      `INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) 
+       VALUES (?, NULL, 'paciente', TRUE, TRUE)`,
+      [targetEmail]
+    );
+    const usuarioId = userResult.insertId;
+
+    // 3. Insertar ficha clínica en tabla `pacientes` asociando usuario_id
     const [result] = await pool.query<ResultSetHeader>(
       `INSERT INTO pacientes 
         (usuario_id, nombre, apellido_paterno, apellido_materno, edad, fecha_nacimiento, genero, email, created_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, NOW()))
-       ON DUPLICATE KEY UPDATE 
-        usuario_id = COALESCE(VALUES(usuario_id), usuario_id),
-        nombre = VALUES(nombre),
-        apellido_paterno = VALUES(apellido_paterno),
-        apellido_materno = VALUES(apellido_materno),
-        edad = VALUES(edad),
-        fecha_nacimiento = VALUES(fecha_nacimiento),
-        genero = VALUES(genero)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, NOW()))`,
       [
         usuarioId,
         nombre.trim(),
@@ -208,9 +218,7 @@ patientRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       ]
     );
 
-    const pacienteId = result.insertId || (
-      await pool.query<RowDataPacket[]>('SELECT id FROM pacientes WHERE email = ? LIMIT 1', [targetEmail])
-    )[0][0]?.id;
+    const pacienteId = result.insertId;
 
     // 3. Vincular con el especialista autenticado o indicado
     let doctor: RowDataPacket | undefined;
@@ -241,7 +249,7 @@ patientRouter.post('/', async (req: Request, res: Response): Promise<void> => {
     }
 
     const targetPsicologoId = doctor ? doctor.id : 1;
-    const doctorName = doctor ? `Dr. ${doctor.nombre} ${doctor.apellidos}` : 'tu especialista';
+    const doctorName = doctor ? `Ps. ${doctor.nombre} ${doctor.apellidos}` : 'tu especialista';
 
     if (pacienteId && fecha_primera_sesion) {
       await pool.query(

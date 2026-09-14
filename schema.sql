@@ -35,8 +35,6 @@ CREATE TABLE IF NOT EXISTS psicologos (
   usuario_id INT NOT NULL UNIQUE,
   nombre VARCHAR(60) NOT NULL,
   apellidos VARCHAR(80) NOT NULL,
-  especialidad VARCHAR(100) NOT NULL DEFAULT 'Psicología Clínica',
-  telefono VARCHAR(25) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_psicologos_usuario
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
@@ -199,17 +197,17 @@ CREATE TABLE IF NOT EXISTS recursos_ejercicios (
 -- ------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS consentimientos_legales (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  paciente_id INT NOT NULL,
+  usuario_id INT NOT NULL,
   tipo_ley VARCHAR(80) NOT NULL DEFAULT 'Ley 21.719 Salud Mental y Datos Sensibles',
   texto_version TEXT NOT NULL,
   aceptado BOOLEAN NOT NULL DEFAULT TRUE,
   ip_origen VARCHAR(45) NULL,
   fecha_aceptacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_consentimientos_paciente
-    FOREIGN KEY (paciente_id) REFERENCES pacientes(id)
+  CONSTRAINT fk_consentimientos_usuario
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-  INDEX idx_consentimientos_paciente (paciente_id)
+  INDEX idx_consentimientos_usuario (usuario_id)
 ) ENGINE=InnoDB;
 
 -- ------------------------------------------------------------------------------
@@ -222,9 +220,9 @@ INSERT INTO usuarios (id, email, password_hash, rol, activo, debe_crear_password
   (2, 'carlos@gmail.com', '$2a$10$tZc1q.7w4s6oR8V4hK4uJeL7kG3A6w.bHhP4X0XzC8VwK1Jc/hY6q', 'paciente', 1, 0)
 ON DUPLICATE KEY UPDATE email=VALUES(email), password_hash=VALUES(password_hash);
 
--- Perfil psicólogo (Dr. Roberto Gonzales)
-INSERT INTO psicologos (id, usuario_id, nombre, apellidos, especialidad, telefono) VALUES
-  (1, 1, 'Roberto', 'Gonzales', 'Psicología Clínica y Cognitivo Conductual', '+56 9 8765 4321')
+-- Perfil psicólogo (Ps. Roberto Gonzales)
+INSERT INTO psicologos (id, usuario_id, nombre, apellidos) VALUES
+  (1, 1, 'Roberto', 'Gonzales')
 ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
 
 -- Perfil paciente (Carlos Lopez Gomez)
@@ -232,7 +230,7 @@ INSERT INTO pacientes (id, usuario_id, nombre, apellido_paterno, apellido_matern
   (1, 2, 'Carlos', 'Lopez', 'Gomez', 21, '2005-04-01', 'masculino', 'carlos@gmail.com')
 ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
 
--- Vínculo Dr. Roberto con Carlos
+-- Vínculo Ps. Roberto con Carlos
 INSERT INTO relacion_psicologo_paciente (id, psicologo_id, paciente_id, fecha_primera_sesion, estado, notas_clinicas) VALUES
   (1, 1, 1, '2026-09-11', 'activo', 'Paciente inicial registrado para atención psicológica.')
 ON DUPLICATE KEY UPDATE estado=VALUES(estado);
@@ -247,13 +245,7 @@ INSERT INTO sesiones_hope (id, paciente_id, titulo_resumen, iniciada_en, animo_p
   (1, 1, 'Reflexión nocturna sobre carga laboral', '2026-09-13 20:30:00', 'Preocupado pero receptivo', 'Paciente dialogó con Hope sobre estrategias de desconexión nocturna antes de dormir.')
 ON DUPLICATE KEY UPDATE titulo_resumen=VALUES(titulo_resumen);
 
-INSERT INTO mensajes_hope (sesion_hope_id, remitente, mensaje, enviado_en) VALUES
-  (1, 'hope', '¡Hola, Carlos! ¿Cómo te has sentido con tus niveles de descanso hoy?', '2026-09-13 20:30:15'),
-  (1, 'paciente', 'He estado un poco tenso por el trabajo, me cuesta desconectarme al final del día.', '2026-09-13 20:31:00'),
-  (1, 'hope', 'Es comprensible. Recuerda la respiración consciente guiada que te recomendó la Dra. María. ¿Te gustaría practicarla ahora?', '2026-09-13 20:31:40')
-ON DUPLICATE KEY UPDATE remitente=VALUES(remitente);
-
 -- Consentimiento legal Ley 21.719
-INSERT INTO consentimientos_legales (paciente_id, tipo_ley, texto_version, aceptado, ip_origen) VALUES
-  (1, 'Ley 21.719 Salud Mental y Datos Sensibles', 'Consentimiento informado aceptado digitalmente en el proceso de registro.', 1, '127.0.0.1')
+INSERT INTO consentimientos_legales (usuario_id, tipo_ley, texto_version, aceptado, ip_origen) VALUES
+  (2, 'Ley 21.719 Salud Mental y Datos Sensibles', 'Consentimiento informado aceptado digitalmente en el proceso de registro.', 1, '127.0.0.1')
 ON DUPLICATE KEY UPDATE aceptado=VALUES(aceptado);

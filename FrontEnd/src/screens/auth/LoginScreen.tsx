@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { UserRole } from '../../constants/auth';
 import { authService } from '../../services';
 import { validatePasswordComplexity } from '../../utils/validators';
+import { LegalConsentModal } from '../../components/LegalConsentModal';
 
 interface LoginScreenProps {
   onBack: () => void;
@@ -41,6 +42,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsModalVisible, setTermsModalVisible] = useState(false);
 
   // Reglas de complejidad para el checklist visual
   const reqLength = newPassword.trim().length >= 8;
@@ -129,10 +132,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       return;
     }
 
+    if (!acceptedTerms) {
+      Alert.alert(
+        'Aceptación de términos requerida',
+        'Para continuar y crear tu contraseña, debes aceptar los Términos y Condiciones y la Política de Privacidad (Ley N° 21.719).'
+      );
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const response = await authService.createInitialPassword(targetEmail, cleanNewPassword);
+      const response = await authService.createInitialPassword(targetEmail, cleanNewPassword, true);
 
       if (response.success && response.data) {
         Alert.alert(
@@ -336,12 +347,51 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 )}
               </View>
 
+              {/* Respaldo Legal de Consentimiento (Ley N° 21.719) */}
+              <View style={styles.termsAgreementBox}>
+                <TouchableOpacity
+                  style={styles.termsCheckboxRow}
+                  onPress={() => setAcceptedTerms(!acceptedTerms)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.termsCheckbox, acceptedTerms && styles.termsCheckboxChecked]}>
+                    {acceptedTerms && <Ionicons name="checkmark" size={15} color="#FFFFFF" />}
+                  </View>
+                  <View style={styles.termsTextContainer}>
+                    <Text style={styles.termsAgreementText}>
+                      He leído y acepto la{' '}
+                      <Text
+                        style={styles.termsLinkText}
+                        onPress={() => setTermsModalVisible(true)}
+                      >
+                        Protección de Datos y Confidencialidad (Ley N° 21.719)
+                      </Text>
+                      .
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.termsInfoButton}
+                  onPress={() => setTermsModalVisible(true)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="shield-checkmark-outline" size={15} color="#0F613B" />
+                  <Text style={styles.termsInfoButtonText}>
+                    Ver términos legales y resguardo de confidencialidad
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
               {/* Botón Guardar e Ingresar */}
               <TouchableOpacity
-                style={[styles.submitButton, isLoading && { opacity: 0.7 }]}
+                style={[
+                  styles.submitButton,
+                  (!acceptedTerms || isLoading) && styles.submitButtonDisabled,
+                ]}
                 onPress={handleCreatePassword}
-                activeOpacity={0.85}
-                disabled={isLoading}
+                activeOpacity={acceptedTerms ? 0.85 : 0.95}
+                disabled={isLoading || !acceptedTerms}
               >
                 {isLoading ? (
                   <ActivityIndicator color="#FFFFFF" />
@@ -450,6 +500,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <LegalConsentModal
+        visible={termsModalVisible}
+        onClose={() => setTermsModalVisible(false)}
+        onAccept={() => setAcceptedTerms(true)}
+        showAcceptButton={!acceptedTerms}
+      />
     </SafeAreaView>
   );
 };
@@ -671,6 +728,66 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#9FB8AA',
+    shadowOpacity: 0.05,
+    elevation: 0,
+  },
+  termsAgreementBox: {
+    backgroundColor: '#F2F8F4',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#D3E6DC',
+  },
+  termsCheckboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  termsCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#0F613B',
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    marginTop: 2,
+  },
+  termsCheckboxChecked: {
+    backgroundColor: '#0F613B',
+    borderColor: '#0F613B',
+  },
+  termsTextContainer: {
+    flex: 1,
+  },
+  termsAgreementText: {
+    fontSize: 13,
+    color: '#374151',
+    lineHeight: 18,
+  },
+  termsLinkText: {
+    color: '#0F613B',
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
+  termsInfoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#DEEBE3',
+  },
+  termsInfoButtonText: {
+    fontSize: 12,
+    color: '#0F613B',
+    fontWeight: '600',
   },
   forgotPasswordText: {
     fontSize: 13.5,

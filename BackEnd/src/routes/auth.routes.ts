@@ -45,7 +45,7 @@ async function getUserDisplayName(usuarioId: number, rol: string, email: string)
         [usuarioId]
       );
       if (psicoRows.length > 0) {
-        return `Dr. ${psicoRows[0].nombre} ${psicoRows[0].apellidos}`;
+        return `Ps. ${psicoRows[0].nombre} ${psicoRows[0].apellidos}`;
       }
     } else if (rol === 'paciente') {
       const [pacRows] = await pool.query<RowDataPacket[]>(
@@ -142,10 +142,18 @@ authRouter.post('/check-email', async (req: Request, res: Response): Promise<voi
  */
 authRouter.post('/create-initial-password', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password } = req.body;
+    const { email, password, acceptedTerms } = req.body;
 
     if (!email) {
       res.status(400).json({ success: false, error: 'Email requerido' });
+      return;
+    }
+
+    if (!acceptedTerms) {
+      res.status(400).json({
+        success: false,
+        error: 'Debes aceptar los Términos y Condiciones y la Política de Privacidad (Ley N° 21.719) para continuar.',
+      });
       return;
     }
 
@@ -201,6 +209,17 @@ authRouter.post('/create-initial-password', async (req: Request, res: Response):
         [passwordHash, usuarioId]
       );
     }
+
+    // 2. Extraer IP y registrar consentimiento legal (Auditoría probatoria Ley 21.719)
+    const rawIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || '127.0.0.1';
+    const clientIp = rawIp.replace(/^::ffff:/, '');
+    const versionLegal = 'Ley N° 21.719 Protección de Datos Personales y Salud Mental - V1.0 (Aceptado digitalmente al crear contraseña)';
+
+    await pool.query(
+      `INSERT INTO consentimientos_legales (usuario_id, tipo_ley, texto_version, aceptado, ip_origen, fecha_aceptacion)
+       VALUES (?, 'Ley 21.719 Salud Mental y Datos Sensibles', ?, TRUE, ?, NOW())`,
+      [usuarioId, versionLegal, clientIp]
+    );
 
     const name = await getUserDisplayName(usuarioId, rol, targetEmail);
 
@@ -370,16 +389,6 @@ authRouter.get('/register-psychologist', (_req: Request, res: Response): void =>
         <input type="email" id="email" name="email" placeholder="ejemplo@correo.com" required>
       </div>
 
-      <div class="form-group">
-        <label for="especialidad">Especialidad</label>
-        <input type="text" id="especialidad" name="especialidad" placeholder="Psicología Clínica y Cognitivo Conductual" value="Psicología Clínica y Cognitivo Conductual">
-      </div>
-
-      <div class="form-group">
-        <label for="telefono">Teléfono (Opcional)</label>
-        <input type="text" id="telefono" name="telefono" placeholder="+56 9 1234 5678">
-      </div>
-
       <button type="submit" id="submitBtn">Registrar y Enviar Correo</button>
     </form>
 
@@ -401,8 +410,6 @@ authRouter.get('/register-psychologist', (_req: Request, res: Response): void =>
         nombre: document.getElementById('nombre').value.trim(),
         apellidos: document.getElementById('apellidos').value.trim(),
         email: document.getElementById('email').value.trim(),
-        especialidad: document.getElementById('especialidad').value.trim(),
-        telefono: document.getElementById('telefono').value.trim(),
       };
 
       try {
@@ -418,7 +425,6 @@ authRouter.get('/register-psychologist', (_req: Request, res: Response): void =>
           alertBox.innerHTML = '✅ <strong>¡Especialista registrado con éxito!</strong><br>Se ha guardado en la base de datos y se ha enviado el correo de bienvenida a <strong>' + payload.email + '</strong>. Ya puede abrir la app y crear su contraseña.';
           alertBox.style.display = 'block';
           form.reset();
-          document.getElementById('especialidad').value = 'Psicología Clínica y Cognitivo Conductual';
         } else {
           alertBox.className = 'alert alert-error';
           alertBox.innerHTML = '❌ ' + (data.error || 'Ocurrió un error al registrar.');
@@ -445,7 +451,7 @@ authRouter.get('/register-psychologist', (_req: Request, res: Response): void =>
  */
 authRouter.post('/register-psychologist', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { nombre, apellidos, email, especialidad, telefono } = req.body;
+    const { nombre, apellidos, email } = req.body;
 
     if (!nombre || !apellidos || !email) {
       res.status(400).json({ success: false, error: 'Faltan campos obligatorios para el especialista' });
@@ -454,33 +460,38 @@ authRouter.post('/register-psychologist', async (req: Request, res: Response): P
 
     const targetEmail = String(email).trim().toLowerCase();
 
-    // 1. Crear en usuarios con debe_crear_password = TRUE
-    const [uResult] = await pool.query<ResultSetHeader>(
-      `INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) 
-       VALUES (?, NULL, 'psicologo', TRUE, TRUE)
-       ON DUPLICATE KEY UPDATE rol = 'psicologo'`,
+    // 1. Validar si el correo ya está registrado en usuarios
+    const [existingUsers] = await pool.query<RowDataPacket[]>(
+      'SELECT id, rol FROM usuarios WHERE email = ? LIMIT 1',
       [targetEmail]
     );
 
-    const usuarioId = uResult.insertId || (
-      await pool.query<RowDataPacket[]>('SELECT id FROM usuarios WHERE email = ? LIMIT 1', [targetEmail])
-    )[0][0]?.id;
+    if (existingUsers.length > 0) {
+      const rolEncontrado = existingUsers[0].rol === 'paciente' ? 'un paciente' : 'un especialista / psicólogo';
+      res.status(409).json({
+        success: false,
+        error: `El correo "${targetEmail}" ya se encuentra registrado en la plataforma como ${rolEncontrado}. No es posible registrar un nuevo especialista con este correo.`,
+      });
+      return;
+    }
 
-    // 2. Insertar en psicologos
+    // 2. Crear en usuarios con debe_crear_password = TRUE
+    const [uResult] = await pool.query<ResultSetHeader>(
+      `INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) 
+       VALUES (?, NULL, 'psicologo', TRUE, TRUE)`,
+      [targetEmail]
+    );
+
+    const usuarioId = uResult.insertId;
+
+    // 3. Insertar en psicologos
     await pool.query(
-      `INSERT INTO psicologos (usuario_id, nombre, apellidos, especialidad, telefono) 
-       VALUES (?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE 
-        nombre = VALUES(nombre),
-        apellidos = VALUES(apellidos),
-        especialidad = VALUES(especialidad),
-        telefono = VALUES(telefono)`,
+      `INSERT INTO psicologos (usuario_id, nombre, apellidos) 
+       VALUES (?, ?, ?)`,
       [
         usuarioId,
         nombre.trim(),
         apellidos.trim(),
-        especialidad || 'Psicología Clínica',
-        telefono || null,
       ]
     );
 

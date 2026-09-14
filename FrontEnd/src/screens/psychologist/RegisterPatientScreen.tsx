@@ -10,6 +10,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,7 +26,7 @@ import { validatePatientForm } from '../../utils/validators';
 interface RegisterPatientScreenProps {
   onBack: () => void;
   onNavigateToLogin?: () => void;
-  onRegisterSuccess: (record: MySqlPatientRecord) => void;
+  onRegisterSuccess: (record: MySqlPatientRecord) => Promise<{ success: boolean; error?: string } | void> | void;
 }
 
 export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
@@ -33,6 +34,7 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
   onNavigateToLogin,
   onRegisterSuccess,
 }) => {
+  const [isSaving, setIsSaving] = useState(false);
   const [form, setForm] = useState<PatientRegistrationForm>({
     nombre: '',
     apellidoPaterno: '',
@@ -76,7 +78,7 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
     }));
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     // 1. Validación exhaustiva de todos los campos mediante utilidades puras
     const validation = validatePatientForm(form);
     if (!validation.isValid) {
@@ -86,8 +88,6 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
 
     // 2. Fecha y hora de registro para la columna created_at en MySQL
     const createdAt = formatToMySqlDateTime();
-
-    
 
     // Objeto estructurado para MySQL (`pacientes`) sin contraseña
     const mySqlPatientRecord: MySqlPatientRecord = {
@@ -102,17 +102,28 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
       created_at: createdAt,                          // DATETIME en MySQL
     };
 
-    console.log('Nuevo paciente registrado para MySQL:', mySqlPatientRecord);
-    Alert.alert(
-      '¡Paciente Registrado!',
-      `Se ha creado exitosamente la ficha para ${form.nombre.trim()} ${form.apellidoPaterno.trim()}.`,
-      [
-        {
-          text: 'Continuar',
-          onPress: () => onRegisterSuccess(mySqlPatientRecord),
-        },
-      ]
-    );
+    setIsSaving(true);
+    try {
+      const res = (await onRegisterSuccess(mySqlPatientRecord)) as
+        | { success: boolean; error?: string }
+        | undefined;
+
+      if (res && !res.success) {
+        Alert.alert(
+          'No se pudo registrar al paciente',
+          res.error || 'El correo ingresado ya se encuentra en uso o es inválido.'
+        );
+      } else {
+        Alert.alert(
+          '¡Paciente Registrado!',
+          `Se ha creado exitosamente la ficha para ${form.nombre.trim()} ${form.apellidoPaterno.trim()}.`
+        );
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Ocurrió un problema de conexión al registrar el paciente.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const genderOptions: { key: Gender; label: string }[] = [
@@ -351,13 +362,17 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
             <TouchableOpacity
               style={[
                 styles.submitButton,
-                !isFormValid && styles.submitButtonDisabled,
+                (!isFormValid || isSaving) && styles.submitButtonDisabled,
               ]}
               onPress={handleRegister}
               activeOpacity={0.85}
-              disabled={!isFormValid}
+              disabled={!isFormValid || isSaving}
             >
-              <Text style={styles.submitButtonText}>Registrar Paciente</Text>
+              {isSaving ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.submitButtonText}>Registrar Paciente</Text>
+              )}
             </TouchableOpacity>
 
           </View>

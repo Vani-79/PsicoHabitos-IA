@@ -10,7 +10,7 @@ export const MOCK_USERS: Record<string, TestUser> = {
   'roberto@gmail.com': {
     email: 'roberto@gmail.com',
     role: 'psicologo',
-    name: 'Dr. Roberto Gonzales',
+    name: 'Ps. Roberto Gonzales',
   },
   'carlos@gmail.com': {
     email: 'carlos@gmail.com',
@@ -25,6 +25,6 @@ export const MOCK_USERS: Record<string, TestUser> = {
   'psicologo1@gmail.com': {
     email: 'psicologo1@gmail.com',
     role: 'psicologo',
-    name: 'Dr. Roberto Gonzales',
+    name: 'Ps. Roberto Gonzales',
   },
 };
