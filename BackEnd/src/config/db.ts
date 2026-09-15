@@ -12,6 +12,8 @@ export const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+  timezone: process.env.DB_TIMEZONE || '-03:00',
+  dateStrings: true,
 });
 
 /**
@@ -21,6 +23,24 @@ export async function testDbConnection(): Promise<void> {
   try {
     const connection = await pool.getConnection();
     console.log('✅ [MySQL] Conexión establecida exitosamente con la base de datos psicohabitos_db');
+    
+    // Configurar zona horaria en MySQL a UTC-3 (Chile) para sincronizar NOW() y CURDATE()
+    await connection.query("SET GLOBAL time_zone = '-03:00';");
+    await connection.query("SET PERSIST time_zone = '-03:00';");
+    await connection.query("SET time_zone = '-03:00';");
+
+    // Asegurar existencia de tabla codigos_recuperacion
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS codigos_recuperacion (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(120) NOT NULL,
+        codigo VARCHAR(6) NOT NULL,
+        expira_en DATETIME NOT NULL,
+        usado BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_codigos_email_codigo (email, codigo, usado)
+      ) ENGINE=InnoDB;
+    `);
     connection.release();
   } catch (error) {
     console.error('❌ [MySQL] Error al conectar con la base de datos:', error);

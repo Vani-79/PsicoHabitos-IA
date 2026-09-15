@@ -18,6 +18,14 @@ export interface CheckEmailResponse {
   error?: string;
 }
 
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+  email?: string;
+  data?: TestUser;
+}
+
 export const authService = {
   /**
    * Comprueba si un correo electrónico existe y si requiere creación de contraseña por primera vez.
@@ -79,7 +87,7 @@ export const authService = {
 
       const json = await response.json().catch(() => null);
 
-      if (json && json.requiresPasswordCreation) {
+      if (json?.requiresPasswordCreation) {
         return {
           success: false,
           requiresPasswordCreation: true,
@@ -145,7 +153,7 @@ export const authService = {
 
       const json = await response.json().catch(() => null);
 
-      if (response.ok && json && json.success) {
+      if (response.ok && json?.success) {
         return json;
       } else {
         return {
@@ -158,6 +166,125 @@ export const authService = {
       return {
         success: false,
         error: 'No se pudo conectar con el servidor para crear tu contraseña.',
+      };
+    }
+  },
+
+  /**
+   * Envía un código de 6 dígitos al correo para iniciar recuperación de contraseña.
+   */
+  async sendPasswordResetCode(email: string): Promise<ForgotPasswordResponse> {
+    const targetEmail = email.trim().toLowerCase();
+    if (!targetEmail) {
+      return { success: false, error: 'Por favor ingresa tu correo electrónico.' };
+    }
+
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/forgot-password/send-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: targetEmail }),
+      });
+
+      const json = await response.json().catch(() => null);
+      if (response.ok && json?.success) {
+        return json;
+      }
+      return {
+        success: false,
+        error: json?.error || 'No se pudo enviar el código de recuperación.',
+      };
+    } catch (err) {
+      console.warn('[authService] Error en sendPasswordResetCode:', err);
+      const mockUser = MOCK_USERS[targetEmail];
+      if (mockUser) {
+        return {
+          success: true,
+          message: 'Código de prueba enviado: 123456',
+          email: targetEmail,
+        };
+      }
+      return {
+        success: false,
+        error: 'No se pudo conectar con el servidor para enviar el código.',
+      };
+    }
+  },
+
+  /**
+   * Valida que el código de 6 dígitos ingresado sea correcto y vigente.
+   */
+  async verifyPasswordResetCode(email: string, code: string): Promise<ForgotPasswordResponse> {
+    const targetEmail = email.trim().toLowerCase();
+    const cleanCode = code.trim();
+
+    if (!targetEmail || !cleanCode) {
+      return { success: false, error: 'Correo y código son requeridos.' };
+    }
+
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/forgot-password/verify-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: targetEmail, code: cleanCode }),
+      });
+
+      const json = await response.json().catch(() => null);
+      if (response.ok && json?.success) {
+        return json;
+      }
+      return {
+        success: false,
+        error: json?.error || 'El código de verificación es inválido o ha expirado.',
+      };
+    } catch (err) {
+      console.warn('[authService] Error en verifyPasswordResetCode:', err);
+      if (cleanCode === '123456') {
+        return { success: true, message: 'Código verificado correctamente.' };
+      }
+      return {
+        success: false,
+        error: 'No se pudo conectar con el servidor para verificar el código.',
+      };
+    }
+  },
+
+  /**
+   * Restablece la contraseña del usuario tras haber validado el código de 6 dígitos.
+   */
+  async resetPassword(
+    email: string,
+    code: string,
+    newPassword: string
+  ): Promise<ApiResponse<TestUser>> {
+    const targetEmail = email.trim().toLowerCase();
+    const cleanCode = code.trim();
+    const cleanPassword = newPassword.trim();
+
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/forgot-password/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: targetEmail,
+          code: cleanCode,
+          newPassword: cleanPassword,
+        }),
+      });
+
+      const json = await response.json().catch(() => null);
+      if (response.ok && json?.success) {
+        return json;
+      }
+      return {
+        success: false,
+        error: json?.error || 'Error al restablecer la contraseña.',
+      };
+    } catch (err) {
+      console.warn('[authService] Error en resetPassword:', err);
+      return {
+        success: false,
+        error: 'No se pudo conectar con el servidor para restablecer la contraseña.',
       };
     }
   },

@@ -54,9 +54,9 @@ Ejemplo:
 
     // 3. Insertar en psicologos
     await conn.query(
-      `INSERT INTO psicologos (usuario_id, nombre, apellidos) 
-       VALUES (?, ?, ?)`,
-      [usuarioId, nombre.trim(), apellidos.trim()]
+      `INSERT INTO psicologos (usuario_id, nombre, apellidos, email) 
+       VALUES (?, ?, ?, ?)`,
+      [usuarioId, nombre.trim(), apellidos.trim(), targetEmail]
     );
 
     console.log(`✅ [Base de Datos] Especialista guardado con éxito (Usuario ID: ${usuarioId}).`);

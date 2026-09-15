@@ -486,12 +486,13 @@ authRouter.post('/register-psychologist', async (req: Request, res: Response): P
 
     // 3. Insertar en psicologos
     await pool.query(
-      `INSERT INTO psicologos (usuario_id, nombre, apellidos) 
-       VALUES (?, ?, ?)`,
+      `INSERT INTO psicologos (usuario_id, nombre, apellidos, email) 
+       VALUES (?, ?, ?, ?)`,
       [
         usuarioId,
         nombre.trim(),
         apellidos.trim(),
+        targetEmail,
       ]
     );
 
@@ -629,3 +630,220 @@ authRouter.post('/login', async (req: Request, res: Response): Promise<void> => 
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });
+
+/**
+ * POST /api/auth/forgot-password/send-code
+ * Genera y envía un código de 6 dígitos para recuperación de contraseña si el correo está registrado.
+ */
+authRouter.post('/forgot-password/send-code', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ success: false, error: 'Por favor ingresa tu correo electrónico.' });
+      return;
+    }
+
+    const targetEmail = String(email).trim().toLowerCase();
+
+    // 1. Verificar si el usuario existe en `usuarios` o `pacientes`
+    const [userRows] = await pool.query<RowDataPacket[]>(
+      'SELECT id, email, rol FROM usuarios WHERE email = ? LIMIT 1',
+      [targetEmail]
+    );
+
+    let userName = '';
+
+    if (userRows.length > 0) {
+      userName = await getUserDisplayName(userRows[0].id, userRows[0].rol, targetEmail);
+    } else {
+      const [pacRows] = await pool.query<RowDataPacket[]>(
+        'SELECT id, nombre, apellido_paterno FROM pacientes WHERE email = ? LIMIT 1',
+        [targetEmail]
+      );
+      if (pacRows.length > 0) {
+        userName = `${pacRows[0].nombre} ${pacRows[0].apellido_paterno}`;
+      } else {
+        res.status(404).json({
+          success: false,
+          error: 'No se encontró ninguna cuenta registrada con este correo electrónico.',
+        });
+        return;
+      }
+    }
+
+    // 2. Generar código de 6 dígitos numéricos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // 3. Invalidar códigos previos no usados para este correo
+    await pool.query(
+      'UPDATE codigos_recuperacion SET usado = TRUE WHERE email = ? AND usado = FALSE',
+      [targetEmail]
+    );
+
+    // 4. Guardar nuevo código en MySQL con vigencia de 15 minutos en hora del servidor
+    await pool.query(
+      'INSERT INTO codigos_recuperacion (email, codigo, expira_en, usado) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 15 MINUTE), FALSE)',
+      [targetEmail, code]
+    );
+
+    // 5. Enviar correo al usuario
+    emailService.sendPasswordResetCode({
+      to: targetEmail,
+      userName,
+      code,
+    }).catch((err) => {
+      console.warn('[forgot-password/send-code] Error en el envío del correo:', err);
+    });
+
+    res.json({
+      success: true,
+      message: 'Código de 6 dígitos enviado exitosamente a tu correo.',
+      email: targetEmail,
+    });
+  } catch (error) {
+    console.error('Error en /api/auth/forgot-password/send-code:', error);
+    res.status(500).json({ success: false, error: 'Error al generar código de recuperación' });
+  }
+});
+
+/**
+ * POST /api/auth/forgot-password/verify-code
+ * Verifica si el código de 6 dígitos es válido, coincide con el correo y no ha expirado.
+ */
+authRouter.post('/forgot-password/verify-code', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      res.status(400).json({ success: false, error: 'Correo y código de 6 dígitos son requeridos.' });
+      return;
+    }
+
+    const targetEmail = String(email).trim().toLowerCase();
+    const cleanCode = String(code).trim();
+
+    if (cleanCode.length !== 6) {
+      res.status(400).json({ success: false, error: 'El código debe contener exactamente 6 dígitos.' });
+      return;
+    }
+
+    // Buscar código válido, no usado y con fecha posterior a NOW()
+    const [codeRows] = await pool.query<RowDataPacket[]>(
+      'SELECT id, email, codigo, expira_en, usado FROM codigos_recuperacion WHERE email = ? AND codigo = ? AND usado = FALSE AND expira_en > NOW() ORDER BY id DESC LIMIT 1',
+      [targetEmail, cleanCode]
+    );
+
+    if (codeRows.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: 'El código de verificación es inválido o ha expirado. Solicita uno nuevo.',
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: 'Código verificado correctamente.',
+      email: targetEmail,
+    });
+  } catch (error) {
+    console.error('Error en /api/auth/forgot-password/verify-code:', error);
+    res.status(500).json({ success: false, error: 'Error al verificar el código' });
+  }
+});
+
+/**
+ * POST /api/auth/forgot-password/reset-password
+ * Restablece la contraseña del usuario tras validar el código de 6 dígitos.
+ */
+authRouter.post('/forgot-password/reset-password', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, code, newPassword } = req.body;
+
+    if (!email || !code || !newPassword) {
+      res.status(400).json({ success: false, error: 'Todos los campos son requeridos.' });
+      return;
+    }
+
+    const targetEmail = String(email).trim().toLowerCase();
+    const cleanCode = String(code).trim();
+    const cleanNewPassword = String(newPassword).trim();
+
+    // 1. Validar complejidad de contraseña
+    const complexity = validatePasswordComplexity(cleanNewPassword);
+    if (!complexity.isValid) {
+      res.status(400).json({ success: false, error: complexity.error });
+      return;
+    }
+
+    // 2. Validar código en MySQL
+    const [codeRows] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM codigos_recuperacion WHERE email = ? AND codigo = ? AND usado = FALSE AND expira_en > NOW() ORDER BY id DESC LIMIT 1',
+      [targetEmail, cleanCode]
+    );
+
+    if (codeRows.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: 'El código de verificación es inválido o ya ha expirado.',
+      });
+      return;
+    }
+
+    const codeId = codeRows[0].id;
+
+    // 3. Buscar usuario en tabla usuarios o sincronizar desde pacientes
+    let [userRows] = await pool.query<RowDataPacket[]>(
+      'SELECT id, email, rol FROM usuarios WHERE email = ? LIMIT 1',
+      [targetEmail]
+    );
+
+    let usuarioId: number;
+    let rol: string;
+
+    const passwordHash = bcrypt.hashSync(cleanNewPassword, 10);
+
+    if (userRows.length === 0) {
+      const [pacRows] = await pool.query<RowDataPacket[]>(
+        'SELECT id FROM pacientes WHERE email = ? LIMIT 1',
+        [targetEmail]
+      );
+      if (pacRows.length === 0) {
+        res.status(404).json({ success: false, error: 'Usuario no encontrado.' });
+        return;
+      }
+      const [uResult] = await pool.query<ResultSetHeader>(
+        "INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) VALUES (?, ?, 'paciente', TRUE, FALSE)",
+        [targetEmail, passwordHash]
+      );
+      usuarioId = uResult.insertId;
+      rol = 'paciente';
+      await pool.query('UPDATE pacientes SET usuario_id = ? WHERE id = ?', [usuarioId, pacRows[0].id]);
+    } else {
+      usuarioId = userRows[0].id;
+      rol = userRows[0].rol;
+      await pool.query(
+        'UPDATE usuarios SET password_hash = ?, debe_crear_password = FALSE, activo = TRUE WHERE id = ?',
+        [passwordHash, usuarioId]
+      );
+    }
+
+    // 4. Marcar código como usado
+    await pool.query('UPDATE codigos_recuperacion SET usado = TRUE WHERE id = ?', [codeId]);
+
+    const name = await getUserDisplayName(usuarioId, rol, targetEmail);
+
+    res.json({
+      success: true,
+      message: '¡Tu contraseña ha sido restablecida exitosamente!',
+      data: {
+        email: targetEmail,
+        role: rol,
+        name,
+      },
+    });
+  } catch (error) {
+    console.error('Error en /api/auth/forgot-password/reset-password:', error);
+    res.status(500).json({ success: false, error: 'Error al restablecer la contraseña' });
+  }
+});
+
