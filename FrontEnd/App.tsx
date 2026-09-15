@@ -15,7 +15,7 @@ import { RegisterPatientScreen } from './src/screens/psychologist/RegisterPatien
 import { UserRole } from './src/constants/auth';
 import { MySqlPatientRecord } from './src/types/patient';
 import { PatientTab } from './src/components/PatientBottomNav';
-import { patientService } from './src/services';
+import { authService, patientService } from './src/services';
 
 export type AppScreen =
   | 'welcome'
@@ -109,6 +109,17 @@ export default function App() {
     }
   };
 
+  const handlePatientLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (e) {
+      console.warn('Error during logout:', e);
+    }
+    setActiveUserName('');
+    setActiveUserEmail('');
+    setCurrentScreen('login');
+  };
+
   const openHabitDetail = (habitKey: HabitSection, habitTitle: string) => {
     setSelectedHabit(habitKey);
     setSelectedHabitTitle(habitTitle);
@@ -135,7 +146,6 @@ export default function App() {
         <DailyCheckInScreen
           userName={activeUserName}
           userEmail={activeUserEmail}
-          onBack={() => setCurrentScreen('welcome')}
           onNavigateTab={handlePatientTabNavigate}
         />
       )}
@@ -143,7 +153,6 @@ export default function App() {
       {currentScreen === 'patient-calendar' && (
         <PatientCalendarScreen
           userName={activeUserName}
-          onBack={() => setCurrentScreen('habits')}
           onNavigateTab={handlePatientTabNavigate}
         />
       )}
@@ -151,7 +160,6 @@ export default function App() {
       {currentScreen === 'patient-exercises' && (
         <PatientExercisesScreen
           userName={activeUserName}
-          onBack={() => setCurrentScreen('habits')}
           onNavigateTab={handlePatientTabNavigate}
           onOpenHabit={openHabitDetail}
         />
@@ -169,7 +177,6 @@ export default function App() {
       {currentScreen === 'patient-chatbot' && (
         <PatientChatbotScreen
           userName={activeUserName}
-          onBack={() => setCurrentScreen('habits')}
           onNavigateTab={handlePatientTabNavigate}
         />
       )}
@@ -177,8 +184,8 @@ export default function App() {
       {currentScreen === 'patient-profile' && (
         <PatientProfileScreen
           userName={activeUserName}
-          onBack={() => setCurrentScreen('habits')}
           onNavigateTab={handlePatientTabNavigate}
+          onLogout={handlePatientLogout}
         />
       )}
 

@@ -1,35 +1,49 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
 
 interface PatientProfileScreenProps {
-  onBack: () => void;
+  onBack?: () => void;
   onNavigateTab: (tab: PatientTab) => void;
   userName?: string;
+  onLogout?: () => void;
 }
 
 export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
-  onBack,
   onNavigateTab,
   userName = 'Paciente',
+  onLogout,
 }) => {
   const insets = useSafeAreaInsets();
+
+  const handleLogoutPress = () => {
+    Alert.alert(
+      'Cerrar Sesión',
+      '¿Estás seguro de que deseas cerrar sesión?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Cerrar Sesión',
+          style: 'destructive',
+          onPress: () => {
+            onLogout?.();
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Encabezado */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={onBack}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="arrow-back" size={24} color="#0F613B" />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>Mi Perfil</Text>
-        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView
@@ -79,6 +93,16 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
             </View>
           </View>
         </View>
+
+        {/* Botón Cerrar Sesión */}
+        <TouchableOpacity
+          style={styles.logoutButton}
+          activeOpacity={0.8}
+          onPress={handleLogoutPress}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#FFFFFF" style={styles.logoutIcon} />
+          <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Barra de navegación inferior */}
@@ -92,16 +116,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#E5EEE8',
     backgroundColor: '#F8FBF9',
   },
-  backButton: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
-  headerSpacer: { width: 32 },
   scrollContent: {
     padding: 20,
     alignItems: 'center',
@@ -181,5 +203,28 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1F2937',
     marginTop: 2,
+  },
+  logoutButton: {
+    width: '100%',
+    backgroundColor: '#DC2626',
+    borderRadius: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  logoutIcon: {
+    marginRight: 8,
+  },
+  logoutButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
