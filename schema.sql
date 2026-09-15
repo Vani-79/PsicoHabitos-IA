@@ -12,6 +12,10 @@ CREATE DATABASE IF NOT EXISTS psicohabitos_db
 
 USE psicohabitos_db;
 
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+SET time_zone = '-03:00';
+
 -- ------------------------------------------------------------------------------
 -- 1. TABLA: usuarios (Credenciales y control de acceso unificado)
 -- ------------------------------------------------------------------------------
@@ -35,11 +39,13 @@ CREATE TABLE IF NOT EXISTS psicologos (
   usuario_id INT NOT NULL UNIQUE,
   nombre VARCHAR(60) NOT NULL,
   apellidos VARCHAR(80) NOT NULL,
+  email VARCHAR(120) NOT NULL UNIQUE,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_psicologos_usuario
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
     ON DELETE CASCADE
-    ON UPDATE CASCADE
+    ON UPDATE CASCADE,
+  INDEX idx_psicologos_email (email)
 ) ENGINE=InnoDB;
 
 -- ------------------------------------------------------------------------------
@@ -168,28 +174,21 @@ CREATE TABLE IF NOT EXISTS mensajes_hope (
 ) ENGINE=InnoDB;
 
 -- ------------------------------------------------------------------------------
--- 9. TABLA: recursos_ejercicios (Tareas terapéuticas asignadas por especialista)
+-- 9. TABLA: recursos_paciente (Catálogo universal de videos y técnicas de apoyo)
 -- ------------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS recursos_ejercicios (
+CREATE TABLE IF NOT EXISTS recursos_paciente (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  psicologo_id INT NOT NULL,
-  paciente_id INT NOT NULL,
-  titulo VARCHAR(120) NOT NULL,
-  instrucciones TEXT NOT NULL,
-  categoria ENUM('respiracion', 'relajacion', 'tarea_cognitiva', 'otro') NOT NULL DEFAULT 'respiracion',
-  estado ENUM('asignado', 'en_progreso', 'completado') NOT NULL DEFAULT 'asignado',
-  fecha_asignacion DATE NOT NULL,
-  fecha_limite DATE NULL,
+  seccion VARCHAR(50) NOT NULL, -- Ej: 'ansiedad', 'estres', 'sueno', etc.
+  tipo_tecnica VARCHAR(80) NOT NULL, -- Ej: 'Respiración diafragmática', 'Grounding', etc.
+  titulo VARCHAR(150) NOT NULL,
+  descripcion TEXT NOT NULL,
+  video_url VARCHAR(255) NOT NULL,
+  miniatura_url VARCHAR(255) NULL,
+  duracion_segundos INT NULL,
+  orden INT NOT NULL DEFAULT 1,
+  activo BOOLEAN NOT NULL DEFAULT TRUE,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_recursos_psicologo
-    FOREIGN KEY (psicologo_id) REFERENCES psicologos(id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT fk_recursos_paciente
-    FOREIGN KEY (paciente_id) REFERENCES pacientes(id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  INDEX idx_recursos_paciente_estado (paciente_id, estado)
+  INDEX idx_recursos_seccion_activo (seccion, activo)
 ) ENGINE=InnoDB;
 
 -- ------------------------------------------------------------------------------
@@ -209,43 +208,18 @@ CREATE TABLE IF NOT EXISTS consentimientos_legales (
     ON UPDATE CASCADE,
   INDEX idx_consentimientos_usuario (usuario_id)
 ) ENGINE=InnoDB;
-
 -- ------------------------------------------------------------------------------
--- DATOS SEMILLA DE PRUEBA (Para validar el funcionamiento del sistema)
+-- 11. TABLA: codigos_recuperacion (Verificación de correo para recuperación de contraseña)
 -- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS codigos_recuperacion (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(120) NOT NULL,
+  codigo VARCHAR(6) NOT NULL,
+  expira_en DATETIME NOT NULL,
+  usado BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_codigos_email_codigo (email, codigo, usado)
+) ENGINE=InnoDB;
 
--- Usuarios de prueba iniciales (Contraseña de prueba: Psico123@)
-INSERT INTO usuarios (id, email, password_hash, rol, activo, debe_crear_password) VALUES
-  (1, 'roberto@gmail.com', '$2a$10$tZc1q.7w4s6oR8V4hK4uJeL7kG3A6w.bHhP4X0XzC8VwK1Jc/hY6q', 'psicologo', 1, 0),
-  (2, 'carlos@gmail.com', '$2a$10$tZc1q.7w4s6oR8V4hK4uJeL7kG3A6w.bHhP4X0XzC8VwK1Jc/hY6q', 'paciente', 1, 0)
-ON DUPLICATE KEY UPDATE email=VALUES(email), password_hash=VALUES(password_hash);
 
--- Perfil psicólogo (Ps. Roberto Gonzales)
-INSERT INTO psicologos (id, usuario_id, nombre, apellidos) VALUES
-  (1, 1, 'Roberto', 'Gonzales')
-ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
 
--- Perfil paciente (Carlos Lopez Gomez)
-INSERT INTO pacientes (id, usuario_id, nombre, apellido_paterno, apellido_materno, edad, fecha_nacimiento, genero, email) VALUES
-  (1, 2, 'Carlos', 'Lopez', 'Gomez', 21, '2005-04-01', 'masculino', 'carlos@gmail.com')
-ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
-
--- Vínculo Ps. Roberto con Carlos
-INSERT INTO relacion_psicologo_paciente (id, psicologo_id, paciente_id, fecha_primera_sesion, estado, notas_clinicas) VALUES
-  (1, 1, 1, '2026-09-11', 'activo', 'Paciente inicial registrado para atención psicológica.')
-ON DUPLICATE KEY UPDATE estado=VALUES(estado);
-
--- Check-in de hábitos de muestra
-INSERT INTO habitos_diarios (paciente_id, evaluation_date, comida, ejercicio, hidratacion, ansiedad, sueno, sueno_horas, estres, confirmed_at) VALUES
-  (1, '2026-09-13', 4, 3, 2.5, 2, 4, 7.5, 2, '2026-09-13 21:00:00')
-ON DUPLICATE KEY UPDATE evaluation_date=VALUES(evaluation_date);
-
--- Sesión y mensajes de muestra con Hope
-INSERT INTO sesiones_hope (id, paciente_id, titulo_resumen, iniciada_en, animo_predominante, resumen_clinico_psicologo) VALUES
-  (1, 1, 'Reflexión nocturna sobre carga laboral', '2026-09-13 20:30:00', 'Preocupado pero receptivo', 'Paciente dialogó con Hope sobre estrategias de desconexión nocturna antes de dormir.')
-ON DUPLICATE KEY UPDATE titulo_resumen=VALUES(titulo_resumen);
-
--- Consentimiento legal Ley 21.719
-INSERT INTO consentimientos_legales (usuario_id, tipo_ley, texto_version, aceptado, ip_origen) VALUES
-  (2, 'Ley 21.719 Salud Mental y Datos Sensibles', 'Consentimiento informado aceptado digitalmente en el proceso de registro.', 1, '127.0.0.1')
-ON DUPLICATE KEY UPDATE aceptado=VALUES(aceptado);
