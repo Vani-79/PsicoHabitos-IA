@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { BackHandler } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { WelcomeScreen } from './src/screens/auth/WelcomeScreen';
@@ -6,6 +7,7 @@ import { LoginScreen } from './src/screens/auth/LoginScreen';
 import { DailyCheckInScreen } from './src/screens/patient/DailyCheckInScreen';
 import { PatientCalendarScreen } from './src/screens/patient/PatientCalendarScreen';
 import { PatientExercisesScreen } from './src/screens/patient/PatientExercisesScreen';
+import { HabitDetailScreen, HabitSection } from './src/screens/patient/HabitDetailScreen';
 import { PatientChatbotScreen } from './src/screens/patient/PatientChatbotScreen';
 import { PatientProfileScreen } from './src/screens/patient/PatientProfileScreen';
 import { PsychologistDashboardScreen } from './src/screens/psychologist/PsychologistDashboardScreen';
@@ -21,6 +23,7 @@ export type AppScreen =
   | 'habits'
   | 'patient-calendar'
   | 'patient-exercises'
+  | 'patient-exercises-detail'
   | 'patient-chatbot'
   | 'patient-profile'
   | 'psychologist-dashboard'
@@ -28,9 +31,41 @@ export type AppScreen =
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('welcome');
+  const [selectedHabit, setSelectedHabit] = useState<HabitSection>('ansiedad');
+  const [selectedHabitTitle, setSelectedHabitTitle] = useState<string>('Ansiedad');
   const [activeUserName, setActiveUserName] = useState<string>('Carlos');
   const [activeUserEmail, setActiveUserEmail] = useState<string>('');
   const [patients, setPatients] = useState<MySqlPatientRecord[]>([]);
+
+  useEffect(() => {
+    const handleHardwareBack = () => {
+      switch (currentScreen) {
+        case 'login':
+          setCurrentScreen('welcome');
+          return true;
+        case 'patient-exercises-detail':
+          setCurrentScreen('patient-exercises');
+          return true;
+        case 'patient-calendar':
+        case 'patient-exercises':
+        case 'patient-chatbot':
+        case 'patient-profile':
+          setCurrentScreen('habits');
+          return true;
+        case 'psychologist-register-patient':
+          setCurrentScreen('psychologist-dashboard');
+          return true;
+        case 'habits':
+        case 'psychologist-dashboard':
+        case 'welcome':
+        default:
+          return true;
+      }
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', handleHardwareBack);
+    return () => subscription.remove();
+  }, [currentScreen]);
 
   const handlePatientRegistration = async (record: MySqlPatientRecord) => {
     const res = await patientService.registerPatient(record, activeUserEmail);
@@ -74,6 +109,12 @@ export default function App() {
     }
   };
 
+  const openHabitDetail = (habitKey: HabitSection, habitTitle: string) => {
+    setSelectedHabit(habitKey);
+    setSelectedHabitTitle(habitTitle);
+    setCurrentScreen('patient-exercises-detail');
+  };
+
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
@@ -111,6 +152,16 @@ export default function App() {
         <PatientExercisesScreen
           userName={activeUserName}
           onBack={() => setCurrentScreen('habits')}
+          onNavigateTab={handlePatientTabNavigate}
+          onOpenHabit={openHabitDetail}
+        />
+      )}
+
+      {currentScreen === 'patient-exercises-detail' && (
+        <HabitDetailScreen
+          habitKey={selectedHabit}
+          habitTitle={selectedHabitTitle}
+          onBack={() => setCurrentScreen('patient-exercises')}
           onNavigateTab={handlePatientTabNavigate}
         />
       )}

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,6 +12,7 @@ import {
   Alert,
   TextInput,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,6 +36,49 @@ interface DailyCheckInScreenProps {
   userEmail?: string;
   onNavigateTab?: (tab: PatientTab) => void;
 }
+
+const HABIT_CARD_COLORS: Record<HabitKey, string> = {
+  comida: '#FFF1D8',
+  ejercicio: '#E7F8E5',
+  hidratacion: '#DFF7FF',
+  ansiedad: '#FDE2E4',
+  sueno: '#F0E7FF',
+  estres: '#E3F0FF',
+};
+
+const HABIT_CARD_BORDER_COLORS: Record<HabitKey, string> = {
+  comida: '#E3A72F',
+  ejercicio: '#4A9F45',
+  hidratacion: '#2596B5',
+  ansiedad: '#D97786',
+  sueno: '#8962B8',
+  estres: '#4B83C4',
+};
+
+const MONTH_NAMES = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+
+const WEEKDAY_NAMES = [
+  'domingo',
+  'lunes',
+  'martes',
+  'miércoles',
+  'jueves',
+  'viernes',
+  'sábado',
+];
 
 export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   onBack,
@@ -60,6 +104,12 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   const [nextDate, setNextDate] = useState('');
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
 
+  const displayDate = useMemo(() => {
+    const [year, month, day] = (serverDate || recordDate).split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return `${WEEKDAY_NAMES[date.getDay()]}, ${day} de ${MONTH_NAMES[month - 1]}`;
+  }, [recordDate, serverDate]);
+
   // Estados dedicados para la ingesta de agua (litros)
   const [waterLiters, setWaterLiters] = useState<number>(2.0);
   const [waterInputText, setWaterInputText] = useState<string>('2.0');
@@ -70,47 +120,39 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
 
   const slideAnim = useRef(new Animated.Value(1)).current;
 
-  // Consulta al servidor en cada render/visita para comprobar si hoy ya se completó el registro
-  useEffect(() => {
-    let isMounted = true;
+  const loadTodayStatus = useCallback(async () => {
+    setIsLoadingStatus(true);
+    const targetUser = userEmail || userName;
+    const status = await habitService.getTodayStatus(targetUser);
 
-    async function loadTodayStatus() {
-      setIsLoadingStatus(true);
-      const targetUser = userEmail || userName;
-      const status = await habitService.getTodayStatus(targetUser);
+    if (status.success) {
+      if (status.serverDate) setServerDate(status.serverDate);
+      if (status.nextDate) setNextDate(status.nextDate);
 
-      if (isMounted) {
-        if (status.success) {
-          if (status.serverDate) setServerDate(status.serverDate);
-          if (status.nextDate) setNextDate(status.nextDate);
-
-          if (status.completedToday && status.record) {
-            setIsLockedToday(true);
-            setIsConfirmed(true);
-            setHabits({
-              comida: status.record.comida ?? null,
-              ejercicio: status.record.ejercicio ?? null,
-              hidratacion: status.record.hidratacion ? Number(status.record.hidratacion) : 2.0,
-              ansiedad: status.record.ansiedad ?? null,
-              sueno: status.record.sueno ?? null,
-              sueno_horas: status.record.sueno_horas ? Number(status.record.sueno_horas) : 8.0,
-              estres: status.record.estres ?? null,
-            });
-          } else {
-            setIsLockedToday(false);
-            setIsConfirmed(false);
-          }
-        }
-        setIsLoadingStatus(false);
+      if (status.completedToday && status.record) {
+        setIsLockedToday(true);
+        setIsConfirmed(true);
+        setHabits({
+          comida: status.record.comida ?? null,
+          ejercicio: status.record.ejercicio ?? null,
+          hidratacion: status.record.hidratacion ? Number(status.record.hidratacion) : 2.0,
+          ansiedad: status.record.ansiedad ?? null,
+          sueno: status.record.sueno ?? null,
+          sueno_horas: status.record.sueno_horas ? Number(status.record.sueno_horas) : 8.0,
+          estres: status.record.estres ?? null,
+        });
+      } else {
+        setIsLockedToday(false);
+        setIsConfirmed(false);
       }
     }
 
-    loadTodayStatus();
-
-    return () => {
-      isMounted = false;
-    };
+    setIsLoadingStatus(false);
   }, [userEmail, userName]);
+
+  useEffect(() => {
+    loadTodayStatus();
+  }, [loadTodayStatus]);
 
   const openHabitModal = (key: HabitKey) => {
     if (isLockedToday) {
@@ -418,6 +460,14 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoadingStatus}
+            onRefresh={loadTodayStatus}
+            colors={['#64748B']}
+            tintColor="#64748B"
+          />
+        }
         contentContainerStyle={[
           styles.scrollContent,
           { paddingBottom: Math.max(insets.bottom + 85, 110) },
@@ -434,17 +484,30 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
                 <Ionicons name="arrow-back" size={24} color="#0F613B" />
               </TouchableOpacity>
             )}
-            <View>
-              <Text style={styles.greeting}>Hola, {userName}!</Text>
+            <View style={styles.greetingRow}>
+              <View>
+                <Text style={styles.greeting}>Hola, {userName}!</Text>
+                <Text style={styles.welcomeText}>Qué bueno verte hoy</Text>
+              </View>
             </View>
           </View>
         </View>
 
+        <Text style={styles.progressDate}>{displayDate}</Text>
+
         <View style={styles.progressCard}>
           <Text style={styles.progressNumber}>{registeredCount}/6</Text>
-          <Text style={styles.progressText}>
-            {isLockedToday ? 'Hábitos completados hoy' : 'Hábitos registrados'}
-          </Text>
+          <Text style={styles.progressEmoji}>🌱</Text>
+          <View style={styles.progressTextGroup}>
+            <Text style={styles.progressText}>
+              {isLockedToday ? 'Hábitos completados hoy' : 'Hábitos evaluados'}
+            </Text>
+            {!isLockedToday && registeredCount < 6 && (
+              <Text style={styles.progressHelpText}>
+                Te faltan {6 - registeredCount} por completar
+              </Text>
+            )}
+          </View>
         </View>
 
         {isLoadingStatus && (
@@ -467,6 +530,8 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
               const qualityLabel = getRatingLabel(currentVal, 'sueno');
               const hours = habits.sueno_horas;
               labelText = hours !== null && hours !== undefined ? `${qualityLabel} • ${hours}h` : qualityLabel;
+            } else if (currentVal !== null) {
+              labelText = getRatingLabel(currentVal, key);
             }
 
             return (
@@ -474,16 +539,26 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
                 key={key}
                 style={[
                   styles.card,
+                  { backgroundColor: HABIT_CARD_COLORS[key] },
                   isLockedToday && styles.cardLocked,
+                  currentVal !== null && {
+                    borderWidth: 2,
+                    borderColor: HABIT_CARD_BORDER_COLORS[key],
+                  },
                 ]}
                 onPress={() => openHabitModal(key)}
                 activeOpacity={isLockedToday ? 0.9 : 0.7}
               >
-                <View style={styles.cardIconArea}>
+                <View style={styles.imageFrame}>
                   {item.image ? (
-                    <Image source={item.image} style={styles.habitImage} resizeMode="contain" />
+                    <Image source={item.image} style={styles.cardImage} resizeMode="contain" />
                   ) : (
                     <Text style={styles.emoji}>{item.emoji}</Text>
+                  )}
+                  {currentVal !== null && (
+                    <View style={styles.cardCheckBadge}>
+                      <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                    </View>
                   )}
                   {isLockedToday && (
                     <View style={styles.cardLockIconBadge}>
@@ -491,18 +566,14 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
                     </View>
                   )}
                 </View>
-                <View style={[styles.cardLabelArea, { backgroundColor: cardColor }]}>
-                  <Text
-                    style={[
-                      styles.cardLabel,
-                      currentVal !== null && styles.cardLabelActiveText,
-                    ]}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                  >
-                    {labelText}
-                  </Text>
-                </View>
+                <Text style={styles.cardTitle}>{item.label}</Text>
+                <Text
+                  style={styles.cardSubtitle}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {currentVal !== null ? labelText : 'Comenzar'}
+                </Text>
               </TouchableOpacity>
             );
           })}
@@ -512,8 +583,9 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
         {isLockedToday ? (
           <View style={styles.lockedBottomContainer}>
             <View style={styles.lockedBottomBadge}>
+              <Ionicons name="happy-outline" size={18} color="#0F613B" style={styles.lockedBottomHappyIcon} />
               <Ionicons name="lock-closed" size={16} color="#0F613B" style={{ marginRight: 6 }} />
-              <Text style={styles.lockedBottomBadgeText}>Registro finalizado por hoy</Text>
+              <Text style={styles.lockedBottomBadgeText}>Evaluación completada por hoy</Text>
             </View>
             <Text style={styles.lockedBottomHelpText}>
               Próximo check-in habilitado mañana.
@@ -531,14 +603,19 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
                 onPress={handleConfirm}
                 activeOpacity={0.8}
               >
-                <Text
-                  style={[
-                    styles.globalConfirmText,
-                    registeredCount < 6 && styles.globalConfirmDisabledText,
-                  ]}
-                >
-                  {registeredCount === 6 ? 'Registrar Hábitos' : 'Registrar'}
-                </Text>
+                <View style={styles.confirmButtonContent}>
+                  {registeredCount === 6 && (
+                    <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" style={styles.confirmIcon} />
+                  )}
+                  <Text
+                    style={[
+                      styles.globalConfirmText,
+                      registeredCount < 6 && styles.globalConfirmDisabledText,
+                    ]}
+                  >
+                    {registeredCount === 6 ? 'Registrar Hábitos' : 'Registrar'}
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
           )
@@ -598,13 +675,16 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  scrollContent: { paddingHorizontal: 20 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 16 },
+  container: { flex: 1, backgroundColor: '#EAF5EE' },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 18 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 0, marginBottom: 46 },
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
   backButton: { marginRight: 12, padding: 4 },
+  greetingRow: { flexDirection: 'row', alignItems: 'center' },
   greeting: { fontSize: 22, fontWeight: 'bold', color: '#1F2937' },
-  headerDate: { fontSize: 13.5, color: '#6B7280', marginTop: 2, fontWeight: '500' },
+  welcomeText: { fontSize: 13, color: '#64748B', marginTop: 8, fontWeight: '600' },
+  headerDate: { fontSize: 13.5, color: '#6B7280', marginTop: 5, fontWeight: '500' },
+  progressDate: { alignSelf: 'flex-end', fontSize: 13.5, color: '#6B7280', marginTop: 0, marginBottom: 8, fontWeight: '500' },
 
   // Banner de bloqueo superior
   lockedBannerCard: {
@@ -640,25 +720,30 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
 
-  progressCard: { borderWidth: 1.5, borderColor: '#A5C1B3', borderRadius: 15, padding: 18, backgroundColor: '#E4EDE7', alignItems: 'center', marginBottom: 24 },
-  progressNumber: { fontSize: 24, fontWeight: '700', color: '#0F613B' },
-  progressText: { fontSize: 15, color: '#374151', marginTop: 4, fontWeight: '600' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  card: { width: '46%', borderWidth: 1.5, borderColor: '#D1D5DB', borderRadius: 14, marginBottom: 20, overflow: 'hidden', backgroundColor: '#FFFFFF' },
+  progressCard: { flexDirection: 'row', borderWidth: 1, borderColor: '#D9ECDC', borderRadius: 20, padding: 16, backgroundColor: '#F7FCF8', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 20 },
+  progressNumber: { fontSize: 28, fontWeight: '800', color: '#64748B' },
+  progressEmoji: { fontSize: 22 },
+  progressTextGroup: { alignItems: 'center' },
+  progressText: { fontSize: 14, color: '#374151', marginTop: 0, fontWeight: '600' },
+  progressHelpText: { fontSize: 11.5, color: '#64748B', marginTop: 4 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12, backgroundColor: '#FFFFFF', borderRadius: 20, padding: 12, paddingTop: 20, borderWidth: 1, borderColor: '#E9EEF0' },
+  card: { width: '48%', height: 180, borderRadius: 20, marginBottom: 20, padding: 16, justifyContent: 'space-between', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
   cardLocked: { opacity: 0.95, borderColor: '#BBF7D0' },
-  cardIconArea: { height: 100, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', position: 'relative' },
+  imageFrame: { width: '100%', height: 82, borderRadius: 14, overflow: 'hidden', backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', position: 'relative' },
+  cardCheckBadge: { position: 'absolute', top: 8, left: 8, width: 22, height: 22, borderRadius: 11, backgroundColor: '#4A9F45', justifyContent: 'center', alignItems: 'center' },
   cardLockIconBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: '#E8F5E9', padding: 4, borderRadius: 10 },
   emoji: { fontSize: 50 },
-  habitImage: { width: 65, height: 65 },
-  cardLabelArea: { borderTopWidth: 1.5, borderColor: '#E5E7EB', paddingVertical: 10, alignItems: 'center' },
-  cardLabel: { fontSize: 15, fontWeight: '600', color: '#4B5563' },
-  cardLabelActiveText: { color: '#FFFFFF', fontWeight: '700' },
+  cardImage: { width: '100%', height: '100%' },
+  cardTitle: { fontSize: 17, fontWeight: '700', color: '#1F2937' },
+  cardSubtitle: { fontSize: 12, color: '#475569', marginTop: 8 },
 
-  confirmationSection: { marginTop: 10, alignItems: 'center' },
-  globalConfirmButton: { backgroundColor: '#0F613B', width: '100%', paddingVertical: 15, borderRadius: 14, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 2 },
-  globalConfirmDisabled: { backgroundColor: '#C2D6CC' },
-  globalConfirmText: { color: '#FFFFFF', fontSize: 17, fontWeight: 'bold' },
-  globalConfirmDisabledText: { color: '#5A7568', fontSize: 15, fontWeight: '600' },
+  confirmationSection: { marginTop: 28, alignItems: 'center' },
+  globalConfirmButton: { backgroundColor: '#D9DEE3', width: '80%', maxWidth: 320, alignSelf: 'center', minHeight: 48, paddingVertical: 12, borderRadius: 14, borderWidth: 1, borderColor: '#B8C0C8', alignItems: 'center', justifyContent: 'center', shadowColor: '#64748B', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 3, elevation: 1 },
+  globalConfirmDisabled: { backgroundColor: '#F3F4F6', borderColor: '#E1E5E9', shadowOpacity: 0 },
+  confirmButtonContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  confirmIcon: { marginRight: 6 },
+  globalConfirmText: { color: '#374151', fontSize: 17, fontWeight: 'bold' },
+  globalConfirmDisabledText: { color: '#64748B', fontSize: 15, fontWeight: '600' },
 
   // Sección inferior bloqueada
   lockedBottomContainer: {
@@ -682,6 +767,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+  lockedBottomHappyIcon: {
+    marginRight: 6,
+  },
   lockedBottomHelpText: {
     fontSize: 13,
     color: '#6B7280',
@@ -701,7 +789,7 @@ const styles = StyleSheet.create({
   slidingIndicator: { position: 'absolute', top: 4, bottom: 4, left: 4, width: '20%', borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 3, elevation: 2 },
   segmentButton: { flex: 1, paddingVertical: 12, paddingHorizontal: 2, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
   segmentLabel: { fontSize: 10.5, fontWeight: '700', color: '#9ca3af', textAlign: 'center' },
-  segmentLabelActive: { color: '#FFFFFF' },
+  segmentLabelActive: { color: '#334155' },
 
   registerButton: { backgroundColor: '#0F613B', paddingVertical: 12, paddingHorizontal: 50, borderRadius: 25, marginTop: 4 },
   registerButtonDisabled: { backgroundColor: '#9ca3af' },

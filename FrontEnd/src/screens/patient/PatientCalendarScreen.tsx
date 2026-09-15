@@ -60,7 +60,7 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#EBEBEB' },
+  container: { flex: 1, backgroundColor: '#EAF5EE' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -68,8 +68,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#D3D3D3',
-    backgroundColor: '#EBEBEB',
+    borderBottomColor: '#E5EEE8',
+    backgroundColor: '#F8FBF9',
   },
   backButton: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
