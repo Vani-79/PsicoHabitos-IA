@@ -5,13 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
 
 interface PatientChatbotScreenProps {
-  onBack: () => void;
+  onBack?: () => void;
   onNavigateTab: (tab: PatientTab) => void;
   userName?: string;
 }
 
 export const PatientChatbotScreen: React.FC<PatientChatbotScreenProps> = ({
-  onBack,
   onNavigateTab,
   userName = 'Paciente',
 }) => {
@@ -21,13 +20,6 @@ export const PatientChatbotScreen: React.FC<PatientChatbotScreenProps> = ({
     <SafeAreaView style={styles.container}>
       {/* Encabezado */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={onBack}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="arrow-back" size={24} color="#0F613B" />
-        </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
           <Image
             source={require('../../../assets/h.o.p.e.png')}
@@ -36,7 +28,6 @@ export const PatientChatbotScreen: React.FC<PatientChatbotScreenProps> = ({
           />
           <Text style={styles.headerTitle}>H.o.p.e</Text>
         </View>
-        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView
@@ -78,18 +69,17 @@ export const PatientChatbotScreen: React.FC<PatientChatbotScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#EBEBEB' },
+  container: { flex: 1, backgroundColor: '#EAF5EE' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#D3D3D3',
-    backgroundColor: '#EBEBEB',
+    borderBottomColor: '#E5EEE8',
+    backgroundColor: '#F8FBF9',
   },
-  backButton: { padding: 4 },
   headerTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -101,7 +91,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
-  headerSpacer: { width: 32 },
   scrollContent: {
     flexGrow: 1,
     padding: 24,

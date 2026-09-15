@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,6 +12,7 @@ import {
   Alert,
   TextInput,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,6 +28,7 @@ import {
 import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
 import { formatToMySqlDate, formatToMySqlDateTime } from '../../utils/date';
 import { habitService } from '../../services';
+import { s, vs, ms } from '../../utils/responsive';
 
 interface DailyCheckInScreenProps {
   onBack?: () => void;
@@ -35,6 +37,49 @@ interface DailyCheckInScreenProps {
   userEmail?: string;
   onNavigateTab?: (tab: PatientTab) => void;
 }
+
+const HABIT_CARD_COLORS: Record<HabitKey, string> = {
+  comida: '#FFF1D8',
+  ejercicio: '#E7F8E5',
+  hidratacion: '#DFF7FF',
+  ansiedad: '#FDE2E4',
+  sueno: '#F0E7FF',
+  estres: '#E3F0FF',
+};
+
+const HABIT_CARD_BORDER_COLORS: Record<HabitKey, string> = {
+  comida: '#E3A72F',
+  ejercicio: '#4A9F45',
+  hidratacion: '#2596B5',
+  ansiedad: '#D97786',
+  sueno: '#8962B8',
+  estres: '#4B83C4',
+};
+
+const MONTH_NAMES = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+
+const WEEKDAY_NAMES = [
+  'domingo',
+  'lunes',
+  'martes',
+  'miércoles',
+  'jueves',
+  'viernes',
+  'sábado',
+];
 
 export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   onBack,
@@ -60,6 +105,12 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   const [nextDate, setNextDate] = useState('');
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
 
+  const displayDate = useMemo(() => {
+    const [year, month, day] = (serverDate || recordDate).split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return `${WEEKDAY_NAMES[date.getDay()]}, ${day} de ${MONTH_NAMES[month - 1]}`;
+  }, [recordDate, serverDate]);
+
   // Estados dedicados para la ingesta de agua (litros)
   const [waterLiters, setWaterLiters] = useState<number>(2.0);
   const [waterInputText, setWaterInputText] = useState<string>('2.0');
@@ -70,47 +121,39 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
 
   const slideAnim = useRef(new Animated.Value(1)).current;
 
-  // Consulta al servidor en cada render/visita para comprobar si hoy ya se completó el registro
-  useEffect(() => {
-    let isMounted = true;
+  const loadTodayStatus = useCallback(async () => {
+    setIsLoadingStatus(true);
+    const targetUser = userEmail || userName;
+    const status = await habitService.getTodayStatus(targetUser);
 
-    async function loadTodayStatus() {
-      setIsLoadingStatus(true);
-      const targetUser = userEmail || userName;
-      const status = await habitService.getTodayStatus(targetUser);
+    if (status.success) {
+      if (status.serverDate) setServerDate(status.serverDate);
+      if (status.nextDate) setNextDate(status.nextDate);
 
-      if (isMounted) {
-        if (status.success) {
-          if (status.serverDate) setServerDate(status.serverDate);
-          if (status.nextDate) setNextDate(status.nextDate);
-
-          if (status.completedToday && status.record) {
-            setIsLockedToday(true);
-            setIsConfirmed(true);
-            setHabits({
-              comida: status.record.comida ?? null,
-              ejercicio: status.record.ejercicio ?? null,
-              hidratacion: status.record.hidratacion ? Number(status.record.hidratacion) : 2.0,
-              ansiedad: status.record.ansiedad ?? null,
-              sueno: status.record.sueno ?? null,
-              sueno_horas: status.record.sueno_horas ? Number(status.record.sueno_horas) : 8.0,
-              estres: status.record.estres ?? null,
-            });
-          } else {
-            setIsLockedToday(false);
-            setIsConfirmed(false);
-          }
-        }
-        setIsLoadingStatus(false);
+      if (status.completedToday && status.record) {
+        setIsLockedToday(true);
+        setIsConfirmed(true);
+        setHabits({
+          comida: status.record.comida ?? null,
+          ejercicio: status.record.ejercicio ?? null,
+          hidratacion: status.record.hidratacion ? Number(status.record.hidratacion) : 2.0,
+          ansiedad: status.record.ansiedad ?? null,
+          sueno: status.record.sueno ?? null,
+          sueno_horas: status.record.sueno_horas ? Number(status.record.sueno_horas) : 8.0,
+          estres: status.record.estres ?? null,
+        });
+      } else {
+        setIsLockedToday(false);
+        setIsConfirmed(false);
       }
     }
 
-    loadTodayStatus();
-
-    return () => {
-      isMounted = false;
-    };
+    setIsLoadingStatus(false);
   }, [userEmail, userName]);
+
+  useEffect(() => {
+    loadTodayStatus();
+  }, [loadTodayStatus]);
 
   const openHabitModal = (key: HabitKey) => {
     if (isLockedToday) {
@@ -418,6 +461,14 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoadingStatus}
+            onRefresh={loadTodayStatus}
+            colors={['#64748B']}
+            tintColor="#64748B"
+          />
+        }
         contentContainerStyle={[
           styles.scrollContent,
           { paddingBottom: Math.max(insets.bottom + 85, 110) },
@@ -425,26 +476,30 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
       >
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            {onBack && (
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={onBack}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="arrow-back" size={24} color="#0F613B" />
-              </TouchableOpacity>
-            )}
-            <View>
-              <Text style={styles.greeting}>Hola, {userName}!</Text>
+            <View style={styles.greetingRow}>
+              <View>
+                <Text style={styles.greeting}>Hola, {userName}!</Text>
+                <Text style={styles.welcomeText}>Qué bueno verte hoy</Text>
+              </View>
             </View>
           </View>
         </View>
 
+        <Text style={styles.progressDate}>{displayDate}</Text>
+
         <View style={styles.progressCard}>
           <Text style={styles.progressNumber}>{registeredCount}/6</Text>
-          <Text style={styles.progressText}>
-            {isLockedToday ? 'Hábitos completados hoy' : 'Hábitos registrados'}
-          </Text>
+          <Text style={styles.progressEmoji}>🌱</Text>
+          <View style={styles.progressTextGroup}>
+            <Text style={styles.progressText}>
+              {isLockedToday ? 'Hábitos completados hoy' : 'Hábitos evaluados'}
+            </Text>
+            {!isLockedToday && registeredCount < 6 && (
+              <Text style={styles.progressHelpText}>
+                Te faltan {6 - registeredCount} por completar
+              </Text>
+            )}
+          </View>
         </View>
 
         {isLoadingStatus && (
@@ -467,6 +522,8 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
               const qualityLabel = getRatingLabel(currentVal, 'sueno');
               const hours = habits.sueno_horas;
               labelText = hours !== null && hours !== undefined ? `${qualityLabel} • ${hours}h` : qualityLabel;
+            } else if (currentVal !== null) {
+              labelText = getRatingLabel(currentVal, key);
             }
 
             return (
@@ -474,16 +531,26 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
                 key={key}
                 style={[
                   styles.card,
+                  { backgroundColor: HABIT_CARD_COLORS[key] },
                   isLockedToday && styles.cardLocked,
+                  currentVal !== null && {
+                    borderWidth: 2,
+                    borderColor: HABIT_CARD_BORDER_COLORS[key],
+                  },
                 ]}
                 onPress={() => openHabitModal(key)}
                 activeOpacity={isLockedToday ? 0.9 : 0.7}
               >
-                <View style={styles.cardIconArea}>
+                <View style={styles.imageFrame}>
                   {item.image ? (
-                    <Image source={item.image} style={styles.habitImage} resizeMode="contain" />
+                    <Image source={item.image} style={styles.cardImage} resizeMode="contain" />
                   ) : (
                     <Text style={styles.emoji}>{item.emoji}</Text>
+                  )}
+                  {currentVal !== null && (
+                    <View style={styles.cardCheckBadge}>
+                      <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                    </View>
                   )}
                   {isLockedToday && (
                     <View style={styles.cardLockIconBadge}>
@@ -491,18 +558,14 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
                     </View>
                   )}
                 </View>
-                <View style={[styles.cardLabelArea, { backgroundColor: cardColor }]}>
-                  <Text
-                    style={[
-                      styles.cardLabel,
-                      currentVal !== null && styles.cardLabelActiveText,
-                    ]}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                  >
-                    {labelText}
-                  </Text>
-                </View>
+                <Text style={styles.cardTitle}>{item.label}</Text>
+                <Text
+                  style={styles.cardSubtitle}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {currentVal !== null ? labelText : 'Comenzar'}
+                </Text>
               </TouchableOpacity>
             );
           })}
@@ -512,8 +575,9 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
         {isLockedToday ? (
           <View style={styles.lockedBottomContainer}>
             <View style={styles.lockedBottomBadge}>
+              <Ionicons name="happy-outline" size={18} color="#0F613B" style={styles.lockedBottomHappyIcon} />
               <Ionicons name="lock-closed" size={16} color="#0F613B" style={{ marginRight: 6 }} />
-              <Text style={styles.lockedBottomBadgeText}>Registro finalizado por hoy</Text>
+              <Text style={styles.lockedBottomBadgeText}>Evaluación completada por hoy</Text>
             </View>
             <Text style={styles.lockedBottomHelpText}>
               Próximo check-in habilitado mañana.
@@ -531,14 +595,19 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
                 onPress={handleConfirm}
                 activeOpacity={0.8}
               >
-                <Text
-                  style={[
-                    styles.globalConfirmText,
-                    registeredCount < 6 && styles.globalConfirmDisabledText,
-                  ]}
-                >
-                  {registeredCount === 6 ? 'Registrar Hábitos' : 'Registrar'}
-                </Text>
+                <View style={styles.confirmButtonContent}>
+                  {registeredCount === 6 && (
+                    <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" style={styles.confirmIcon} />
+                  )}
+                  <Text
+                    style={[
+                      styles.globalConfirmText,
+                      registeredCount < 6 && styles.globalConfirmDisabledText,
+                    ]}
+                  >
+                    {registeredCount === 6 ? 'Registrar Hábitos' : 'Registrar'}
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
           )
@@ -598,13 +667,28 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  scrollContent: { paddingHorizontal: 20 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 16 },
+  container: { flex: 1, backgroundColor: '#EAF5EE' },
+  scrollContent: { paddingHorizontal: s(16), paddingTop: vs(14) },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 0,
+    marginBottom: vs(22),
+  },
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
-  backButton: { marginRight: 12, padding: 4 },
-  greeting: { fontSize: 22, fontWeight: 'bold', color: '#1F2937' },
-  headerDate: { fontSize: 13.5, color: '#6B7280', marginTop: 2, fontWeight: '500' },
+  greetingRow: { flexDirection: 'row', alignItems: 'center' },
+  greeting: { fontSize: ms(21), fontWeight: 'bold', color: '#1F2937' },
+  welcomeText: { fontSize: ms(12.5), color: '#64748B', marginTop: vs(4), fontWeight: '600' },
+  headerDate: { fontSize: ms(13), color: '#6B7280', marginTop: vs(4), fontWeight: '500' },
+  progressDate: {
+    alignSelf: 'flex-end',
+    fontSize: ms(12.5),
+    color: '#6B7280',
+    marginTop: 0,
+    marginBottom: vs(8),
+    fontWeight: '500',
+  },
 
   // Banner de bloqueo superior
   lockedBannerCard: {
@@ -612,9 +696,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0FDF4',
     borderWidth: 1.5,
     borderColor: '#BBF7D0',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 20,
+    borderRadius: ms(16),
+    padding: s(12),
+    marginBottom: vs(16),
     alignItems: 'center',
     shadowColor: '#0F613B',
     shadowOffset: { width: 0, height: 2 },
@@ -623,105 +707,289 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   lockedBannerIconBadge: {
-    marginRight: 12,
+    marginRight: s(10),
   },
   lockedBannerTextWrapper: {
     flex: 1,
   },
   lockedBannerTitle: {
-    fontSize: 15,
+    fontSize: ms(14.5),
     fontWeight: '700',
     color: '#0F613B',
-    marginBottom: 3,
+    marginBottom: vs(2),
   },
   lockedBannerDesc: {
-    fontSize: 12.5,
+    fontSize: ms(12),
     color: '#374151',
-    lineHeight: 17,
+    lineHeight: ms(16.5),
   },
 
-  progressCard: { borderWidth: 1.5, borderColor: '#A5C1B3', borderRadius: 15, padding: 18, backgroundColor: '#E4EDE7', alignItems: 'center', marginBottom: 24 },
-  progressNumber: { fontSize: 24, fontWeight: '700', color: '#0F613B' },
-  progressText: { fontSize: 15, color: '#374151', marginTop: 4, fontWeight: '600' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  card: { width: '46%', borderWidth: 1.5, borderColor: '#D1D5DB', borderRadius: 14, marginBottom: 20, overflow: 'hidden', backgroundColor: '#FFFFFF' },
-  cardLocked: { opacity: 0.95, borderColor: '#BBF7D0' },
-  cardIconArea: { height: 100, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', position: 'relative' },
-  cardLockIconBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: '#E8F5E9', padding: 4, borderRadius: 10 },
-  emoji: { fontSize: 50 },
-  habitImage: { width: 65, height: 65 },
-  cardLabelArea: { borderTopWidth: 1.5, borderColor: '#E5E7EB', paddingVertical: 10, alignItems: 'center' },
-  cardLabel: { fontSize: 15, fontWeight: '600', color: '#4B5563' },
-  cardLabelActiveText: { color: '#FFFFFF', fontWeight: '700' },
+  progressCard: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#D9ECDC',
+    borderRadius: ms(18),
+    paddingVertical: vs(12),
+    paddingHorizontal: s(14),
+    backgroundColor: '#F7FCF8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: s(10),
+    marginBottom: vs(16),
+  },
+  progressNumber: { fontSize: ms(26), fontWeight: '800', color: '#64748B' },
+  progressEmoji: { fontSize: ms(20) },
+  progressTextGroup: { alignItems: 'center' },
+  progressText: { fontSize: ms(13.5), color: '#374151', marginTop: 0, fontWeight: '600' },
+  progressHelpText: { fontSize: ms(11), color: '#64748B', marginTop: vs(3) },
 
-  confirmationSection: { marginTop: 10, alignItems: 'center' },
-  globalConfirmButton: { backgroundColor: '#0F613B', width: '100%', paddingVertical: 15, borderRadius: 14, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 2 },
-  globalConfirmDisabled: { backgroundColor: '#C2D6CC' },
-  globalConfirmText: { color: '#FFFFFF', fontSize: 17, fontWeight: 'bold' },
-  globalConfirmDisabledText: { color: '#5A7568', fontSize: 15, fontWeight: '600' },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: ms(20),
+    padding: s(12),
+    paddingTop: vs(16),
+    borderWidth: 1,
+    borderColor: '#E9EEF0',
+    rowGap: vs(14),
+  },
+  card: {
+    width: '48%',
+    minHeight: vs(165),
+    borderRadius: ms(18),
+    padding: s(12),
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  cardLocked: { opacity: 0.95, borderColor: '#BBF7D0' },
+  imageFrame: {
+    width: '100%',
+    height: vs(78),
+    borderRadius: ms(12),
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  cardCheckBadge: {
+    position: 'absolute',
+    top: s(6),
+    left: s(6),
+    width: s(22),
+    height: s(22),
+    borderRadius: s(11),
+    backgroundColor: '#4A9F45',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardLockIconBadge: {
+    position: 'absolute',
+    top: s(6),
+    right: s(6),
+    backgroundColor: '#E8F5E9',
+    padding: s(4),
+    borderRadius: ms(8),
+  },
+  emoji: { fontSize: ms(44) },
+  cardImage: { width: '100%', height: '100%' },
+  cardTitle: { fontSize: ms(15.5), fontWeight: '700', color: '#1F2937' },
+  cardSubtitle: { fontSize: ms(11.5), color: '#475569', marginTop: vs(4) },
+
+  confirmationSection: { marginTop: vs(22), alignItems: 'center' },
+  globalConfirmButton: {
+    backgroundColor: '#D9DEE3',
+    width: '85%',
+    maxWidth: s(320),
+    alignSelf: 'center',
+    minHeight: vs(46),
+    paddingVertical: vs(12),
+    borderRadius: ms(14),
+    borderWidth: 1,
+    borderColor: '#B8C0C8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#64748B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  globalConfirmDisabled: { backgroundColor: '#F3F4F6', borderColor: '#E1E5E9', shadowOpacity: 0 },
+  confirmButtonContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  confirmIcon: { marginRight: s(6) },
+  globalConfirmText: { color: '#374151', fontSize: ms(16), fontWeight: 'bold' },
+  globalConfirmDisabledText: { color: '#64748B', fontSize: ms(14), fontWeight: '600' },
 
   // Sección inferior bloqueada
   lockedBottomContainer: {
-    marginTop: 10,
+    marginTop: vs(10),
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: vs(10),
   },
   lockedBottomBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#E8F5E9',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 25,
+    paddingVertical: vs(10),
+    paddingHorizontal: s(20),
+    borderRadius: ms(25),
     borderWidth: 1,
     borderColor: '#A7F3D0',
-    marginBottom: 8,
+    marginBottom: vs(6),
   },
   lockedBottomBadgeText: {
     color: '#0F613B',
-    fontSize: 15,
+    fontSize: ms(14),
     fontWeight: '700',
   },
+  lockedBottomHappyIcon: {
+    marginRight: s(6),
+  },
   lockedBottomHelpText: {
-    fontSize: 13,
+    fontSize: ms(12),
     color: '#6B7280',
     fontWeight: '500',
   },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.45)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '90%', backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, alignItems: 'center', elevation: 5, position: 'relative' },
-  modalCloseButton: { position: 'absolute', top: 14, right: 14, zIndex: 10, padding: 4 },
-  modalIconArea: { width: 100, height: 100, borderWidth: 2, borderColor: '#C6E3D1', borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+  modalContent: {
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: '#FFFFFF',
+    borderRadius: ms(20),
+    padding: s(18),
+    alignItems: 'center',
+    elevation: 5,
+    position: 'relative',
+  },
+  modalCloseButton: { position: 'absolute', top: vs(12), right: s(12), zIndex: 10, padding: s(4) },
+  modalIconArea: {
+    width: s(88),
+    height: s(88),
+    borderWidth: 2,
+    borderColor: '#C6E3D1',
+    borderRadius: ms(20),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: vs(14),
+  },
   waterModalIconArea: { borderColor: '#93C5FD', backgroundColor: '#EFF6FF' },
-  modalEmoji: { fontSize: 50 },
-  modalHabitImage: { width: 65, height: 65 },
-  questionText: { fontSize: 16, fontWeight: '600', color: '#4b5563', marginBottom: 20, textAlign: 'center' },
+  modalEmoji: { fontSize: ms(44) },
+  modalHabitImage: { width: s(60), height: s(60) },
+  questionText: { fontSize: ms(15), fontWeight: '600', color: '#4b5563', marginBottom: vs(16), textAlign: 'center' },
 
-  segmentedControl: { flexDirection: 'row', backgroundColor: '#f3f4f6', borderRadius: 25, padding: 4, width: '100%', marginBottom: 20, position: 'relative' },
-  slidingIndicator: { position: 'absolute', top: 4, bottom: 4, left: 4, width: '20%', borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 3, elevation: 2 },
-  segmentButton: { flex: 1, paddingVertical: 12, paddingHorizontal: 2, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
-  segmentLabel: { fontSize: 10.5, fontWeight: '700', color: '#9ca3af', textAlign: 'center' },
-  segmentLabelActive: { color: '#FFFFFF' },
+  segmentedControl: {
+    flexDirection: 'row',
+    backgroundColor: '#f3f4f6',
+    borderRadius: ms(25),
+    padding: s(4),
+    width: '100%',
+    marginBottom: vs(18),
+    position: 'relative',
+  },
+  slidingIndicator: {
+    position: 'absolute',
+    top: s(4),
+    bottom: s(4),
+    left: s(4),
+    width: '20%',
+    borderRadius: ms(20),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  segmentButton: { flex: 1, paddingVertical: vs(10), paddingHorizontal: 2, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+  segmentLabel: { fontSize: ms(10), fontWeight: '700', color: '#9ca3af', textAlign: 'center' },
+  segmentLabelActive: { color: '#334155' },
 
-  registerButton: { backgroundColor: '#0F613B', paddingVertical: 12, paddingHorizontal: 50, borderRadius: 25, marginTop: 4 },
+  registerButton: {
+    backgroundColor: '#0F613B',
+    paddingVertical: vs(11),
+    paddingHorizontal: s(44),
+    borderRadius: ms(25),
+    marginTop: vs(4),
+  },
   registerButtonDisabled: { backgroundColor: '#9ca3af' },
-  registerButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  registerButtonText: { color: '#FFFFFF', fontSize: ms(15), fontWeight: 'bold' },
 
   // Estilos de Agua
-  waterModalContainer: { width: '100%', alignItems: 'center', paddingVertical: 6 },
-  waterCounterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: 20 },
-  waterStepBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#EFF6FF', borderWidth: 1.5, borderColor: '#BFDBFE', justifyContent: 'center', alignItems: 'center' },
-  waterInputBox: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', marginHorizontal: 16, backgroundColor: '#F8FAFC', borderWidth: 1.5, borderColor: '#93C5FD', borderRadius: 16, paddingHorizontal: 18, paddingVertical: 8, minWidth: 140 },
-  waterInput: { fontSize: 28, fontWeight: '800', color: '#1E3A8A', textAlign: 'center', minWidth: 50 },
-  waterUnitText: { fontSize: 16, fontWeight: '600', color: '#3B82F6', marginLeft: 8 },
-  waterSaveButton: { backgroundColor: '#2563EB', paddingVertical: 14, paddingHorizontal: 60, borderRadius: 25, shadowColor: '#2563EB', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 3, marginTop: 8 },
+  waterModalContainer: { width: '100%', alignItems: 'center', paddingVertical: vs(6) },
+  waterCounterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: vs(16) },
+  waterStepBtn: {
+    width: s(46),
+    height: s(46),
+    borderRadius: s(23),
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1.5,
+    borderColor: '#BFDBFE',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  waterInputBox: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    marginHorizontal: s(12),
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#93C5FD',
+    borderRadius: ms(14),
+    paddingHorizontal: s(16),
+    paddingVertical: vs(8),
+    minWidth: s(130),
+  },
+  waterInput: { fontSize: ms(26), fontWeight: '800', color: '#1E3A8A', textAlign: 'center', minWidth: s(46) },
+  waterUnitText: { fontSize: ms(15), fontWeight: '600', color: '#3B82F6', marginLeft: s(6) },
+  waterSaveButton: {
+    backgroundColor: '#2563EB',
+    paddingVertical: vs(12),
+    paddingHorizontal: s(50),
+    borderRadius: ms(25),
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+    marginTop: vs(8),
+  },
 
   // Estilos de Sueño
-  sectionSubtitle: { fontSize: 13.5, fontWeight: '700', color: '#475569', alignSelf: 'flex-start', marginBottom: 8, marginTop: 4 },
-  sleepSection: { width: '100%', alignItems: 'center', marginTop: 2, marginBottom: 14 },
-  sleepCounterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: 6 },
-  sleepStepBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9', borderWidth: 1.5, borderColor: '#CBD5E1', justifyContent: 'center', alignItems: 'center' },
-  sleepInputBox: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', marginHorizontal: 14, backgroundColor: '#F8FAFC', borderWidth: 1.5, borderColor: '#CBD5E1', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 6, minWidth: 125 },
-  sleepInput: { fontSize: 24, fontWeight: '800', color: '#1E293B', textAlign: 'center', minWidth: 44 },
-  sleepUnitText: { fontSize: 14.5, fontWeight: '600', color: '#64748B', marginLeft: 6 },
+  sectionSubtitle: { fontSize: ms(13), fontWeight: '700', color: '#475569', alignSelf: 'flex-start', marginBottom: vs(8), marginTop: vs(4) },
+  sleepSection: { width: '100%', alignItems: 'center', marginTop: vs(2), marginBottom: vs(12) },
+  sleepCounterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: vs(6) },
+  sleepStepBtn: {
+    width: s(42),
+    height: s(42),
+    borderRadius: s(21),
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sleepInputBox: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    marginHorizontal: s(12),
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    borderRadius: ms(14),
+    paddingHorizontal: s(14),
+    paddingVertical: vs(6),
+    minWidth: s(120),
+  },
+  sleepInput: { fontSize: ms(22), fontWeight: '800', color: '#1E293B', textAlign: 'center', minWidth: s(40) },
+  sleepUnitText: { fontSize: ms(13.5), fontWeight: '600', color: '#64748B', marginLeft: s(6) },
 });
+

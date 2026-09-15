@@ -5,11 +5,11 @@ import { HabitKey, HabitDefinition, RatingScaleItem, DailyHabitRatings } from '.
  * Fuente de verdad para valores, textos, colores y animaciones.
  */
 export const RATING_SCALE: RatingScaleItem[] = [
-  { value: 1, label: 'Muy mal', anxietyLabel: 'Muy intensa', stressLabel: 'Muy intenso', color: '#ef4444' },
-  { value: 2, label: 'Mal', anxietyLabel: 'Intensa', stressLabel: 'Intenso', color: '#f97316' },
-  { value: 3, label: 'Regular', anxietyLabel: 'Moderada', stressLabel: 'Moderado', color: '#eab308' },
-  { value: 4, label: 'Bien', anxietyLabel: 'Leve', stressLabel: 'Leve', color: '#84cc16' },
-  { value: 5, label: 'Muy bien', anxietyLabel: 'En calma', stressLabel: 'En calma', color: '#22c55e' },
+  { value: 1, label: 'Muy mal', anxietyLabel: 'Muy intensa', stressLabel: 'Muy intenso', color: '#F7B7B7' },
+  { value: 2, label: 'Mal', anxietyLabel: 'Intensa', stressLabel: 'Intenso', color: '#F8C99A' },
+  { value: 3, label: 'Regular', anxietyLabel: 'Moderada', stressLabel: 'Moderado', color: '#F6E3A1' },
+  { value: 4, label: 'Bien', anxietyLabel: 'Leve', stressLabel: 'Leve', color: '#BFE3A8' },
+  { value: 5, label: 'Muy bien', anxietyLabel: 'En calma', stressLabel: 'En calma', color: '#A9DDB7' },
 ];
 
 export const UNRATED_COLOR = '#EFEFEF';
