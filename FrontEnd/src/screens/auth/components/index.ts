@@ -9,3 +9,4 @@ export { CreateInitialPasswordCard } from './CreateInitialPasswordCard';
 export { ForgotEmailCard } from './ForgotEmailCard';
 export { ForgotCodeCard } from './ForgotCodeCard';
 export { ForgotResetPasswordCard } from './ForgotResetPasswordCard';
+export { ActivationCodeCard } from './ActivationCodeCard';

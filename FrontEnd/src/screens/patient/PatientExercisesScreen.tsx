@@ -1,24 +1,55 @@
 import React, { useRef } from 'react';
 import { Animated, Image, StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
 import { HABIT_CATALOG } from '../../constants/habits';
+
+export type ExerciseHabitKey = 'ansiedad' | 'estres' | 'sueno' | 'ejercicio' | 'alimentacion' | 'hidratacion';
 
 interface PatientExercisesScreenProps {
   onBack?: () => void;
   onNavigateTab: (tab: PatientTab) => void;
-  onOpenHabit?: (habitKey: 'ansiedad' | 'estres' | 'sueno' | 'ejercicio' | 'alimentacion' | 'hidratacion', habitTitle: string) => void;
+  onOpenHabit?: (habitKey: ExerciseHabitKey, habitTitle: string) => void;
   userName?: string;
 }
 
-const habitCards = [
-  { id: 1, title: 'Ansiedad', description: 'Respira y recupera la calma.', color: '#FDE2E4', borderColor: '#D97786', image: HABIT_CATALOG.ansiedad.image! },
-  { id: 2, title: 'Sueño', description: 'Prepara tu mente para descansar.', color: '#F0E7FF', borderColor: '#8962B8', image: HABIT_CATALOG.sueno.image! },
-  { id: 3, title: 'Estrés', description: 'Libera tensión y vuelve al presente.', color: '#E3F0FF', borderColor: '#4B83C4', image: HABIT_CATALOG.estres.image! },
+interface HabitCardItem {
+  id: number;
+  habitKey: ExerciseHabitKey;
+  title: string;
+  description: string;
+  color: string;
+  borderColor: string;
+  image: any;
+}
+
+const habitCards: HabitCardItem[] = [
+  { id: 1, habitKey: 'ansiedad', title: 'Ansiedad', description: 'Respira y recupera la calma.', color: '#FDE2E4', borderColor: '#D97786', image: HABIT_CATALOG.ansiedad.image! },
+  { id: 2, habitKey: 'sueno', title: 'Sueño', description: 'Prepara tu mente para descansar.', color: '#F0E7FF', borderColor: '#8962B8', image: HABIT_CATALOG.sueno.image! },
+  { id: 3, habitKey: 'estres', title: 'Estrés', description: 'Libera tensión y vuelve al presente.', color: '#E3F0FF', borderColor: '#4B83C4', image: HABIT_CATALOG.estres.image! },
 ];
 
-const HabitCard: React.FC<{ item: (typeof habitCards)[number]; onOpenHabit?: (habitKey: 'ansiedad' | 'estres' | 'sueno' | 'ejercicio' | 'alimentacion' | 'hidratacion', habitTitle: string) => void }> = ({ item, onOpenHabit }) => {
+const HABIT_KEY_BY_TITLE: Record<string, ExerciseHabitKey> = {
+  comida: 'alimentacion',
+  alimentacion: 'alimentacion',
+  'hidratación': 'hidratacion',
+  hidratacion: 'hidratacion',
+  'estrés': 'estres',
+  estres: 'estres',
+  'sueño': 'sueno',
+  sueno: 'sueno',
+  ejercicio: 'ejercicio',
+};
+
+const getHabitKeyFromTitle = (title: string): ExerciseHabitKey => {
+  const normalizedTitle = title.toLowerCase().replace(/\s+/g, '-');
+  return HABIT_KEY_BY_TITLE[normalizedTitle] ?? 'ansiedad';
+};
+
+const HabitCard: React.FC<{
+  item: HabitCardItem;
+  onOpenHabit?: (habitKey: ExerciseHabitKey, habitTitle: string) => void;
+}> = ({ item, onOpenHabit }) => {
   const pressAnimation = useRef(new Animated.Value(0)).current;
 
   const animatePress = (toValue: number) => {
@@ -28,6 +59,11 @@ const HabitCard: React.FC<{ item: (typeof habitCards)[number]; onOpenHabit?: (ha
       speed: 24,
       bounciness: 6,
     }).start();
+  };
+
+  const handlePress = () => {
+    const habitKey = item.habitKey ?? getHabitKeyFromTitle(item.title);
+    onOpenHabit?.(habitKey, item.title);
   };
 
   return (
@@ -57,7 +93,7 @@ const HabitCard: React.FC<{ item: (typeof habitCards)[number]; onOpenHabit?: (ha
         activeOpacity={1}
         onPressIn={() => animatePress(1)}
         onPressOut={() => animatePress(0)}
-        onPress={() => onOpenHabit?.(item.title.toLowerCase().replace(/\s+/g, '-') === 'comida' ? 'alimentacion' : item.title.toLowerCase().replace(/\s+/g, '-') === 'hidratación' ? 'hidratacion' : item.title.toLowerCase().replace(/\s+/g, '-') === 'estrés' ? 'estres' : item.title.toLowerCase().replace(/\s+/g, '-') === 'sueño' ? 'sueno' : item.title.toLowerCase().replace(/\s+/g, '-') === 'ejercicio' ? 'ejercicio' : 'ansiedad', item.title)}
+        onPress={handlePress}
       >
         <View style={styles.imageFrame}>
           <Image source={item.image} style={styles.cardImage} resizeMode="contain" />

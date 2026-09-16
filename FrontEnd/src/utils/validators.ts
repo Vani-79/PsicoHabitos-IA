@@ -47,8 +47,8 @@ export function isValidEmail(email: string): boolean {
  * Comprueba si una edad numérica es válida y cumple con la edad mínima requerida.
  */
 export function isValidAge(age: string | number, minAge = 16): boolean {
-  const parsed = typeof age === 'number' ? age : parseInt(age, 10);
-  return !isNaN(parsed) && parsed >= minAge;
+  const parsed = typeof age === 'number' ? age : Number.parseInt(age, 10);
+  return !Number.isNaN(parsed) && parsed >= minAge;
 }
 
 /**
@@ -59,7 +59,7 @@ export function isValidAge(age: string | number, minAge = 16): boolean {
  * - Al menos un número
  * - Al menos un carácter especial
  */
-export const PASSWORD_COMPLEXITY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+export const PASSWORD_COMPLEXITY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
 
 /**
  * Valida de forma detallada si una contraseña cumple con los requisitos de seguridad:
@@ -79,7 +79,7 @@ export function validatePasswordComplexity(password: string): { isValid: boolean
   if (!/\d/.test(clean)) {
     return { isValid: false, error: 'La contraseña debe contener al menos un número.' };
   }
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(clean)) {
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(clean)) {
     return { isValid: false, error: 'La contraseña debe contener al menos un carácter especial (ej. @, #, $, !).' };
   }
   return { isValid: true };
@@ -92,68 +92,77 @@ export function isValidPassword(password: string): boolean {
   return validatePasswordComplexity(password).isValid;
 }
 
-/**
- * Valida de forma exhaustiva el formulario de registro de pacientes.
- * Devuelve un ValidationResult con el título y mensaje de error en caso de fallo.
- */
-export function validatePatientForm(form: PatientRegistrationForm): ValidationResult {
+interface NameValidationMessages {
+  required: string;
+  length: string;
+  letters: string;
+}
+
+function validateNameField(
+  value: string,
+  fieldTitle: string,
+  messages: NameValidationMessages,
+  invalidTitle = `${fieldTitle} inválido`
+): ValidationResult | null {
+  if (!value) {
+    return { isValid: false, errorTitle: `${fieldTitle} requerido`, errorMessage: messages.required };
+  }
+  if (!isValidStringLength(value, 2, 40)) {
+    return { isValid: false, errorTitle: invalidTitle, errorMessage: messages.length };
+  }
+  if (!isLettersOnly(value)) {
+    return { isValid: false, errorTitle: invalidTitle, errorMessage: messages.letters };
+  }
+  return null;
+}
+
+function validatePatientNames(form: PatientRegistrationForm): ValidationResult | null {
   const nombre = form.nombre.trim();
   const apellidoPaterno = form.apellidoPaterno.trim();
   const apellidoMaterno = form.apellidoMaterno.trim();
-  const email = form.email.trim().toLowerCase();
 
-  // 1. Nombre
-  if (!nombre) {
-    return { isValid: false, errorTitle: 'Nombre requerido', errorMessage: 'Escribe el nombre del paciente.' };
-  }
-  if (!isValidStringLength(nombre, 2, 40)) {
-    return { isValid: false, errorTitle: 'Nombre inválido', errorMessage: 'El nombre debe tener entre 2 y 40 caracteres.' };
-  }
-  if (!isLettersOnly(nombre)) {
-    return { isValid: false, errorTitle: 'Nombre inválido', errorMessage: 'El nombre no debe contener números ni símbolos.' };
-  }
+  return (
+    validateNameField(nombre, 'Nombre', {
+      required: 'Escribe el nombre del paciente.',
+      length: 'El nombre debe tener entre 2 y 40 caracteres.',
+      letters: 'El nombre no debe contener números ni símbolos.',
+    }) ??
+    validateNameField(
+      apellidoPaterno,
+      'Apellido Paterno',
+      {
+        required: 'Escribe el apellido paterno del paciente.',
+        length: 'Debe tener entre 2 y 40 caracteres.',
+        letters: 'No debe incluir números ni símbolos.',
+      },
+      'Apellido paterno inválido'
+    ) ??
+    validateNameField(
+      apellidoMaterno,
+      'Apellido Materno',
+      {
+        required: 'Escribe el apellido materno del paciente.',
+        length: 'Debe tener entre 2 y 40 caracteres.',
+        letters: 'No debe incluir números ni símbolos.',
+      },
+      'Apellido materno inválido'
+    )
+  );
+}
 
-  // 2. Apellido Paterno
-  if (!apellidoPaterno) {
-    return { isValid: false, errorTitle: 'Apellido Paterno requerido', errorMessage: 'Escribe el apellido paterno del paciente.' };
-  }
-  if (!isValidStringLength(apellidoPaterno, 2, 40)) {
-    return { isValid: false, errorTitle: 'Apellido paterno inválido', errorMessage: 'Debe tener entre 2 y 40 caracteres.' };
-  }
-  if (!isLettersOnly(apellidoPaterno)) {
-    return { isValid: false, errorTitle: 'Apellido paterno inválido', errorMessage: 'No debe incluir números ni símbolos.' };
-  }
-
-  // 3. Apellido Materno
-  if (!apellidoMaterno) {
-    return { isValid: false, errorTitle: 'Apellido Materno requerido', errorMessage: 'Escribe el apellido materno del paciente.' };
-  }
-  if (!isValidStringLength(apellidoMaterno, 2, 40)) {
-    return { isValid: false, errorTitle: 'Apellido materno inválido', errorMessage: 'Debe tener entre 2 y 40 caracteres.' };
-  }
-  if (!isLettersOnly(apellidoMaterno)) {
-    return { isValid: false, errorTitle: 'Apellido materno inválido', errorMessage: 'No debe incluir números ni símbolos.' };
-  }
-
-  // 4. Fecha de Nacimiento
+function validatePatientDemographics(form: PatientRegistrationForm): ValidationResult | null {
   if (!form.fechaNacimiento) {
     return { isValid: false, errorTitle: 'Fecha requerida', errorMessage: 'Selecciona la fecha de nacimiento.' };
   }
   if (isFutureDate(form.fechaNacimiento)) {
     return { isValid: false, errorTitle: 'Fecha inválida', errorMessage: 'La fecha de nacimiento no puede ser futura.' };
   }
-
-  // 5. Edad
   if (!isValidAge(form.edad, 16)) {
     return { isValid: false, errorTitle: 'Edad inválida', errorMessage: 'El paciente debe tener al menos 16 años.' };
   }
-
-  // 6. Género
   if (!form.genero) {
     return { isValid: false, errorTitle: 'Género requerido', errorMessage: 'Selecciona un género para continuar.' };
   }
-
-  // 7. Fecha de Primera Sesión
   if (!form.fechaPrimeraSesion) {
     return { isValid: false, errorTitle: 'Fecha requerida', errorMessage: 'Selecciona la fecha de la primera sesión.' };
   }
@@ -167,14 +176,29 @@ export function validatePatientForm(form: PatientRegistrationForm): ValidationRe
       errorMessage: 'La primera sesión no puede ser anterior a la fecha de nacimiento.',
     };
   }
+  return null;
+}
 
-  // 8. Correo Electrónico
+function validatePatientEmail(rawEmail: string): ValidationResult | null {
+  const email = rawEmail.trim().toLowerCase();
   if (!email) {
     return { isValid: false, errorTitle: 'Email requerido', errorMessage: 'Escribe el correo del paciente.' };
   }
   if (!isValidEmail(email)) {
     return { isValid: false, errorTitle: 'Correo inválido', errorMessage: 'El correo debe tener formato válido.' };
   }
+  return null;
+}
 
-  return { isValid: true };
+/**
+ * Valida de forma exhaustiva el formulario de registro de pacientes.
+ * Devuelve un ValidationResult con el título y mensaje de error en caso de fallo.
+ */
+export function validatePatientForm(form: PatientRegistrationForm): ValidationResult {
+  return (
+    validatePatientNames(form) ??
+    validatePatientDemographics(form) ??
+    validatePatientEmail(form.email) ??
+    { isValid: true }
+  );
 }

@@ -19,10 +19,12 @@ import {
   ForgotEmailCard,
   ForgotCodeCard,
   ForgotResetPasswordCard,
+  ActivationCodeCard,
 } from './components';
 
 export type AuthViewMode =
   | 'login'
+  | 'activation_code'
   | 'create_initial_password'
   | 'forgot_email'
   | 'forgot_code'
@@ -46,6 +48,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
   const handleTopBack = () => {
     switch (authView) {
+      case 'activation_code':
       case 'create_initial_password':
       case 'forgot_email':
         setAuthView('login');
@@ -65,6 +68,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
   const renderAuthCard = () => {
     switch (authView) {
+      case 'activation_code':
+        return (
+          <ActivationCodeCard
+            email={activeEmail}
+            userName={pendingUserName}
+            onSuccess={() => {
+              setAuthView('create_initial_password');
+            }}
+            onBackToEmail={() => setAuthView('login')}
+          />
+        );
       case 'create_initial_password':
         return (
           <CreateInitialPasswordCard
@@ -115,10 +129,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <LoginForm
             initialEmail={activeEmail}
             onSuccess={onLoginSuccess}
-            onNavigateToCreatePassword={(email, name) => {
+            onNavigateToActivation={(email, name) => {
               setActiveEmail(email);
               setPendingUserName(name);
-              setAuthView('create_initial_password');
+              setAuthView('activation_code');
             }}
             onNavigateToForgot={(email) => {
               setActiveEmail(email);

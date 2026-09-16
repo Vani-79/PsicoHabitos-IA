@@ -4,7 +4,7 @@
  */
 
 import { API_CONFIG, ApiResponse } from './api';
-import { MySqlPatientRecord } from '../types/patient';
+import { MySqlPatientRecord, PatientProfileData } from '../types/patient';
 
 let localMemoryFallback: MySqlPatientRecord[] = [];
 
@@ -85,5 +85,29 @@ export const patientService = {
       console.warn('[patientService] Backend no alcanzable para listado completo:', err);
     }
     return [...localMemoryFallback];
+  },
+
+  /**
+   * Obtiene la información de perfil detallada del paciente actual,
+   * incluyendo su especialista asignado desde MySQL.
+   */
+  async getPatientProfile(email?: string, name?: string): Promise<PatientProfileData | null> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (email) queryParams.append('email', email);
+      if (name) queryParams.append('name', name);
+
+      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+      const response = await fetch(`${API_CONFIG.BASE_URL}/patients/profile${queryString}`);
+      if (response.ok) {
+        const json = await response.json();
+        if (json.success && json.data) {
+          return json.data;
+        }
+      }
+    } catch (err) {
+      console.warn('[patientService] Error al consultar perfil del paciente:', err);
+    }
+    return null;
   },
 };

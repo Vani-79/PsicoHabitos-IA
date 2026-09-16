@@ -22,7 +22,6 @@ import {
   HABIT_KEYS,
   RATING_SCALE,
   INITIAL_HABITS_STATE,
-  getRatingColor,
   getRatingLabel,
 } from '../../constants/habits';
 import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
@@ -102,7 +101,6 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   // Estados de control robusto con la fecha del servidor (MySQL CURDATE())
   const [isLockedToday, setIsLockedToday] = useState(false);
   const [serverDate, setServerDate] = useState('');
-  const [nextDate, setNextDate] = useState('');
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
 
   const displayDate = useMemo(() => {
@@ -128,7 +126,6 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
 
     if (status.success) {
       if (status.serverDate) setServerDate(status.serverDate);
-      if (status.nextDate) setNextDate(status.nextDate);
 
       if (status.completedToday && status.record) {
         setIsLockedToday(true);
@@ -513,7 +510,6 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
           {HABIT_KEYS.map((key) => {
             const item = HABIT_CATALOG[key];
             const currentVal = habits[key];
-            const cardColor = getRatingColor(currentVal, key);
 
             let labelText = item.label;
             if (key === 'hidratacion' && currentVal !== null) {

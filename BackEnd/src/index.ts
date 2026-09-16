@@ -16,10 +16,10 @@ const PORT = Number(process.env.PORT) || 3000;
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())
   : [
-      'http://localhost:8081', // Expo Web / Metro bundler
-      'http://localhost:3000', // Backend local
-      'http://localhost:19006', // Expo Web alternativo
-    ];
+    'http://localhost:8081', // Expo Web / Metro bundler
+    'http://localhost:3000', // Backend local
+    'http://localhost:19006', // Expo Web alternativo
+  ];
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
@@ -38,7 +38,7 @@ const corsOptions: cors.CorsOptions = {
       process.env.NODE_ENV !== 'production' &&
       (origin.startsWith('http://localhost:') ||
         origin.startsWith('http://127.0.0.1:') ||
-        origin.startsWith('http://192.168.'))
+        origin.startsWith('https://192.168.'))
     ) {
       return callback(null, true);
     }

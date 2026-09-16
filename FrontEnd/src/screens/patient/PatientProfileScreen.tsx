@@ -1,22 +1,75 @@
-import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
+import { patientService } from '../../services/patientService';
+import { PatientProfileData } from '../../types/patient';
 
 interface PatientProfileScreenProps {
-  onBack?: () => void;
   onNavigateTab: (tab: PatientTab) => void;
   userName?: string;
+  userEmail?: string;
   onLogout?: () => void;
 }
+
+const formatBirthDate = (dateStr?: string): string => {
+  if (!dateStr) return 'No registrada';
+  const cleanDate = dateStr.split('T')[0];
+  const parts = cleanDate.split('-');
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+    return `${day}/${month}/${year}`;
+  }
+  return cleanDate;
+};
+
+const formatAge = (edad?: number | string): string => {
+  if (edad === undefined || edad === null || edad === '') return 'No registrada';
+  return `${edad} años`;
+};
 
 export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
   onNavigateTab,
   userName = 'Paciente',
+  userEmail,
   onLogout,
 }) => {
   const insets = useSafeAreaInsets();
+  const [profile, setProfile] = useState<PatientProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchProfile = async () => {
+      setLoading(true);
+      try {
+        const data = await patientService.getPatientProfile(userEmail, userName);
+        if (isMounted) {
+          setProfile(data);
+        }
+      } catch (err) {
+        console.warn('Error al cargar perfil del paciente desde MySQL:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userEmail, userName]);
+
+  const fullName = profile
+    ? [profile.nombre, profile.apellido_paterno, profile.apellido_materno]
+        .filter(Boolean)
+        .join(' ')
+        .trim() || userName
+    : userName;
 
   const handleLogoutPress = () => {
     Alert.alert(
@@ -39,6 +92,103 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
     );
   };
 
+  const renderProfileContent = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingCard}>
+          <ActivityIndicator size="large" color="#0F613B" />
+          <Text style={styles.loadingText}>Cargando datos desde la base de datos...</Text>
+        </View>
+      );
+    }
+
+    if (profile) {
+      return (
+        <View style={styles.profileCard}>
+          <View style={styles.avatarCircle}>
+            <Ionicons name="person" size={42} color="#0F613B" />
+          </View>
+          <Text style={styles.profileName}>{fullName}</Text>
+          <View style={styles.roleTag}>
+            <Text style={styles.roleTagText}>PACIENTE REGISTRADO</Text>
+          </View>
+
+          <View style={styles.infoSection}>
+            {/* Campo: Nombre */}
+            <View style={styles.infoRow}>
+              <View style={styles.infoIconWrapper}>
+                <Ionicons name="person-outline" size={18} color="#0F613B" />
+              </View>
+              <View style={styles.infoTextWrapper}>
+                <Text style={styles.infoLabel}>Nombre</Text>
+                <Text style={styles.infoValue}>{fullName}</Text>
+              </View>
+            </View>
+
+            {/* Campo: Edad */}
+            <View style={styles.infoRow}>
+              <View style={styles.infoIconWrapper}>
+                <Ionicons name="hourglass-outline" size={18} color="#0F613B" />
+              </View>
+              <View style={styles.infoTextWrapper}>
+                <Text style={styles.infoLabel}>Edad</Text>
+                <Text style={styles.infoValue}>{formatAge(profile.edad)}</Text>
+              </View>
+            </View>
+
+            {/* Campo: Fecha de Nacimiento */}
+            <View style={styles.infoRow}>
+              <View style={styles.infoIconWrapper}>
+                <Ionicons name="calendar-outline" size={18} color="#0F613B" />
+              </View>
+              <View style={styles.infoTextWrapper}>
+                <Text style={styles.infoLabel}>Fecha de Nacimiento</Text>
+                <Text style={styles.infoValue}>{formatBirthDate(profile.fecha_nacimiento)}</Text>
+              </View>
+            </View>
+
+            {/* Campo: Correo */}
+            <View style={styles.infoRow}>
+              <View style={styles.infoIconWrapper}>
+                <Ionicons name="mail-outline" size={18} color="#0F613B" />
+              </View>
+              <View style={styles.infoTextWrapper}>
+                <Text style={styles.infoLabel}>Correo</Text>
+                <Text style={styles.infoValue}>{profile.email || userEmail || 'No registrado'}</Text>
+              </View>
+            </View>
+
+            {/* Campo: Especialista */}
+            <View style={styles.infoRow}>
+              <View style={styles.infoIconWrapper}>
+                <Ionicons name="medkit-outline" size={18} color="#0F613B" />
+              </View>
+              <View style={styles.infoTextWrapper}>
+                <Text style={styles.infoLabel}>Especialista</Text>
+                <Text style={styles.infoValue}>{profile.especialista || 'Sin especialista asignado'}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.profileCard}>
+        <View style={styles.avatarCircle}>
+          <Ionicons name="person-outline" size={42} color="#0F613B" />
+        </View>
+        <Text style={styles.profileName}>{userName}</Text>
+        <View style={styles.roleTag}>
+          <Text style={styles.roleTagText}>INFORMACIÓN NO ENCONTRADA</Text>
+        </View>
+        <Text style={styles.emptyNote}>
+          No se encontraron registros en MySQL para este usuario.
+        </Text>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Encabezado */}
@@ -52,47 +202,7 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
           { paddingBottom: Math.max(insets.bottom + 80, 100) },
         ]}
       >
-        <View style={styles.profileCard}>
-          <View style={styles.avatarCircle}>
-            <Ionicons name="person" size={42} color="#0F613B" />
-          </View>
-          <Text style={styles.profileName}>{userName}</Text>
-          <View style={styles.roleTag}>
-            <Text style={styles.roleTagText}>PACIENTE REGISTRADO</Text>
-          </View>
-
-          <View style={styles.infoSection}>
-            <View style={styles.infoRow}>
-              <View style={styles.infoIconWrapper}>
-                <Ionicons name="person-outline" size={18} color="#0F613B" />
-              </View>
-              <View style={styles.infoTextWrapper}>
-                <Text style={styles.infoLabel}>Nombre completo</Text>
-                <Text style={styles.infoValue}>{userName}</Text>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <View style={styles.infoIconWrapper}>
-                <Ionicons name="shield-checkmark-outline" size={18} color="#0F613B" />
-              </View>
-              <View style={styles.infoTextWrapper}>
-                <Text style={styles.infoLabel}>Estado de cuenta</Text>
-                <Text style={styles.infoValue}>Activo</Text>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <View style={styles.infoIconWrapper}>
-                <Ionicons name="medkit-outline" size={18} color="#0F613B" />
-              </View>
-              <View style={styles.infoTextWrapper}>
-                <Text style={styles.infoLabel}>Seguimiento clínico</Text>
-                <Text style={styles.infoValue}>PsicoHábitos IA</Text>
-              </View>
-            </View>
-          </View>
-        </View>
+        {renderProfileContent()}
 
         {/* Botón Cerrar Sesión */}
         <TouchableOpacity
@@ -139,6 +249,32 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 3,
+  },
+  loadingCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  emptyNote: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginTop: 8,
   },
   avatarCircle: {
     width: 86,

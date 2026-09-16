@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
 import { pool } from '../config/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { emailService } from '../services/emailService';
@@ -28,7 +29,7 @@ export function validatePasswordComplexity(password: string): { isValid: boolean
   if (!/\d/.test(clean)) {
     return { isValid: false, error: 'La contraseña debe contener al menos un número.' };
   }
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(clean)) {
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(clean)) {
     return { isValid: false, error: 'La contraseña debe contener al menos un carácter especial (ej. @, #, $, !).' };
   }
   return { isValid: true };
@@ -672,7 +673,7 @@ authRouter.post('/forgot-password/send-code', async (req: Request, res: Response
     }
 
     // 2. Generar código de 6 dígitos numéricos
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = crypto.randomInt(100000, 1000000).toString();
 
     // 3. Invalidar códigos previos no usados para este correo
     await pool.query(
@@ -844,6 +845,132 @@ authRouter.post('/forgot-password/reset-password', async (req: Request, res: Res
   } catch (error) {
     console.error('Error en /api/auth/forgot-password/reset-password:', error);
     res.status(500).json({ success: false, error: 'Error al restablecer la contraseña' });
+  }
+});
+
+/**
+ * POST /api/auth/activation/send-code
+ * Genera y envía un código de confirmación de 6 dígitos para activación de cuenta / primer acceso.
+ */
+authRouter.post('/activation/send-code', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ success: false, error: 'Por favor ingresa tu correo electrónico.' });
+      return;
+    }
+
+    const targetEmail = String(email).trim().toLowerCase();
+
+    // 1. Verificar si el usuario existe en `usuarios` o `pacientes`
+    const [userRows] = await pool.query<RowDataPacket[]>(
+      'SELECT id, email, rol, debe_crear_password, password_hash FROM usuarios WHERE email = ? LIMIT 1',
+      [targetEmail]
+    );
+
+    let userName = '';
+    let requiresPasswordCreation = false;
+
+    if (userRows.length > 0) {
+      const user = userRows[0];
+      requiresPasswordCreation = Boolean(user.debe_crear_password || !user.password_hash);
+      userName = await getUserDisplayName(user.id, user.rol, targetEmail);
+    } else {
+      const [pacRows] = await pool.query<RowDataPacket[]>(
+        'SELECT id, nombre, apellido_paterno FROM pacientes WHERE email = ? LIMIT 1',
+        [targetEmail]
+      );
+      if (pacRows.length > 0) {
+        requiresPasswordCreation = true;
+        userName = `${pacRows[0].nombre} ${pacRows[0].apellido_paterno}`;
+      } else {
+        res.status(404).json({
+          success: false,
+          error: 'No se encontró ninguna ficha o cuenta registrada con este correo electrónico. Contacta a tu especialista.',
+        });
+        return;
+      }
+    }
+
+    // 2. Generar código de 6 dígitos numéricos
+    const code = crypto.randomInt(100000, 1000000).toString();
+
+    // 3. Invalidar códigos previos no usados para este correo
+    await pool.query(
+      'UPDATE codigos_recuperacion SET usado = TRUE WHERE email = ? AND usado = FALSE',
+      [targetEmail]
+    );
+
+    // 4. Guardar nuevo código en MySQL con vigencia de 15 minutos en hora del servidor
+    await pool.query(
+      'INSERT INTO codigos_recuperacion (email, codigo, expira_en, usado) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 15 MINUTE), FALSE)',
+      [targetEmail, code]
+    );
+
+    // 5. Enviar correo de activación al usuario
+    emailService.sendActivationCode({
+      to: targetEmail,
+      userName,
+      code,
+    }).catch((err) => {
+      console.warn('[activation/send-code] Error en el envío del correo:', err);
+    });
+
+    res.json({
+      success: true,
+      message: 'Código de confirmación de 6 dígitos enviado exitosamente a tu correo.',
+      email: targetEmail,
+      name: userName,
+      requiresPasswordCreation,
+    });
+  } catch (error) {
+    console.error('Error en /api/auth/activation/send-code:', error);
+    res.status(500).json({ success: false, error: 'Error al generar código de activación' });
+  }
+});
+
+/**
+ * POST /api/auth/activation/verify-code
+ * Valida que el código de 6 dígitos sea correcto, vigente y pertenezca al correo.
+ */
+authRouter.post('/activation/verify-code', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      res.status(400).json({ success: false, error: 'Correo y código de 6 dígitos son requeridos.' });
+      return;
+    }
+
+    const targetEmail = String(email).trim().toLowerCase();
+    const cleanCode = String(code).trim();
+
+    if (cleanCode.length !== 6) {
+      res.status(400).json({ success: false, error: 'El código debe contener exactamente 6 dígitos.' });
+      return;
+    }
+
+    // Buscar código válido, no usado y con fecha posterior a NOW()
+    const [codeRows] = await pool.query<RowDataPacket[]>(
+      'SELECT id, email, codigo, expira_en, usado FROM codigos_recuperacion WHERE email = ? AND codigo = ? AND usado = FALSE AND expira_en > NOW() ORDER BY id DESC LIMIT 1',
+      [targetEmail, cleanCode]
+    );
+
+    if (codeRows.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: 'El código de activación es inválido o ha expirado. Solicita uno nuevo.',
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: 'Código de activación verificado correctamente.',
+      email: targetEmail,
+    });
+  } catch (error) {
+    console.error('Error en /api/auth/activation/verify-code:', error);
+    res.status(500).json({ success: false, error: 'Error al verificar código de activación' });
   }
 });
 

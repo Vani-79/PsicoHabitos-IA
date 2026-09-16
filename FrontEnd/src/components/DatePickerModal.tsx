@@ -37,7 +37,24 @@ const MONTH_NAMES = [
   'Diciembre',
 ];
 
-const WEEK_DAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+const WEEK_DAYS = [
+  { id: 'lun', label: 'L' },
+  { id: 'mar', label: 'M' },
+  { id: 'mie', label: 'M' },
+  { id: 'jue', label: 'J' },
+  { id: 'vie', label: 'V' },
+  { id: 'sab', label: 'S' },
+  { id: 'dom', label: 'D' },
+];
+
+const EMPTY_CELL_KEYS = [
+  'empty-col-0',
+  'empty-col-1',
+  'empty-col-2',
+  'empty-col-3',
+  'empty-col-4',
+  'empty-col-5',
+];
 
 export const DatePickerModal: React.FC<DatePickerModalProps> = ({
   visible,
@@ -51,13 +68,13 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
   // Parsear fecha inicial respetando límites
   const parseInitial = () => {
     let candidate = new Date();
-    if (initialDate && initialDate.includes('-')) {
+    if (initialDate?.includes('-')) {
       const parts = initialDate.split('-');
       if (parts.length === 3) {
-        const y = parseInt(parts[0], 10);
-        const m = parseInt(parts[1], 10) - 1;
-        const d = parseInt(parts[2], 10);
-        if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+        const y = Number.parseInt(parts[0], 10);
+        const m = Number.parseInt(parts[1], 10) - 1;
+        const d = Number.parseInt(parts[2], 10);
+        if (!Number.isNaN(y) && !Number.isNaN(m) && !Number.isNaN(d)) {
           candidate = new Date(y, m, d);
         }
       }
@@ -65,10 +82,10 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
 
     // Si excede maxDate, limitar al maxDate
     if (maxDate && candidate > maxDate) {
-      candidate = new Date(maxDate.getTime());
+      candidate = new Date(maxDate);
     }
     if (minDate && candidate < minDate) {
-      candidate = new Date(minDate.getTime());
+      candidate = new Date(minDate);
     }
     return candidate;
   };
@@ -106,6 +123,11 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
   const daysInMonth = useMemo(() => {
     return new Date(displayedYear, displayedMonth + 1, 0).getDate();
   }, [displayedYear, displayedMonth]);
+
+  // Lista de días del mes actual (1..N)
+  const monthDays = useMemo(() => {
+    return Array.from({ length: daysInMonth }, (_, index) => index + 1);
+  }, [daysInMonth]);
 
   // Día de la semana en que empieza el mes (0 = Lunes, 6 = Domingo)
   const firstDayOfWeek = useMemo(() => {
@@ -177,7 +199,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
 
     // Ajustar mes si el año es el año máximo y el mes supera el mes máximo
     let targetMonth = displayedMonth;
-    if (maxDate && year === maxDate.getFullYear() && targetMonth > maxDate.getMonth()) {
+    if (year === maxDate?.getFullYear() && targetMonth > maxDate.getMonth()) {
       targetMonth = maxDate.getMonth();
       setDisplayedMonth(targetMonth);
     }
@@ -186,7 +208,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
     let targetDay = Math.min(selectedDate.getDate(), daysInTargetMonth);
 
     // Ajustar si el día excede maxDate
-    if (maxDate && year === maxDate.getFullYear() && targetMonth === maxDate.getMonth()) {
+    if (year === maxDate?.getFullYear() && targetMonth === maxDate.getMonth()) {
       targetDay = Math.min(targetDay, maxDate.getDate());
     }
 
@@ -201,7 +223,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
     const daysInTargetMonth = new Date(displayedYear, monthIndex + 1, 0).getDate();
     let targetDay = Math.min(selectedDate.getDate(), daysInTargetMonth);
 
-    if (maxDate && displayedYear === maxDate.getFullYear() && monthIndex === maxDate.getMonth()) {
+    if (displayedYear === maxDate?.getFullYear() && monthIndex === maxDate.getMonth()) {
       targetDay = Math.min(targetDay, maxDate.getDate());
     }
 
@@ -226,7 +248,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
   const handleSelectToday = () => {
     let target = new Date();
     if (maxDate && target > maxDate) {
-      target = new Date(maxDate.getTime());
+      target = new Date(maxDate);
     }
     setSelectedDate(target);
     setDisplayedYear(target.getFullYear());
@@ -416,9 +438,9 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
             <View style={styles.calendarContainer}>
               {/* Días de la semana */}
               <View style={styles.weekDaysRow}>
-                {WEEK_DAYS.map((wd, i) => (
-                  <Text key={i} style={styles.weekDayText}>
-                    {wd}
+                {WEEK_DAYS.map((day) => (
+                  <Text key={day.id} style={styles.weekDayText}>
+                    {day.label}
                   </Text>
                 ))}
               </View>
@@ -426,13 +448,12 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
               {/* Días del mes */}
               <View style={styles.daysGrid}>
                 {/* Espacios vacíos antes del primer día */}
-                {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-                  <View key={`empty-${i}`} style={styles.emptyDayCell} />
+                {EMPTY_CELL_KEYS.slice(0, firstDayOfWeek).map((cellKey) => (
+                  <View key={cellKey} style={styles.emptyDayCell} />
                 ))}
 
                 {/* Días del 1 al N */}
-                {Array.from({ length: daysInMonth }).map((_, i) => {
-                  const dayNumber = i + 1;
+                {monthDays.map((dayNumber) => {
                   const isSelected =
                     selectedDate.getFullYear() === displayedYear &&
                     selectedDate.getMonth() === displayedMonth &&

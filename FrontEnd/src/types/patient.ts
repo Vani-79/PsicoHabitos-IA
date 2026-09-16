@@ -36,3 +36,16 @@ export interface MySqlPatientRecord {
   password_hash?: string;       // VARCHAR(255) NOT NULL
   created_at: string;           // DATETIME / TIMESTAMP ('YYYY-MM-DD HH:MM:SS')
 }
+
+export interface PatientProfileData {
+  id?: number;
+  nombre: string;
+  apellido_paterno: string;
+  apellido_materno: string;
+  edad: number;
+  fecha_nacimiento: string;     // Formato 'YYYY-MM-DD'
+  genero?: Gender;
+  email: string;
+  fecha_primera_sesion?: string;
+  especialista?: string;
+}

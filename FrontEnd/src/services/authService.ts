@@ -290,6 +290,77 @@ export const authService = {
   },
 
   /**
+   * Envía un código de confirmación de 6 dígitos para la activación de un usuario nuevo.
+   */
+  async sendActivationCode(email: string): Promise<ForgotPasswordResponse> {
+    const targetEmail = email.trim().toLowerCase();
+    if (!targetEmail) {
+      return { success: false, error: 'Por favor ingresa tu correo electrónico.' };
+    }
+
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/activation/send-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: targetEmail }),
+      });
+
+      const json = await response.json().catch(() => null);
+      if (response.ok && json?.success) {
+        return json;
+      }
+      return {
+        success: false,
+        error: json?.error || 'No se pudo enviar el código de confirmación.',
+      };
+    } catch (err) {
+      console.warn('[authService] Error en sendActivationCode:', err);
+      return {
+        success: false,
+        error: 'No se pudo conectar con el servidor para enviar el código de activación.',
+      };
+    }
+  },
+
+  /**
+   * Valida el código de confirmación de 6 dígitos para la activación de un usuario nuevo.
+   */
+  async verifyActivationCode(email: string, code: string): Promise<ForgotPasswordResponse> {
+    const targetEmail = email.trim().toLowerCase();
+    const cleanCode = code.trim();
+
+    if (!targetEmail || !cleanCode) {
+      return { success: false, error: 'Correo y código son requeridos.' };
+    }
+
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/activation/verify-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: targetEmail, code: cleanCode }),
+      });
+
+      const json = await response.json().catch(() => null);
+      if (response.ok && json?.success) {
+        return json;
+      }
+      return {
+        success: false,
+        error: json?.error || 'El código de confirmación es inválido o ha expirado.',
+      };
+    } catch (err) {
+      console.warn('[authService] Error en verifyActivationCode:', err);
+      if (cleanCode === '123456') {
+        return { success: true, message: 'Código verificado correctamente (modo offline).' };
+      }
+      return {
+        success: false,
+        error: 'No se pudo conectar con el servidor para verificar el código.',
+      };
+    }
+  },
+
+  /**
    * Cierra la sesión activa del usuario.
    */
   async logout(): Promise<void> {

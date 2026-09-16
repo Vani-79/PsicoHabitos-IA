@@ -86,6 +86,71 @@ patientRouter.get('/recent', async (req: Request, res: Response): Promise<void> 
   }
 });
 
+// GET /api/patients/profile?email=...&name=...
+patientRouter.get('/profile', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const email = typeof req.query.email === 'string' ? req.query.email.trim().toLowerCase() : '';
+    const name = typeof req.query.name === 'string' ? req.query.name.trim() : '';
+    const identifier = email || name;
+
+    if (!identifier) {
+      res.status(400).json({ success: false, error: 'Se requiere el correo o identificador del paciente' });
+      return;
+    }
+
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT 
+        pac.id,
+        pac.nombre, 
+        pac.apellido_paterno, 
+        pac.apellido_materno, 
+        pac.edad, 
+        DATE_FORMAT(pac.fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, 
+        pac.genero, 
+        pac.email, 
+        DATE_FORMAT(r.fecha_primera_sesion, '%Y-%m-%d') as fecha_primera_sesion,
+        psi.nombre as doctor_nombre,
+        psi.apellidos as doctor_apellidos
+      FROM pacientes pac
+      LEFT JOIN usuarios u ON u.id = pac.usuario_id
+      LEFT JOIN relacion_psicologo_paciente r ON pac.id = r.paciente_id
+      LEFT JOIN psicologos psi ON psi.id = r.psicologo_id
+      WHERE LOWER(pac.email) = ? OR LOWER(u.email) = ? OR pac.nombre = ? OR CONCAT(pac.nombre, ' ', pac.apellido_paterno) = ?
+      LIMIT 1`,
+      [identifier, identifier, identifier, identifier]
+    );
+
+    if (rows.length === 0) {
+      res.status(404).json({ success: false, error: 'Paciente no encontrado en MySQL' });
+      return;
+    }
+
+    const p = rows[0];
+    const especialista = p.doctor_nombre
+      ? `Ps. ${p.doctor_nombre} ${p.doctor_apellidos}`
+      : 'Sin especialista asignado';
+
+    res.json({
+      success: true,
+      data: {
+        id: p.id,
+        nombre: p.nombre,
+        apellido_paterno: p.apellido_paterno,
+        apellido_materno: p.apellido_materno,
+        edad: p.edad,
+        fecha_nacimiento: p.fecha_nacimiento,
+        genero: p.genero,
+        email: p.email,
+        fecha_primera_sesion: p.fecha_primera_sesion,
+        especialista,
+      },
+    });
+  } catch (error) {
+    console.error('Error en GET /api/patients/profile:', error);
+    res.status(500).json({ success: false, error: 'Error al consultar perfil del paciente en MySQL' });
+  }
+});
+
 // GET /api/patients
 patientRouter.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
