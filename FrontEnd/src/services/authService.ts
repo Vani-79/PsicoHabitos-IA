@@ -43,27 +43,39 @@ export const authService = {
         body: JSON.stringify({ email: targetEmail }),
       });
 
-      if (response.ok) {
-        const json = await response.json();
+      const json = await response.json().catch(() => null);
+
+      if (response.ok && json) {
         return json;
       }
+
+      return {
+        success: false,
+        exists: false,
+        requiresPasswordCreation: false,
+        error: json?.error || 'Error al verificar el correo electrónico.',
+      };
     } catch (err) {
       console.warn('[authService] Error al verificar email en backend:', err);
-    }
+      // Fallback local en desarrollo sólo si el usuario existe en mocks de prueba
+      const mockUser = MOCK_USERS[targetEmail];
+      if (mockUser) {
+        return {
+          success: true,
+          exists: true,
+          requiresPasswordCreation: false,
+          role: mockUser.role,
+          name: mockUser.name,
+        };
+      }
 
-    // Fallback local en desarrollo
-    const mockUser = MOCK_USERS[targetEmail];
-    if (mockUser) {
       return {
-        success: true,
-        exists: true,
+        success: false,
+        exists: false,
         requiresPasswordCreation: false,
-        role: mockUser.role,
-        name: mockUser.name,
+        error: 'No se pudo conectar con el servidor. Revisa tu conexión de red.',
       };
     }
-
-    return { success: true, exists: false, requiresPasswordCreation: false };
   },
 
   /**

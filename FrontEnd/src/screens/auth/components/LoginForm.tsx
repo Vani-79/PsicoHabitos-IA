@@ -62,6 +62,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     try {
       const check = await authService.checkEmail(targetEmail);
 
+      if (!check.success && check.error) {
+        Alert.alert('Error de conexión', check.error, [{ text: 'Entendido' }]);
+        return;
+      }
+
       if (!check.exists) {
         Alert.alert(
           'Correo no registrado',
