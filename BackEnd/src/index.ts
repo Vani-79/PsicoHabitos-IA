@@ -33,13 +33,8 @@ const corsOptions: cors.CorsOptions = {
       return callback(null, true);
     }
 
-    // En desarrollo, permitir orígenes locales dinámicos (localhost, 127.0.0.1 o LAN 192.168.x.x)
-    if (
-      process.env.NODE_ENV !== 'production' &&
-      (origin.startsWith('http://localhost:') ||
-        origin.startsWith('http://127.0.0.1:') ||
-        origin.startsWith('https://192.168.'))
-    ) {
+    // En desarrollo, permitir orígenes locales y dinámicos (localhost, LAN dinámico 192.168.x.x, 10.x.x.x, túneles ngrok, expo, etc.)
+    if (process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
 
