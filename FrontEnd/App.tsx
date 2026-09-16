@@ -55,11 +55,8 @@ export default function App() {
         case 'psychologist-register-patient':
           setCurrentScreen('psychologist-dashboard');
           return true;
-        case 'habits':
-        case 'psychologist-dashboard':
-        case 'welcome':
         default:
-          return true;
+          return false;
       }
     };
 
@@ -184,6 +181,7 @@ export default function App() {
       {currentScreen === 'patient-profile' && (
         <PatientProfileScreen
           userName={activeUserName}
+          userEmail={activeUserEmail}
           onNavigateTab={handlePatientTabNavigate}
           onLogout={handlePatientLogout}
         />

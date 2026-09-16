@@ -1,11 +1,9 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Image } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
 
 interface PatientChatbotScreenProps {
-  onBack?: () => void;
   onNavigateTab: (tab: PatientTab) => void;
   userName?: string;
 }

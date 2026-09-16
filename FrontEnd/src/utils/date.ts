@@ -39,7 +39,7 @@ export function parseLocalDate(dateInput: Date | string): Date {
   const parts = dateInput.split('-');
   if (parts.length === 3) {
     const [year, month, day] = parts.map(Number);
-    if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+    if (!Number.isNaN(year) && !Number.isNaN(month) && !Number.isNaN(day)) {
       return new Date(year, month - 1, day);
     }
   }

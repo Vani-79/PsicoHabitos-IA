@@ -1,11 +1,10 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
 
 interface PatientCalendarScreenProps {
-  onBack?: () => void;
   onNavigateTab: (tab: PatientTab) => void;
   userName?: string;
 }

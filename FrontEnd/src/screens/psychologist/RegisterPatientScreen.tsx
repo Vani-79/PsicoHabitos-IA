@@ -94,7 +94,7 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
       nombre: form.nombre.trim(),
       apellido_paterno: form.apellidoPaterno.trim(),
       apellido_materno: form.apellidoMaterno.trim(),
-      edad: parseInt(form.edad, 10) || 0,
+      edad: Number.parseInt(form.edad, 10) || 0,
       fecha_nacimiento: form.fechaNacimiento,        // Columna DATE en MySQL
       genero: form.genero as Gender,                  // ENUM('masculino','femenino','otro')
       fecha_primera_sesion: form.fechaPrimeraSesion,    // Columna DATE en MySQL
@@ -120,6 +120,7 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
         );
       }
     } catch (err) {
+      console.error('Error al registrar paciente:', err);
       Alert.alert('Error', 'Ocurrió un problema de conexión al registrar el paciente.');
     } finally {
       setIsSaving(false);

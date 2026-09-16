@@ -20,6 +20,12 @@ export interface PasswordResetEmailPayload {
   code: string;
 }
 
+export interface ActivationEmailPayload {
+  to: string;
+  userName: string;
+  code: string;
+}
+
 /**
  * Crea o resuelve el transportador de correo nodemailer.
  */
@@ -471,6 +477,142 @@ function getPasswordResetHtml(userName: string, code: string, email: string): st
   `.trim();
 }
 
+/**
+ * Plantilla HTML con diseño profesional para el código de activación / primer acceso.
+ */
+function getActivationCodeHtml(userName: string, code: string, email: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Código de Activación - PsicoHábitos</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #F3F7F5;
+      margin: 0;
+      padding: 24px 16px;
+      color: #1F2937;
+    }
+    .container {
+      max-width: 580px;
+      margin: 0 auto;
+      background-color: #FFFFFF;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 14px rgba(15, 97, 59, 0.08);
+      border: 1px solid #E5EBF0;
+    }
+    .header {
+      background: linear-gradient(135deg, #0F613B 0%, #168A54 100%);
+      padding: 32px 24px;
+      text-align: center;
+      color: #FFFFFF;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .header p {
+      margin: 8px 0 0 0;
+      font-size: 14px;
+      color: #D1FAE5;
+    }
+    .content {
+      padding: 32px 28px;
+      line-height: 1.6;
+    }
+    .greeting {
+      font-size: 17px;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 14px;
+    }
+    .code-box {
+      background: #F0FDF4;
+      border: 2px dashed #168A54;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin: 24px 0;
+    }
+    .code-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 700;
+      color: #0F613B;
+      margin-bottom: 8px;
+    }
+    .code-digits {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: 10px;
+      color: #0F613B;
+    }
+    .warning-box {
+      background-color: #FEF3C7;
+      border-left: 4px solid #F59E0B;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin: 18px 0;
+      font-size: 13px;
+      color: #92400E;
+    }
+    .footer {
+      background-color: #F9FAFB;
+      padding: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #6B7280;
+      border-top: 1px solid #E5EBF0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>PsicoHábitos-IA</h1>
+      <p>Activación de Cuenta y Primer Acceso</p>
+    </div>
+    <div class="content">
+      <div class="greeting">¡Hola, ${userName || 'estimado/a usuario/a'}!</div>
+      <p>
+        Te damos la bienvenida a <strong>PsicoHábitos</strong>. Para completar la activación de tu cuenta asociada a <strong>${email}</strong> y configurar tu contraseña de acceso seguro, utiliza el siguiente código de confirmación:
+      </p>
+      
+      <div class="code-box">
+        <div class="code-label">Código de Activación</div>
+        <div class="code-digits">${code}</div>
+      </div>
+
+      <div class="warning-box">
+        ⏱️ Este código de confirmación expirará en <strong>15 minutos</strong>.
+      </div>
+
+      <p style="font-size: 13px; color: #4B5563;">
+        Ingresa este código en la aplicación para confirmar tu identidad. En el siguiente paso podrás crear tu contraseña personal y revisar el consentimiento legal de confidencialidad (Ley N° 21.719).
+      </p>
+      
+      <p style="font-size: 12px; color: #9CA3AF; margin-top: 24px; border-top: 1px solid #F3F4F6; padding-top: 14px;">
+        Si no reconoces este registro o no eres paciente de PsicoHábitos, puedes desestimar este mensaje.
+      </p>
+    </div>
+    <div class="footer">
+      Este es un correo automático enviado por PsicoHábitos.<br>
+      © ${new Date().getFullYear()} PsicoHábitos. Confidencialidad y seguridad clínica.
+    </div>
+  </div>
+</body>
+</html>
+  `.trim();
+}
+
 export const emailService = {
   /**
    * Envía un correo de confirmación de registro a un paciente.
@@ -572,6 +714,43 @@ export const emailService = {
     console.log(`Para: ${to} (${userName})`);
     console.log(`Asunto: ${subject}`);
     console.log(`CÓDIGO DE 6 DÍGITOS: ${code}`);
+    console.log('Vigencia: 15 minutos');
+    console.log('========================================================================\n');
+    return true;
+  },
+
+  /**
+   * Envía el código de confirmación de 6 dígitos para activación de cuenta / primer acceso.
+   */
+  async sendActivationCode(payload: ActivationEmailPayload): Promise<boolean> {
+    const { to, userName, code } = payload;
+    const from = process.env.SMTP_FROM || '"PsicoHábitos" <notificaciones@psicohabitos.com>';
+    const subject = `${code} es tu código de activación - PsicoHábitos`;
+    const html = getActivationCodeHtml(userName, code, to);
+
+    const transporter = getTransporter();
+
+    if (transporter) {
+      try {
+        const info = await transporter.sendMail({
+          from,
+          to,
+          subject,
+          html,
+        });
+        console.log(`✅ [EmailService] Código de activación enviado exitosamente a ${to} (ID: ${info.messageId})`);
+        return true;
+      } catch (error) {
+        console.error(`❌ [EmailService] Error al enviar código de activación SMTP a ${to}:`, error);
+        return false;
+      }
+    }
+
+    console.log('\n========================================================================');
+    console.log('📧 [EmailService] SIMULACIÓN DE CÓDIGO DE ACTIVACIÓN (Modo Desarrollo)');
+    console.log(`Para: ${to} (${userName})`);
+    console.log(`Asunto: ${subject}`);
+    console.log(`CÓDIGO DE ACTIVACIÓN: ${code}`);
     console.log('Vigencia: 15 minutos');
     console.log('========================================================================\n');
     return true;
