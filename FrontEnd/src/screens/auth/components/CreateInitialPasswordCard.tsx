@@ -20,7 +20,13 @@ interface CreateInitialPasswordCardProps {
   acceptedTerms: boolean;
   setAcceptedTerms: (accepted: boolean) => void;
   onOpenTermsModal: () => void;
-  onSuccess: (email: string, role: UserRole, name: string) => void;
+  onSuccess: (
+    email: string,
+    role: UserRole,
+    name: string,
+    token?: string,
+    rememberMe?: boolean
+  ) => void;
   onBackToLogin: () => void;
 }
 
@@ -102,7 +108,9 @@ export const CreateInitialPasswordCard: React.FC<CreateInitialPasswordCardProps>
                 onSuccess(
                   response.data!.email,
                   response.data!.role,
-                  response.data!.name
+                  response.data!.name,
+                  response.data!.token,
+                  false
                 );
               },
             },

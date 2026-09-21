@@ -23,8 +23,7 @@
   "scripts": {
     "prestart": "node scripts/update-ip.js",
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
     "web": "expo start --web"
   },
   "private": true

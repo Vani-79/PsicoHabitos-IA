@@ -61,7 +61,7 @@ const habitResourcesBySection: Record<HabitSection, HabitResource[]> = {
 interface HabitDetailScreenProps {
   habitKey?: HabitSection;
   habitTitle?: string;
-  onBack: () => void;
+  onBack?: () => void;
   onNavigateTab: (tab: PatientTab) => void;
 }
 
@@ -81,15 +81,7 @@ export const HabitDetailScreen: React.FC<HabitDetailScreenProps> = ({
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={onBack}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="arrow-back" size={24} color="#0F613B" />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>{habitTitle}</Text>
-        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView
@@ -151,16 +143,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#E5EEE8',
     backgroundColor: '#F8FBF9',
   },
-  backButton: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
-  headerSpacer: { width: 32 },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
