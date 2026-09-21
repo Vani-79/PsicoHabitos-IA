@@ -1,15 +1,32 @@
 import React, { useRef } from 'react';
-import { Animated, Image, StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import {
+  Animated,
+  Image,
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
 import { HABIT_CATALOG } from '../../constants/habits';
 
-export type ExerciseHabitKey = 'ansiedad' | 'estres' | 'sueno' | 'ejercicio' | 'alimentacion' | 'hidratacion';
+export type ExerciseHabitKey =
+  | 'ansiedad'
+  | 'estres'
+  | 'sueno'
+  | 'ejercicio'
+  | 'alimentacion'
+  | 'hidratacion';
 
 interface PatientExercisesScreenProps {
   onBack?: () => void;
   onNavigateTab: (tab: PatientTab) => void;
-  onOpenHabit?: (habitKey: ExerciseHabitKey, habitTitle: string) => void;
+  onOpenHabit?: (
+    habitKey: ExerciseHabitKey,
+    habitTitle: string
+  ) => void;
   userName?: string;
 }
 
@@ -24,9 +41,33 @@ interface HabitCardItem {
 }
 
 const habitCards: HabitCardItem[] = [
-  { id: 1, habitKey: 'ansiedad', title: 'Ansiedad', description: 'Respira y recupera la calma.', color: '#FDE2E4', borderColor: '#D97786', image: HABIT_CATALOG.ansiedad.image! },
-  { id: 2, habitKey: 'sueno', title: 'Sueño', description: 'Prepara tu mente para descansar.', color: '#F0E7FF', borderColor: '#8962B8', image: HABIT_CATALOG.sueno.image! },
-  { id: 3, habitKey: 'estres', title: 'Estrés', description: 'Libera tensión y vuelve al presente.', color: '#E3F0FF', borderColor: '#4B83C4', image: HABIT_CATALOG.estres.image! },
+  {
+    id: 1,
+    habitKey: 'ansiedad',
+    title: 'Ansiedad',
+    description: 'Respira y recupera la calma.',
+    color: '#FDE2E4',
+    borderColor: '#D97786',
+    image: HABIT_CATALOG.ansiedad.image!,
+  },
+  {
+    id: 2,
+    habitKey: 'sueno',
+    title: 'Sueño',
+    description: 'Prepara tu mente para descansar.',
+    color: '#F0E7FF',
+    borderColor: '#8962B8',
+    image: HABIT_CATALOG.sueno.image!,
+  },
+  {
+    id: 3,
+    habitKey: 'estres',
+    title: 'Estrés',
+    description: 'Libera tensión y vuelve al presente.',
+    color: '#E3F0FF',
+    borderColor: '#4B83C4',
+    image: HABIT_CATALOG.estres.image!,
+  },
 ];
 
 const HABIT_KEY_BY_TITLE: Record<string, ExerciseHabitKey> = {
@@ -48,7 +89,10 @@ const getHabitKeyFromTitle = (title: string): ExerciseHabitKey => {
 
 const HabitCard: React.FC<{
   item: HabitCardItem;
-  onOpenHabit?: (habitKey: ExerciseHabitKey, habitTitle: string) => void;
+  onOpenHabit?: (
+    habitKey: ExerciseHabitKey,
+    habitTitle: string
+  ) => void;
 }> = ({ item, onOpenHabit }) => {
   const pressAnimation = useRef(new Animated.Value(0)).current;
 
@@ -62,7 +106,9 @@ const HabitCard: React.FC<{
   };
 
   const handlePress = () => {
-    const habitKey = item.habitKey ?? getHabitKeyFromTitle(item.title);
+    const habitKey =
+      item.habitKey ?? getHabitKeyFromTitle(item.title);
+
     onOpenHabit?.(habitKey, item.title);
   };
 
@@ -89,26 +135,48 @@ const HabitCard: React.FC<{
       ]}
     >
       <TouchableOpacity
-        style={[styles.card, { backgroundColor: item.color, borderColor: item.borderColor }]}
+        style={[
+          styles.card,
+          {
+            backgroundColor: item.color,
+            borderColor: item.borderColor,
+          },
+        ]}
         activeOpacity={1}
         onPressIn={() => animatePress(1)}
         onPressOut={() => animatePress(0)}
         onPress={handlePress}
       >
         <View style={styles.imageFrame}>
-          <Image source={item.image} style={styles.cardImage} resizeMode="contain" />
+          <Image
+            source={item.image}
+            style={styles.cardImage}
+            resizeMode="contain"
+          />
         </View>
+
         <View style={styles.cardContent}>
           <Text style={styles.cardTitle}>{item.title}</Text>
-          <Text style={styles.cardDescription} numberOfLines={2}>{item.description}</Text>
-          <Text style={styles.cardSubtitle}>Ver videos</Text>
+
+          <Text
+            style={styles.cardDescription}
+            numberOfLines={2}
+          >
+            {item.description}
+          </Text>
+
+          <Text style={styles.cardSubtitle}>
+            Ver videos
+          </Text>
         </View>
       </TouchableOpacity>
     </Animated.View>
   );
 };
 
-export const PatientExercisesScreen: React.FC<PatientExercisesScreenProps> = ({
+export const PatientExercisesScreen: React.FC<
+  PatientExercisesScreenProps
+> = ({
   onBack,
   onNavigateTab,
   onOpenHabit,
@@ -119,34 +187,66 @@ export const PatientExercisesScreen: React.FC<PatientExercisesScreenProps> = ({
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Ejercicios y Respiraciones</Text>
+        <Text style={styles.headerTitle}>
+          Prácticas de bienestar
+        </Text>
       </View>
 
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom + 80, 100) },
+          {
+            paddingBottom: Math.max(
+              insets.bottom + 80,
+              100
+            ),
+          },
         ]}
       >
-        <View style={styles.introContainer}>
-          <Text style={styles.introTitle}>¿Qué quieres trabajar hoy?</Text>
-          <Text style={styles.introText}>Elige un área y encuentra una práctica breve para sentirte mejor.</Text>
+        {/* TARJETA DE INTRODUCCIÓN */}
+        <View style={styles.introCard}>
+          <View style={styles.introContent}>
+            <Text style={styles.introTitle}>
+              ¿Qué quieres trabajar hoy?
+            </Text>
+
+            <Text style={styles.introText}>
+              Elige un área y encuentra una práctica breve para sentirte mejor.
+            </Text>
+          </View>
+
+          <View style={styles.introIcon}>
+            <Text style={styles.introEmoji}>🌿</Text>
+          </View>
         </View>
 
         <View style={styles.gridContainer}>
           {habitCards.map((item) => (
-            <HabitCard key={item.id} item={item} onOpenHabit={onOpenHabit} />
+            <HabitCard
+              key={item.id}
+              item={item}
+              onOpenHabit={onOpenHabit}
+            />
           ))}
         </View>
       </ScrollView>
 
-      <PatientBottomNav activeTab="exercises" onNavigate={onNavigateTab} />
+      
+
+      <PatientBottomNav
+        activeTab="exercises"
+        onNavigate={onNavigateTab}
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#EAF5EE' },
+  container: {
+    flex: 1,
+    backgroundColor: '#EAF5EE',
+  },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -157,27 +257,65 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5EEE8',
     backgroundColor: '#F8FBF9',
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
+
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 24,
   },
-  introContainer: {
-    marginBottom: 18,
+
+  /* TARJETA DE INTRODUCCIÓN */
+  introCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F4F8F5',
+    borderRadius: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    marginTop: 0,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E0EBE3',
   },
+
+    introIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E4F0E7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 14,
+  },
+
+  introEmoji: {
+    fontSize: 25,
+  },
+
+  introContent: {
+    flex: 1,
+  },
+
   introTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 6,
+    color: '#2F3A35',
+    marginBottom: 5,
   },
+
   introText: {
     fontSize: 14,
-    color: '#5B6473',
     lineHeight: 20,
+    color: '#68736E',
   },
+
   gridContainer: {
     flexDirection: 'column',
     gap: 20,
@@ -189,9 +327,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E9EEF0',
   },
+
   cardAnimated: {
     width: '100%',
   },
+
   card: {
     minHeight: 108,
     borderRadius: 20,
@@ -201,13 +341,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 2,
     justifyContent: 'space-between',
     marginBottom: 0,
   },
+
   imageFrame: {
     width: 96,
     height: 82,
@@ -217,25 +361,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   cardImage: {
     width: '100%',
     height: '100%',
   },
+
   cardContent: {
     flex: 1,
     justifyContent: 'center',
   },
+
   cardTitle: {
     fontSize: 17,
     fontWeight: '700',
     color: '#1F2937',
   },
+
   cardDescription: {
     fontSize: 12,
     lineHeight: 17,
     color: '#475569',
     marginTop: 5,
   },
+
   cardSubtitle: {
     fontSize: 12,
     color: '#475569',

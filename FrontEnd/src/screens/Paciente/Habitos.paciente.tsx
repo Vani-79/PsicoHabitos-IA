@@ -482,8 +482,6 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
           </View>
         </View>
 
-        <Text style={styles.progressDate}>{displayDate}</Text>
-
         <View style={styles.progressCard}>
           <Text style={styles.progressNumber}>{registeredCount}/6</Text>
           <Text style={styles.progressEmoji}>🌱</Text>
@@ -677,15 +675,7 @@ const styles = StyleSheet.create({
   greeting: { fontSize: ms(21), fontWeight: 'bold', color: '#1F2937' },
   welcomeText: { fontSize: ms(12.5), color: '#64748B', marginTop: vs(4), fontWeight: '600' },
   headerDate: { fontSize: ms(13), color: '#6B7280', marginTop: vs(4), fontWeight: '500' },
-  progressDate: {
-    alignSelf: 'flex-end',
-    fontSize: ms(12.5),
-    color: '#6B7280',
-    marginTop: 0,
-    marginBottom: vs(8),
-    fontWeight: '500',
-  },
-
+ 
   // Banner de bloqueo superior
   lockedBannerCard: {
     flexDirection: 'row',

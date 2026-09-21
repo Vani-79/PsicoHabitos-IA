@@ -1,8 +1,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { PsychologistStackParamList } from './types';
-import { PsychologistDashboardScreen } from '../screens/psychologist/PsychologistDashboardScreen';
-import { RegisterPatientScreen } from '../screens/psychologist/RegisterPatientScreen';
+import { PsychologistDashboardScreen } from '../screens/Psicologo/Pantallaprincipal.psicologo';
+import { RegisterPatientScreen } from '../screens/Psicologo/Registropaciente.psicologo';
 import { useAuth } from '../context/AuthContext';
 
 const Stack = createNativeStackNavigator<PsychologistStackParamList>();
