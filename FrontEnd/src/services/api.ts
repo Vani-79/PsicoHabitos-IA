@@ -46,11 +46,20 @@ function getHostIpFromExpo(): string | null {
   return null;
 }
 
+let lastLoggedApiUrl: string | null = null;
+
+function logApiConnectionOnce(url: string) {
+  if (__DEV__ && lastLoggedApiUrl !== url) {
+    lastLoggedApiUrl = url;
+    console.log(`Conectado con  la IP: ${url}`);
+  }
+}
+
 /**
  * Resuelve la URL base de la API backend de forma completamente dinámica:
  * 1. Si EXPO_PUBLIC_API_URL es un túnel público o URL remota (https://, ngrok, loca.lt), tiene máxima prioridad.
  * 2. En producción, utiliza la URL oficial o el valor de EXPO_PUBLIC_API_URL.
- * 3. En dispositivos móviles (iOS/Android en Expo Go o dev client), resuelve la IP dinámica actual de la Mac desde Metro en tiempo real.
+ * 3. En dispositivos móviles (iOS/Android en Expo Go o dev client), resuelve la IP dinámica actual del equipo desde Metro en tiempo real.
  * 4. En Web, utiliza window.location.hostname para sincronizarse automáticamente con el host desde el que se abrió.
  * 5. En emulador Android sin host detectable, recurre a 10.0.2.2.
  * 6. Fallback a localhost:3000.
@@ -66,9 +75,7 @@ export function getApiBaseUrl(): string {
       envUrl.includes('.loca.lt') ||
       envUrl.includes('.trycloudflare.com'))
   ) {
-    if (__DEV__) {
-      console.log(`📡 [API] Usando túnel/backend remoto: ${envUrl}`);
-    }
+    logApiConnectionOnce(envUrl);
     return envUrl;
   }
 
@@ -84,35 +91,40 @@ export function getApiBaseUrl(): string {
       const protocol = window.location.protocol || 'http:';
       if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
         const url = `${protocol}//${hostname}:3000/api`;
-        if (__DEV__) console.log(`📡 [API Web Dinámica] Conectando a: ${url}`);
+        logApiConnectionOnce(url);
         return url;
       }
     }
-    return 'http://localhost:3000/api';
+    const defaultWebUrl = 'http://localhost:3000/api';
+    logApiConnectionOnce(defaultWebUrl);
+    return defaultWebUrl;
   }
 
   // 4. Dispositivos móviles (iOS / Android) en desarrollo: IP dinámica desde Metro
   const devHostIp = getHostIpFromExpo();
   if (devHostIp) {
     const url = `http://${devHostIp}:3000/api`;
-    if (__DEV__) {
-      console.log(`📡 [API Dinámica] Conectando a la IP detectada de tu Mac: ${url}`);
-    }
+    logApiConnectionOnce(url);
     return url;
   }
 
   // 5. Fallback a variable de entorno si tiene una URL configurada
   if (envUrl && envUrl !== 'http://localhost:3000/api') {
+    logApiConnectionOnce(envUrl);
     return envUrl;
   }
 
   // 6. Emulador Android (10.0.2.2 apunta al localhost de la máquina anfitriona)
   if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:3000/api';
+    const url = 'http://10.0.2.2:3000/api';
+    logApiConnectionOnce(url);
+    return url;
   }
 
   // 7. Fallback local estándar (Simulador iOS o localhost)
-  return 'http://localhost:3000/api';
+  const defaultLocalUrl = 'http://localhost:3000/api';
+  logApiConnectionOnce(defaultLocalUrl);
+  return defaultLocalUrl;
 }
 
 export const API_CONFIG = {
