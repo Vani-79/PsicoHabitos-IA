@@ -9,7 +9,6 @@ import {
   Image,
   Alert,
   KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,7 +23,7 @@ import { formatToMySqlDateTime } from '../../utils/date';
 import { validatePatientForm } from '../../utils/validators';
 
 interface RegisterPatientScreenProps {
-  onBack: () => void;
+  onBack?: () => void;
   onNavigateToLogin?: () => void;
   onRegisterSuccess: (record: MySqlPatientRecord) => Promise<{ success: boolean; error?: string } | void> | void;
 }
@@ -145,23 +144,14 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        behavior="height"
+        keyboardVerticalOffset={20}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Botón Volver */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={onBack}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="arrow-back" size={24} color="#0F613B" />
-          </TouchableOpacity>
-
           {/* Encabezado Institucional */}
           <View style={styles.header}>
             <Image
@@ -393,12 +383,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 60,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    marginBottom: 5,
   },
   header: {
     alignItems: 'center',

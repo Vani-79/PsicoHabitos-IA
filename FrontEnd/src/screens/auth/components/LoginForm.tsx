@@ -14,7 +14,13 @@ import { authStyles } from './authStyles';
 
 interface LoginFormProps {
   initialEmail?: string;
-  onSuccess: (email: string, role: UserRole, name: string) => void;
+  onSuccess: (
+    email: string,
+    role: UserRole,
+    name: string,
+    token?: string,
+    rememberMe?: boolean
+  ) => void;
   onNavigateToActivation: (email: string, name: string) => void;
   onNavigateToForgot: (email: string) => void;
 }
@@ -163,7 +169,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           await storageService.clearUserSession();
         }
 
-        onSuccess(response.data.email, response.data.role, response.data.name);
+        onSuccess(
+          response.data.email,
+          response.data.role,
+          response.data.name,
+          response.data.token,
+          rememberMe
+        );
       } else {
 
         Alert.alert('Error de acceso', response.error || 'Contraseña incorrecta. Por favor verifica tus datos.');

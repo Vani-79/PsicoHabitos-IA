@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,10 +7,9 @@ import {
   ScrollView,
   Image,
   KeyboardAvoidingView,
-  Platform,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { UserRole } from '../../constants/auth';
 import { LegalConsentModal } from '../../components/LegalConsentModal';
 import {
@@ -31,9 +30,16 @@ export type AuthViewMode =
   | 'forgot_reset';
 
 interface LoginScreenProps {
-  onBack: () => void;
-  onLoginSuccess: (email: string, role: UserRole, name: string) => void;
+  onBack?: () => void;
+  onLoginSuccess: (
+    email: string,
+    role: UserRole,
+    name: string,
+    token?: string,
+    rememberMe?: boolean
+  ) => void;
 }
+
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
   onBack,
@@ -61,10 +67,27 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         break;
       case 'login':
       default:
-        onBack();
+        onBack?.();
         break;
     }
   };
+
+  // Gestión de botón físico / gesto nativo 'Atrás' de Android
+  useEffect(() => {
+    const onHardwareBack = () => {
+      if (authView !== 'login') {
+        handleTopBack();
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onHardwareBack
+    );
+    return () => backHandler.remove();
+  }, [authView]);
 
   const renderAuthCard = () => {
     switch (authView) {
@@ -148,23 +171,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={styles.flexContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        behavior="height"
+        keyboardVerticalOffset={20}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Botón Volver */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={handleTopBack}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="arrow-back" size={24} color="#0F613B" />
-          </TouchableOpacity>
-
           {/* Encabezado Institucional */}
           <View style={styles.header}>
             <Image
@@ -207,12 +221,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 60,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    marginBottom: 5,
   },
   header: {
     alignItems: 'center',

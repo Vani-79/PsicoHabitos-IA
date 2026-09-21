@@ -20,7 +20,13 @@ import {
 interface ForgotResetPasswordCardProps {
   email: string;
   recoveryCode: string;
-  onSuccess: (email: string, role: UserRole, name: string) => void;
+  onSuccess: (
+    email: string,
+    role: UserRole,
+    name: string,
+    token?: string,
+    rememberMe?: boolean
+  ) => void;
   onBackToLogin: () => void;
 }
 
@@ -98,7 +104,9 @@ export const ForgotResetPasswordCard: React.FC<ForgotResetPasswordCardProps> = (
                 onSuccess(
                   response.data!.email,
                   response.data!.role,
-                  response.data!.name
+                  response.data!.name,
+                  response.data!.token,
+                  false
                 );
               },
             },
