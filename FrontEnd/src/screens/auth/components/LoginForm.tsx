@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Text,
   View,
@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { UserRole } from '../../../constants/auth';
-import { authService } from '../../../services';
+import { authService, storageService } from '../../../services';
 import { authStyles } from './authStyles';
 
 interface LoginFormProps {
@@ -32,6 +32,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const loadRemembered = async () => {
+      if (!initialEmail) {
+        const remembered = await storageService.getRememberedEmail();
+        if (remembered) {
+          setEmail(remembered);
+          setRememberMe(true);
+        }
+      }
+    };
+    loadRemembered();
+  }, [initialEmail]);
+
 
   const validateEmail = (targetEmail: string): boolean => {
     if (!targetEmail) {
@@ -135,8 +149,23 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       }
 
       if (response.success && response.data) {
+        if (rememberMe) {
+          await storageService.saveRememberedEmail(targetEmail);
+          await storageService.saveUserSession({
+            email: response.data.email,
+            role: response.data.role,
+            name: response.data.name,
+            token: response.data.token,
+            rememberMe: true,
+          });
+        } else {
+          await storageService.clearRememberedEmail();
+          await storageService.clearUserSession();
+        }
+
         onSuccess(response.data.email, response.data.role, response.data.name);
       } else {
+
         Alert.alert('Error de acceso', response.error || 'Contraseña incorrecta. Por favor verifica tus datos.');
       }
     } catch (err) {

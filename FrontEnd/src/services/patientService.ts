@@ -3,7 +3,7 @@
  * Permite filtrar pacientes por el especialista autenticado.
  */
 
-import { API_CONFIG, ApiResponse } from './api';
+import { API_CONFIG, ApiResponse, fetchWithAuth } from './api';
 import { MySqlPatientRecord, PatientProfileData } from '../types/patient';
 
 let localMemoryFallback: MySqlPatientRecord[] = [];
@@ -18,7 +18,7 @@ export const patientService = {
     doctorEmail?: string
   ): Promise<ApiResponse<MySqlPatientRecord>> {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/patients`, {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/patients`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...record, doctorEmail }),
@@ -45,7 +45,7 @@ export const patientService = {
 
   /**
    * Obtiene los últimos N pacientes registrados desde MySQL vía backend REST.
-   * Si se especifica doctorEmail, retorna solo los pacientes de ese especialista.
+   * Retorna los pacientes asignados al especialista autenticado.
    */
   async getRecentPatients(limit = 5, doctorEmail?: string): Promise<MySqlPatientRecord[]> {
     try {
@@ -54,7 +54,7 @@ export const patientService = {
         queryParams.append('doctorEmail', doctorEmail);
       }
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}/patients/recent?${queryParams.toString()}`);
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/patients/recent?${queryParams.toString()}`);
       if (response.ok) {
         const json = await response.json();
         if (json.success && Array.isArray(json.data)) {
@@ -68,13 +68,12 @@ export const patientService = {
   },
 
   /**
-   * Obtiene el listado completo de pacientes registrados.
-   * Si se especifica doctorEmail, filtra por ese especialista.
+   * Obtiene el listado completo de pacientes registrados del especialista autenticado.
    */
   async getAllPatients(doctorEmail?: string): Promise<MySqlPatientRecord[]> {
     try {
       const queryParams = doctorEmail ? `?doctorEmail=${encodeURIComponent(doctorEmail)}` : '';
-      const response = await fetch(`${API_CONFIG.BASE_URL}/patients${queryParams}`);
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/patients${queryParams}`);
       if (response.ok) {
         const json = await response.json();
         if (json.success && Array.isArray(json.data)) {
@@ -98,7 +97,8 @@ export const patientService = {
       if (name) queryParams.append('name', name);
 
       const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-      const response = await fetch(`${API_CONFIG.BASE_URL}/patients/profile${queryString}`);
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/patients/profile${queryString}`);
+
       if (response.ok) {
         const json = await response.json();
         if (json.success && json.data) {

@@ -4,6 +4,8 @@ import crypto from 'node:crypto';
 import { pool } from '../config/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { emailService } from '../services/emailService';
+import { generateToken } from '../config/jwt';
+import { authLimiter, otpVerificationLimiter } from '../middlewares/rateLimiter';
 
 export const authRouter = Router();
 
@@ -69,7 +71,7 @@ async function getUserDisplayName(usuarioId: number, rol: string, email: string)
  * POST /api/auth/check-email
  * Comprueba si un correo está registrado y si requiere crear contraseña por primera vez.
  */
-authRouter.post('/check-email', async (req: Request, res: Response): Promise<void> => {
+authRouter.post('/check-email', authLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -141,7 +143,7 @@ authRouter.post('/check-email', async (req: Request, res: Response): Promise<voi
  * POST /api/auth/create-initial-password
  * Permite a un paciente o psicólogo recién registrado crear su contraseña por primera vez.
  */
-authRouter.post('/create-initial-password', async (req: Request, res: Response): Promise<void> => {
+authRouter.post('/create-initial-password', authLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, acceptedTerms } = req.body;
 
@@ -175,7 +177,7 @@ authRouter.post('/create-initial-password', async (req: Request, res: Response):
     );
 
     let usuarioId: number;
-    let rol: string;
+    let rol: 'psicologo' | 'paciente' | 'admin';
 
     if (userRows.length === 0) {
       // Si existe en pacientes pero aún no en usuarios, crearlo
@@ -192,7 +194,7 @@ authRouter.post('/create-initial-password', async (req: Request, res: Response):
         return;
       }
 
-      const passwordHash = bcrypt.hashSync(cleanPassword, 10);
+      const passwordHash = await bcrypt.hash(cleanPassword, 10);
       const [uResult] = await pool.query<ResultSetHeader>(
         "INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) VALUES (?, ?, 'paciente', TRUE, FALSE)",
         [targetEmail, passwordHash]
@@ -203,7 +205,7 @@ authRouter.post('/create-initial-password', async (req: Request, res: Response):
     } else {
       usuarioId = userRows[0].id;
       rol = userRows[0].rol;
-      const passwordHash = bcrypt.hashSync(cleanPassword, 10);
+      const passwordHash = await bcrypt.hash(cleanPassword, 10);
 
       await pool.query(
         'UPDATE usuarios SET password_hash = ?, debe_crear_password = FALSE, activo = TRUE WHERE id = ?',
@@ -224,13 +226,21 @@ authRouter.post('/create-initial-password', async (req: Request, res: Response):
 
     const name = await getUserDisplayName(usuarioId, rol, targetEmail);
 
+    const token = generateToken({
+      userId: usuarioId,
+      email: targetEmail,
+      role: rol,
+    });
+
     res.json({
       success: true,
       message: '¡Contraseña creada exitosamente! Has iniciado sesión.',
       data: {
+        id: usuarioId,
         email: targetEmail,
         role: rol,
         name,
+        token,
       },
     });
   } catch (error) {
@@ -525,7 +535,7 @@ authRouter.post('/register-psychologist', async (req: Request, res: Response): P
  * POST /api/auth/login
  * Inicia sesión verificando credenciales o indicando si debe crear contraseña por primera vez.
  */
-authRouter.post('/login', async (req: Request, res: Response): Promise<void> => {
+authRouter.post('/login', authLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
@@ -572,10 +582,8 @@ authRouter.post('/login', async (req: Request, res: Response): Promise<void> => 
         return;
       }
 
-      // Verificación de contraseña con hash bcrypt o texto plano de respaldo
-      const isPasswordValid =
-        bcrypt.compareSync(inputPassword, user.password_hash) ||
-        inputPassword === user.password_hash;
+      // Verificación de contraseña exclusivamente con hash bcrypt asíncrono seguro
+      const isPasswordValid = await bcrypt.compare(inputPassword, user.password_hash);
 
       if (!isPasswordValid) {
         res.status(401).json({ success: false, error: 'Contraseña incorrecta. Por favor inténtalo de nuevo.' });
@@ -583,13 +591,20 @@ authRouter.post('/login', async (req: Request, res: Response): Promise<void> => 
       }
 
       const name = await getUserDisplayName(user.id, user.rol, user.email);
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        role: user.rol,
+      });
 
       res.json({
         success: true,
         data: {
+          id: user.id,
           email: user.email,
           role: user.rol,
           name,
+          token,
         },
       });
       return;
@@ -636,7 +651,7 @@ authRouter.post('/login', async (req: Request, res: Response): Promise<void> => 
  * POST /api/auth/forgot-password/send-code
  * Genera y envía un código de 6 dígitos para recuperación de contraseña si el correo está registrado.
  */
-authRouter.post('/forgot-password/send-code', async (req: Request, res: Response): Promise<void> => {
+authRouter.post('/forgot-password/send-code', authLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -711,7 +726,7 @@ authRouter.post('/forgot-password/send-code', async (req: Request, res: Response
  * POST /api/auth/forgot-password/verify-code
  * Verifica si el código de 6 dígitos es válido, coincide con el correo y no ha expirado.
  */
-authRouter.post('/forgot-password/verify-code', async (req: Request, res: Response): Promise<void> => {
+authRouter.post('/forgot-password/verify-code', otpVerificationLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, code } = req.body;
     if (!email || !code) {
@@ -756,12 +771,12 @@ authRouter.post('/forgot-password/verify-code', async (req: Request, res: Respon
  * POST /api/auth/forgot-password/reset-password
  * Restablece la contraseña del usuario tras validar el código de 6 dígitos.
  */
-authRouter.post('/forgot-password/reset-password', async (req: Request, res: Response): Promise<void> => {
+authRouter.post('/forgot-password/reset-password', authLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, code, newPassword } = req.body;
 
     if (!email || !code || !newPassword) {
-      res.status(400).json({ success: false, error: 'Todos los campos son requeridos.' });
+      res.status(400).json({ success: false, error: 'Faltan campos obligatorios.' });
       return;
     }
 
@@ -769,14 +784,14 @@ authRouter.post('/forgot-password/reset-password', async (req: Request, res: Res
     const cleanCode = String(code).trim();
     const cleanNewPassword = String(newPassword).trim();
 
-    // 1. Validar complejidad de contraseña
+    // 1. Validar complejidad de la nueva contraseña
     const complexity = validatePasswordComplexity(cleanNewPassword);
     if (!complexity.isValid) {
       res.status(400).json({ success: false, error: complexity.error });
       return;
     }
 
-    // 2. Validar código en MySQL
+    // 2. Verificar que el código sea correcto, no esté usado y no haya expirado
     const [codeRows] = await pool.query<RowDataPacket[]>(
       'SELECT id FROM codigos_recuperacion WHERE email = ? AND codigo = ? AND usado = FALSE AND expira_en > NOW() ORDER BY id DESC LIMIT 1',
       [targetEmail, cleanCode]
@@ -785,7 +800,7 @@ authRouter.post('/forgot-password/reset-password', async (req: Request, res: Res
     if (codeRows.length === 0) {
       res.status(400).json({
         success: false,
-        error: 'El código de verificación es inválido o ya ha expirado.',
+        error: 'El código de verificación es inválido o ha expirado. Por favor solicita uno nuevo.',
       });
       return;
     }
@@ -799,9 +814,9 @@ authRouter.post('/forgot-password/reset-password', async (req: Request, res: Res
     );
 
     let usuarioId: number;
-    let rol: string;
+    let rol: 'psicologo' | 'paciente' | 'admin';
 
-    const passwordHash = bcrypt.hashSync(cleanNewPassword, 10);
+    const passwordHash = await bcrypt.hash(cleanNewPassword, 10);
 
     if (userRows.length === 0) {
       const [pacRows] = await pool.query<RowDataPacket[]>(
@@ -832,14 +847,21 @@ authRouter.post('/forgot-password/reset-password', async (req: Request, res: Res
     await pool.query('UPDATE codigos_recuperacion SET usado = TRUE WHERE id = ?', [codeId]);
 
     const name = await getUserDisplayName(usuarioId, rol, targetEmail);
+    const token = generateToken({
+      userId: usuarioId,
+      email: targetEmail,
+      role: rol,
+    });
 
     res.json({
       success: true,
       message: '¡Tu contraseña ha sido restablecida exitosamente!',
       data: {
+        id: usuarioId,
         email: targetEmail,
         role: rol,
         name,
+        token,
       },
     });
   } catch (error) {
@@ -852,7 +874,7 @@ authRouter.post('/forgot-password/reset-password', async (req: Request, res: Res
  * POST /api/auth/activation/send-code
  * Genera y envía un código de confirmación de 6 dígitos para activación de cuenta / primer acceso.
  */
-authRouter.post('/activation/send-code', async (req: Request, res: Response): Promise<void> => {
+authRouter.post('/activation/send-code', authLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -933,7 +955,7 @@ authRouter.post('/activation/send-code', async (req: Request, res: Response): Pr
  * POST /api/auth/activation/verify-code
  * Valida que el código de 6 dígitos sea correcto, vigente y pertenezca al correo.
  */
-authRouter.post('/activation/verify-code', async (req: Request, res: Response): Promise<void> => {
+authRouter.post('/activation/verify-code', otpVerificationLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, code } = req.body;
     if (!email || !code) {

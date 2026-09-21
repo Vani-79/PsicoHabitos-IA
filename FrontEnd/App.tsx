@@ -15,7 +15,7 @@ import { RegisterPatientScreen } from './src/screens/psychologist/RegisterPatien
 import { UserRole } from './src/constants/auth';
 import { MySqlPatientRecord } from './src/types/patient';
 import { PatientTab } from './src/components/PatientBottomNav';
-import { authService, patientService } from './src/services';
+import { authService, patientService, storageService, authSession } from './src/services';
 
 export type AppScreen =
   | 'welcome'
@@ -36,6 +36,37 @@ export default function App() {
   const [activeUserName, setActiveUserName] = useState<string>('Carlos');
   const [activeUserEmail, setActiveUserEmail] = useState<string>('');
   const [patients, setPatients] = useState<MySqlPatientRecord[]>([]);
+
+  // Reanudación automática de sesión guardada (Auto-Login cuando se marcó "Recuérdame")
+  useEffect(() => {
+    let isMounted = true;
+    const restoreSession = async () => {
+      try {
+        const savedSession = await storageService.getUserSession();
+        if (savedSession && isMounted) {
+          if (savedSession.token) {
+            authSession.setToken(savedSession.token);
+          }
+          setActiveUserName(savedSession.name);
+          setActiveUserEmail(savedSession.email);
+          if (savedSession.role === 'psicologo') {
+            const psychologistPatients = await patientService.getRecentPatients(5, savedSession.email);
+            if (isMounted) setPatients(psychologistPatients);
+            if (isMounted) setCurrentScreen('psychologist-dashboard');
+          } else {
+            if (isMounted) setCurrentScreen('habits');
+          }
+        }
+      } catch (err) {
+        console.warn('[App] Error al restaurar sesión guardada:', err);
+      }
+    };
+
+    restoreSession();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const handleHardwareBack = () => {
@@ -106,16 +137,19 @@ export default function App() {
     }
   };
 
-  const handlePatientLogout = async () => {
+  const handleLogout = async () => {
     try {
       await authService.logout();
+      await storageService.clearAll(); // Elimina completamente tanto la sesión activa como el correo recordado
     } catch (e) {
       console.warn('Error during logout:', e);
     }
     setActiveUserName('');
     setActiveUserEmail('');
-    setCurrentScreen('login');
+    setPatients([]);
+    setCurrentScreen('welcome');
   };
+
 
   const openHabitDetail = (habitKey: HabitSection, habitTitle: string) => {
     setSelectedHabit(habitKey);
@@ -183,7 +217,7 @@ export default function App() {
           userName={activeUserName}
           userEmail={activeUserEmail}
           onNavigateTab={handlePatientTabNavigate}
-          onLogout={handlePatientLogout}
+          onLogout={handleLogout}
         />
       )}
 
@@ -191,7 +225,7 @@ export default function App() {
         <PsychologistDashboardScreen
           doctorName={activeUserName}
           patients={patients}
-          onLogout={() => setCurrentScreen('welcome')}
+          onLogout={handleLogout}
           onRegisterPatient={() => setCurrentScreen('psychologist-register-patient')}
         />
       )}

@@ -6,3 +6,5 @@ export * from './api';
 export * from './authService';
 export * from './patientService';
 export * from './habitService';
+export * from './storageService';
+

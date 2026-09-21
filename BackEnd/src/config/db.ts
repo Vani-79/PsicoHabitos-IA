@@ -3,11 +3,15 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+if (!process.env.DB_PASSWORD && process.env.NODE_ENV === 'production') {
+  throw new Error('❌ [Seguridad] DB_PASSWORD no está configurada en las variables de entorno.');
+}
+
 export const pool = mysql.createPool({
   host: process.env.DB_HOST || '127.0.0.1',
   port: Number(process.env.DB_PORT) || 3306,
   user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'Admin123@',
+  password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'psicohabitos_db',
   waitForConnections: true,
   connectionLimit: 10,
@@ -15,6 +19,7 @@ export const pool = mysql.createPool({
   timezone: process.env.DB_TIMEZONE || '-03:00',
   dateStrings: true,
 });
+
 
 /**
  * Prueba la conectividad con la base de datos al iniciar el servidor
