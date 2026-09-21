@@ -1,9 +1,20 @@
-import React from 'react';
-import { StyleSheet, View, TouchableOpacity, Image } from 'react-native';
+import React, { useRef } from 'react';
+import {
+  Animated,
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export type PatientTab = 'calendar' | 'exercises' | 'chatbot' | 'profile' | 'habits';
+export type PatientTab =
+  | 'calendar'
+  | 'exercises'
+  | 'chatbot'
+  | 'profile'
+  | 'habits';
 
 interface PatientBottomNavProps {
   activeTab?: PatientTab | null;
@@ -16,6 +27,21 @@ export const PatientBottomNav: React.FC<PatientBottomNavProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
 
+  const habitsScale = useRef(new Animated.Value(1)).current;
+  const exercisesScale = useRef(new Animated.Value(1)).current;
+
+  const animateScale = (
+    animation: Animated.Value,
+    active: boolean
+  ) => {
+    Animated.spring(animation, {
+      toValue: active ? 1.18 : 1,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 5,
+    }).start();
+  };
+
   return (
     <View
       style={[
@@ -25,7 +51,7 @@ export const PatientBottomNav: React.FC<PatientBottomNavProps> = ({
         },
       ]}
     >
-      {/* Botón 1: Calendario (Historial de sesiones antiguas y próximas) */}
+      {/* Botón 1: Sesiones */}
       <TouchableOpacity
         style={styles.navButton}
         onPress={() => onNavigate('calendar')}
@@ -33,70 +59,74 @@ export const PatientBottomNav: React.FC<PatientBottomNavProps> = ({
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
         <Ionicons
-          name={activeTab === 'calendar' ? 'calendar' : 'calendar-outline'}
+          name={
+            activeTab === 'calendar'
+              ? 'calendar'
+              : 'calendar-outline'
+          }
           size={26}
-          color={activeTab === 'calendar' ? '#0F613B' : '#737373'}
+          color="#6FAF86"
         />
-        {activeTab === 'calendar' && <View style={styles.activeDot} />}
       </TouchableOpacity>
 
-      {/* Botón 2: Clip (Ejercicios o respiraciones) */}
+      {/* Botón 2: Prácticas de bienestar */}
       <TouchableOpacity
         style={styles.navButton}
-        onPress={() => onNavigate('exercises')}
+        onPress={() => {
+          onNavigate('exercises');
+          animateScale(exercisesScale, true);
+        }}
         activeOpacity={0.7}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
-        <Ionicons
-          name={activeTab === 'exercises' ? 'attach' : 'attach-outline'}
-          size={28}
-          color={activeTab === 'exercises' ? '#0F613B' : '#737373'}
-          style={styles.clipIcon}
-        />
-        {activeTab === 'exercises' && <View style={styles.activeDot} />}
+        <Animated.View
+          style={{
+            transform: [{ scale: exercisesScale }],
+          }}
+        >
+          <Ionicons
+            name={
+              activeTab === 'exercises'
+                ? 'fitness'
+                : 'fitness-outline'
+            }
+            size={27}
+            color="#6FAF86"
+          />
+        </Animated.View>
       </TouchableOpacity>
 
-      {/* Botón 3 (Centro): Hábitos */}
+      {/* Botón 3: Hábitos */}
       <TouchableOpacity
-        style={styles.navButton}
-        onPress={() => onNavigate('habits')}
-        activeOpacity={0.7}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-      >
-        <Image
-          source={require('../../assets/habitos-nav.png')}
-          style={[
-            styles.habitsNavIcon,
-            { tintColor: activeTab === 'habits' ? '#0F613B' : '#737373' },
-          ]}
-          resizeMode="contain"
-        />
-        {activeTab === 'habits' && <View style={styles.activeDot} />}
-      </TouchableOpacity>
+  style={styles.navButton}
+  onPress={() => onNavigate('habits')}
+  activeOpacity={0.7}
+  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+>
+  <Image
+    source={require('../../assets/habitos-nav.png')}
+    style={styles.habitsNavIcon}
+    resizeMode="contain"
+  />
+</TouchableOpacity>
 
-      {/* Botón 4: Chatbot (H.O.P.E.) */}
+      {/* Botón 4: Chatbot H.O.P.E. */}
       <TouchableOpacity
         style={styles.navButton}
         onPress={() => onNavigate('chatbot')}
         activeOpacity={0.7}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
-        <View
-          style={[
-            styles.chatbotIconWrapper,
-            activeTab === 'chatbot' && styles.chatbotIconWrapperActive,
-          ]}
-        >
+        <View style={styles.chatbotIconWrapper}>
           <Image
             source={require('../../assets/h.o.p.e.png')}
             style={styles.chatbotImage}
             resizeMode="contain"
           />
         </View>
-        {activeTab === 'chatbot' && <View style={styles.activeDot} />}
       </TouchableOpacity>
 
-      {/* Botón 5: Perfil con su información */}
+      {/* Botón 5: Perfil */}
       <TouchableOpacity
         style={styles.navButton}
         onPress={() => onNavigate('profile')}
@@ -104,11 +134,14 @@ export const PatientBottomNav: React.FC<PatientBottomNavProps> = ({
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
         <Ionicons
-          name={activeTab === 'profile' ? 'person' : 'person-outline'}
+          name={
+            activeTab === 'profile'
+              ? 'person'
+              : 'person-outline'
+          }
           size={26}
-          color={activeTab === 'profile' ? '#0F613B' : '#737373'}
+          color="#6FAF86"
         />
-        {activeTab === 'profile' && <View style={styles.activeDot} />}
       </TouchableOpacity>
     </View>
   );
@@ -127,13 +160,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FBF9',
     borderTopWidth: 1,
     borderColor: '#E5EEE8',
-    paddingTop: 10,
+    paddingTop: 6,
     elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
     shadowOpacity: 0.06,
     shadowRadius: 4,
   },
+
   navButton: {
     flex: 1,
     alignItems: 'center',
@@ -141,9 +178,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     minHeight: 40,
   },
-  clipIcon: {
-    transform: [{ rotate: '-45deg' }],
-  },
+
   chatbotIconWrapper: {
     width: 32,
     height: 32,
@@ -152,24 +187,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  chatbotIconWrapperActive: {
-    borderWidth: 2,
-    borderColor: '#0F613B',
-    borderRadius: 16,
-  },
+
   chatbotImage: {
     width: 30,
     height: 30,
   },
-  activeDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#0F613B',
-    marginTop: 3,
-  },
+
   habitsNavIcon: {
-    width: 28,
-    height: 28,
+    width: 40,
+    height: 40,
   },
 });

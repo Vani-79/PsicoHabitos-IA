@@ -1,12 +1,12 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { PatientStackParamList } from './types';
-import { DailyCheckInScreen } from '../screens/patient/DailyCheckInScreen';
-import { PatientCalendarScreen } from '../screens/patient/PatientCalendarScreen';
-import { PatientExercisesScreen } from '../screens/patient/PatientExercisesScreen';
-import { HabitDetailScreen } from '../screens/patient/HabitDetailScreen';
-import { PatientChatbotScreen } from '../screens/patient/PatientChatbotScreen';
-import { PatientProfileScreen } from '../screens/patient/PatientProfileScreen';
+import { DailyCheckInScreen } from '../screens/Paciente/Habitos.paciente';
+import { PatientCalendarScreen } from '../screens/Paciente/Sesiones.paciente';
+import { PatientExercisesScreen } from '../screens/Paciente/Ejercicios.paciente';
+import { HabitDetailScreen } from '../screens/Paciente/Ejerciciosvideos.paciente';
+import { PatientChatbotScreen } from '../screens/Paciente/Chathope.paciente';
+import { PatientProfileScreen } from '../screens/Paciente/Perfil.paciente';
 import { PatientTab } from '../components/PatientBottomNav';
 import { useAuth } from '../context/AuthContext';
 

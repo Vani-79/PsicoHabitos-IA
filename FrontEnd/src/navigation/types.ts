@@ -1,5 +1,5 @@
 import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
-import { HabitSection } from '../screens/patient/HabitDetailScreen';
+import { HabitSection } from '../screens/Paciente/Ejerciciosvideos.paciente';
 
 export type AuthStackParamList = {
   Welcome: undefined;
