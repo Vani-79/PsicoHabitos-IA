@@ -2,7 +2,7 @@
  * Servicio de autenticación conectado a la API REST MySQL con detección de creación de contraseña inicial.
  */
 
-import { API_CONFIG, ApiResponse } from './api';
+import { API_CONFIG, ApiResponse, authSession } from './api';
 import { MOCK_USERS, TestUser, UserRole } from '../constants/auth';
 
 export interface AuthLoginResponse extends ApiResponse<TestUser> {
@@ -113,6 +113,9 @@ export const authService = {
       }
 
       if (response.ok && json) {
+        if (json.data?.token) {
+          authSession.setToken(json.data.token);
+        }
         return json;
       } else {
         return { success: false, error: json?.error || 'Credenciales incorrectas o incompletas.' };
@@ -166,6 +169,9 @@ export const authService = {
       const json = await response.json().catch(() => null);
 
       if (response.ok && json?.success) {
+        if (json.data?.token) {
+          authSession.setToken(json.data.token);
+        }
         return json;
       } else {
         return {
@@ -286,6 +292,9 @@ export const authService = {
 
       const json = await response.json().catch(() => null);
       if (response.ok && json?.success) {
+        if (json.data?.token) {
+          authSession.setToken(json.data.token);
+        }
         return json;
       }
       return {
@@ -376,6 +385,6 @@ export const authService = {
    * Cierra la sesión activa del usuario.
    */
   async logout(): Promise<void> {
-    // Listo para invalidar token o limpiar almacenamiento local
+    authSession.clearToken();
   },
 };

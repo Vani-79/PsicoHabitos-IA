@@ -122,9 +122,45 @@ export const API_CONFIG = {
   TIMEOUT_MS: 10000,
 };
 
+let currentToken: string | null = null;
+
+export const authSession = {
+  getToken(): string | null {
+    return currentToken;
+  },
+  setToken(token: string | null): void {
+    currentToken = token;
+  },
+  clearToken(): void {
+    currentToken = null;
+  },
+};
+
+/**
+ * Realiza peticiones HTTP adjuntando automáticamente el encabezado Authorization: Bearer <token>
+ */
+export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(options.headers || {});
+
+  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const token = authSession.getToken();
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  return fetch(url, {
+    ...options,
+    headers,
+  });
+}
+
 /**
  * Simula una pequeña latencia de red para emular comportamiento asíncrono real en desarrollo.
  */
 export const simulateNetworkDelay = (ms: number = 200): Promise<void> => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
+

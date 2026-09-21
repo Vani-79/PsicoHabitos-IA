@@ -3,7 +3,7 @@
  * Proporciona validación robusta y bloqueo del registro según la fecha del servidor de base de datos.
  */
 
-import { API_CONFIG, ApiResponse } from './api';
+import { API_CONFIG, ApiResponse, fetchWithAuth } from './api';
 import { MySqlDailyHabitRecord } from '../types/habits';
 
 export interface TodayHabitStatus {
@@ -35,7 +35,7 @@ export const habitService = {
     }
 
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         `${API_CONFIG.BASE_URL}/habits/today-status?userId=${encodeURIComponent(userId)}`
       );
 
@@ -68,7 +68,7 @@ export const habitService = {
    */
   async saveDailyCheckIn(record: MySqlDailyHabitRecord): Promise<ApiResponse<MySqlDailyHabitRecord>> {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/habits/checkin`, {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/habits/checkin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(record),
@@ -111,7 +111,7 @@ export const habitService = {
   async getHabitsHistory(userId?: string): Promise<MySqlDailyHabitRecord[]> {
     if (userId) {
       try {
-        const response = await fetch(`${API_CONFIG.BASE_URL}/habits/${encodeURIComponent(userId)}`);
+        const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/habits/${encodeURIComponent(userId)}`);
         if (response.ok) {
           const json = await response.json();
           if (json.success && Array.isArray(json.data)) {
@@ -122,6 +122,7 @@ export const habitService = {
         console.warn('[habitService] Backend no alcanzable para historial:', err);
       }
     }
+
 
     if (!userId) return [...localHabitsFallback];
     return localHabitsFallback.filter((h) => h.user_id === userId);

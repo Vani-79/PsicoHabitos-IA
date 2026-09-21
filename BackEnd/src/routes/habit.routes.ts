@@ -1,8 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../config/db';
 import { RowDataPacket } from 'mysql2';
+import { authMiddleware, requireRole } from '../middlewares/authMiddleware';
 
 export const habitRouter = Router();
+
+// Blindaje global: Todas las rutas de hábitos clínicos requieren autenticación JWT
+habitRouter.use(authMiddleware);
 
 /**
  * Resuelve el paciente_id a partir de email, ID numérico o nombre.
@@ -26,24 +30,68 @@ async function resolvePacienteId(identifier: string | number | string[]): Promis
   return null;
 }
 
+
+/**
+ * Obtiene el paciente_id asociado a un usuario autenticado con rol paciente.
+ */
+async function getPacienteIdFromUser(userId: number, email: string): Promise<number | null> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    'SELECT id FROM pacientes WHERE usuario_id = ? OR LOWER(email) = ? LIMIT 1',
+    [userId, email.toLowerCase()]
+  );
+  return rows.length > 0 ? rows[0].id : null;
+}
+
+/**
+ * Verifica si un paciente está formalmente asignado a un psicólogo autenticado.
+ */
+async function isPatientAssignedToPsychologist(psychologistUserId: number, pacienteId: number): Promise<boolean> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT r.id 
+     FROM relacion_psicologo_paciente r
+     JOIN psicologos psi ON psi.id = r.psicologo_id
+     WHERE psi.usuario_id = ? AND r.paciente_id = ?
+     LIMIT 1`,
+    [psychologistUserId, pacienteId]
+  );
+  return rows.length > 0;
+}
+
 /**
  * GET /api/habits/today-status?userId=...
  * Consulta robusta en la base de datos (usando CURDATE() del servidor MySQL)
- * para verificar si el paciente ya completó su registro de hábitos hoy.
+ * con validación estricta de propiedad clínica (Anti-BOLA).
  */
 habitRouter.get('/today-status', async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = typeof req.query.userId === 'string' ? req.query.userId.trim() : '';
+    const user = req.user!;
+    let targetPacienteId: number | null = null;
 
-    if (!userId) {
-      res.status(400).json({ success: false, error: 'Parámetro userId requerido' });
-      return;
+    if (user.role === 'paciente') {
+      targetPacienteId = await getPacienteIdFromUser(user.userId, user.email);
+    } else {
+      // Si es especialista o admin, requiere el parámetro userId
+      const queryUserId = typeof req.query.userId === 'string' ? req.query.userId.trim() : '';
+      if (!queryUserId) {
+        res.status(400).json({ success: false, error: 'Parámetro userId requerido para consultar hábitos del paciente' });
+        return;
+      }
+      targetPacienteId = await resolvePacienteId(queryUserId);
+
+      // Verificación Anti-BOLA para psicólogos
+      if (user.role === 'psicologo' && targetPacienteId) {
+        const isAssigned = await isPatientAssignedToPsychologist(user.userId, targetPacienteId);
+        if (!isAssigned) {
+          res.status(403).json({
+            success: false,
+            error: 'Acceso denegado: El paciente no se encuentra asignado a tu supervisión clínica.',
+          });
+          return;
+        }
+      }
     }
 
-    const pacienteId = await resolvePacienteId(userId);
-
-    if (!pacienteId) {
-      // Si no existe el paciente en DB, responder no bloqueado
+    if (!targetPacienteId) {
       res.json({
         success: true,
         completedToday: false,
@@ -73,7 +121,7 @@ habitRouter.get('/today-status', async (req: Request, res: Response): Promise<vo
       FROM habitos_diarios h
       WHERE h.paciente_id = ? AND h.evaluation_date = CURDATE()
       LIMIT 1`,
-      [pacienteId]
+      [targetPacienteId]
     );
 
     if (rows.length > 0) {
@@ -100,7 +148,6 @@ habitRouter.get('/today-status', async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    // Obtener la fecha del servidor aunque no haya registro hoy
     const [dateRows] = await pool.query<RowDataPacket[]>(
       "SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') as server_date, DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 1 DAY), '%Y-%m-%d') as next_date"
     );
@@ -122,12 +169,19 @@ habitRouter.get('/today-status', async (req: Request, res: Response): Promise<vo
 /**
  * POST /api/habits/checkin
  * Registra los hábitos del día utilizando la fecha del servidor (CURDATE()).
- * Si ya se completó el registro hoy, RECHAZA la solicitud para evitar manipulaciones.
+ * El paciente solo puede registrar para sí mismo (identidad extraída del JWT verificado).
  */
-habitRouter.post('/checkin', async (req: Request, res: Response): Promise<void> => {
+habitRouter.post('/checkin', requireRole('paciente'), async (req: Request, res: Response): Promise<void> => {
   try {
+    const user = req.user!;
+    const pacienteId = await getPacienteIdFromUser(user.userId, user.email);
+
+    if (!pacienteId) {
+      res.status(404).json({ success: false, error: 'No se encontró la ficha clínica del paciente en el sistema.' });
+      return;
+    }
+
     const {
-      user_id,
       comida,
       ejercicio,
       hidratacion,
@@ -137,19 +191,7 @@ habitRouter.post('/checkin', async (req: Request, res: Response): Promise<void> 
       estres,
     } = req.body;
 
-    if (!user_id) {
-      res.status(400).json({ success: false, error: 'user_id es obligatorio' });
-      return;
-    }
-
-    const pacienteId = await resolvePacienteId(user_id);
-
-    if (!pacienteId) {
-      res.status(404).json({ success: false, error: 'Paciente no encontrado en el sistema' });
-      return;
-    }
-
-    // 1. Verificación robusta en el servidor: ¿Ya completó el check-in hoy?
+    // 1. Verificación en el servidor: ¿Ya completó el check-in hoy?
     const [existingToday] = await pool.query<RowDataPacket[]>(
       'SELECT id, DATE_FORMAT(confirmed_at, "%Y-%m-%d %H:%i:%s") as confirmed_at FROM habitos_diarios WHERE paciente_id = ? AND evaluation_date = CURDATE() LIMIT 1',
       [pacienteId]
@@ -172,13 +214,13 @@ habitRouter.post('/checkin', async (req: Request, res: Response): Promise<void> 
        VALUES (?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         pacienteId,
-        Number(comida) || 3,
-        Number(ejercicio) || 3,
-        Number(hidratacion) || 2.0,
-        Number(ansiedad) || 3,
-        Number(sueno) || 3,
-        sueno_horas ? Number(sueno_horas) : null,
-        Number(estres) || 3,
+        Math.min(Math.max(Number(comida) || 3, 1), 5),
+        Math.min(Math.max(Number(ejercicio) || 3, 1), 5),
+        Math.max(Number(hidratacion) || 2.0, 0),
+        Math.min(Math.max(Number(ansiedad) || 3, 1), 5),
+        Math.min(Math.max(Number(sueno) || 3, 1), 5),
+        sueno_horas ? Math.max(Number(sueno_horas), 0) : null,
+        Math.min(Math.max(Number(estres) || 3, 1), 5),
       ]
     );
 
@@ -199,20 +241,40 @@ habitRouter.post('/checkin', async (req: Request, res: Response): Promise<void> 
     });
   } catch (error) {
     console.error('Error en POST /api/habits/checkin:', error);
-    res.status(500).json({ success: false, error: 'Error al registrar check-in diario en MySQL' });
+    res.status(500).json({ success: false, error: 'Error al registrar check-in diario' });
   }
 });
 
 /**
  * GET /api/habits/:userId
- * Obtiene el historial de registros de hábitos para un paciente específico.
+ * Obtiene el historial de registros de hábitos con verificación estricta de propiedad (Anti-BOLA).
  */
 habitRouter.get('/:userId', async (req: Request, res: Response): Promise<void> => {
   try {
+    const user = req.user!;
     const { userId } = req.params;
-    const pacienteId = await resolvePacienteId(userId);
+    let targetPacienteId: number | null = null;
 
-    if (!pacienteId) {
+    if (user.role === 'paciente') {
+      // Paciente solo puede ver su propio historial
+      targetPacienteId = await getPacienteIdFromUser(user.userId, user.email);
+    } else {
+      // Especialista o admin
+      targetPacienteId = await resolvePacienteId(userId);
+
+      if (user.role === 'psicologo' && targetPacienteId) {
+        const isAssigned = await isPatientAssignedToPsychologist(user.userId, targetPacienteId);
+        if (!isAssigned) {
+          res.status(403).json({
+            success: false,
+            error: 'Acceso denegado: El paciente no se encuentra asignado a tu supervisión clínica.',
+          });
+          return;
+        }
+      }
+    }
+
+    if (!targetPacienteId) {
       res.json({ success: true, data: [] });
       return;
     }
@@ -234,7 +296,7 @@ habitRouter.get('/:userId', async (req: Request, res: Response): Promise<void> =
       JOIN pacientes p ON p.id = h.paciente_id
       WHERE h.paciente_id = ?
       ORDER BY h.evaluation_date DESC`,
-      [pacienteId]
+      [targetPacienteId]
     );
 
     res.json({ success: true, data: rows });

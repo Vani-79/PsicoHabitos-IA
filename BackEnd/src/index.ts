@@ -1,10 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
 import { testDbConnection } from './config/db';
 import { authRouter } from './routes/auth.routes';
 import { patientRouter } from './routes/patient.routes';
 import { habitRouter } from './routes/habit.routes';
+import { generalLimiter } from './middlewares/rateLimiter';
 
 dotenv.config();
 
@@ -12,7 +14,15 @@ const app = express();
 app.disable('x-powered-by');
 const PORT = Number(process.env.PORT) || 3000;
 
+// Configuración segura de cabeceras HTTP con Helmet
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+
 // Configuración segura de CORS
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())
   : [
@@ -48,6 +58,7 @@ const corsOptions: cors.CorsOptions = {
 // Middlewares
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use('/api', generalLimiter);
 
 // Verificación de estado del servidor (Health Check)
 app.get('/api/health', (_req, res) => {

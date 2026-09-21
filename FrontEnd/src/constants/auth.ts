@@ -1,10 +1,13 @@
 export type UserRole = 'paciente' | 'psicologo';
 
 export interface TestUser {
+  id?: number;
   email: string;
   role: UserRole;
   name: string;
+  token?: string;
 }
+
 
 export const MOCK_USERS: Record<string, TestUser> = {
   'roberto@gmail.com': {
