@@ -70,7 +70,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartLogin }) =>
             <View style={styles.featureTextContainer}>
               <Text style={styles.featureTitle}>Monitoreo de Hábitos</Text>
               <Text style={styles.featureDescription}>
-                Registro diario de sueño, hidratación, ánimo y niveles de estrés.
+                Registro diario de sueño, alimentación, hidratación, ejercicio, ansiedad y niveles de estrés.
               </Text>
             </View>
           </View>

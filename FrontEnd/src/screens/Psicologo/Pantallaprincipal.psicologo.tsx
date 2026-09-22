@@ -10,11 +10,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+
+
 interface PsychologistDashboardScreenProps {
   doctorName: string;
   patients: MySqlPatientRecord[];
   onLogout: () => void;
   onRegisterPatient: () => void;
+  onSelectPatient: (patient: MySqlPatientRecord) => void;
 }
 
 export const PsychologistDashboardScreen: React.FC<PsychologistDashboardScreenProps> = ({
@@ -22,6 +25,7 @@ export const PsychologistDashboardScreen: React.FC<PsychologistDashboardScreenPr
   patients,
   onLogout,
   onRegisterPatient,
+  onSelectPatient
 }) => {
   const recentPatients = patients.slice(-5).reverse();
 
@@ -83,9 +87,11 @@ export const PsychologistDashboardScreen: React.FC<PsychologistDashboardScreenPr
             </View>
           ) : (
             recentPatients.map((patient, index) => (
-              <View
+              <TouchableOpacity
                 key={`${patient.email}-${index}`}
                 style={styles.patientCard}
+                onPress={() => onSelectPatient(patient)}
+                activeOpacity={0.8}
               >
                 <View style={styles.patientAccent} />
                 <Text style={styles.patientName}>
@@ -103,7 +109,7 @@ export const PsychologistDashboardScreen: React.FC<PsychologistDashboardScreenPr
                 <Text style={styles.patientDetail}>
                   Primera sesión: {patient.fecha_primera_sesion}
                 </Text>
-              </View>
+              </TouchableOpacity>
             ))
           )}
         </View>

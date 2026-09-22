@@ -59,7 +59,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       return false;
     }
     if (!targetEmail.includes('@') || !targetEmail.includes('.')) {
-      Alert.alert('Email inválido', 'Ingresa un formato de correo válido (ej. usuario@email.com).');
+      Alert.alert('Email inválido', 'Ingresa un formato de correo válido');
       return false;
     }
     return true;
@@ -211,7 +211,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       </Text>
       <Text style={authStyles.cardSubtitle}>
         {loginStep === 'email'
-          ? 'Ingresa tu correo para continuar a tu espacio seguro'
+          ? 'Ingresa tu correo para continuar'
           : 'Ingresa tu contraseña para acceder a tu cuenta'}
       </Text>
 
@@ -222,7 +222,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             <Text style={authStyles.inputLabel}>Correo Electrónico</Text>
             <TextInput
               style={authStyles.input}
-              placeholder="ejemplo@email.com"
+              placeholder="Usuario@email.com"
               placeholderTextColor="#9CA3AF"
               value={email}
               onChangeText={setEmail}

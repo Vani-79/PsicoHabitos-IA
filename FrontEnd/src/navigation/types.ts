@@ -1,5 +1,6 @@
 import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HabitSection } from '../screens/Paciente/Ejerciciosvideos.paciente';
+import { MySqlPatientRecord } from '../types/patient';
 
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -18,6 +19,7 @@ export type PatientStackParamList = {
 export type PsychologistStackParamList = {
   PsychologistDashboard: undefined;
   RegisterPatient: undefined;
+  PatientDetail: { patient: MySqlPatientRecord };
 };
 
 // Tipos auxiliares para navegación tipada en componentes

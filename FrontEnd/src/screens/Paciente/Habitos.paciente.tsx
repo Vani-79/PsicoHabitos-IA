@@ -482,29 +482,28 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
           </View>
         </View>
 
-        <View style={styles.progressCard}>
-          <Text style={styles.progressNumber}>{registeredCount}/6</Text>
-          <Text style={styles.progressEmoji}>🌱</Text>
-          <View style={styles.progressTextGroup}>
-            <Text style={styles.progressText}>
-              {isLockedToday ? 'Hábitos completados hoy' : 'Hábitos evaluados'}
-            </Text>
-            {!isLockedToday && registeredCount < 6 && (
-              <Text style={styles.progressHelpText}>
-                Te faltan {6 - registeredCount} por completar
-              </Text>
-            )}
-          </View>
-        </View>
-
         {isLoadingStatus && (
           <View style={{ paddingVertical: 1, alignItems: 'center' }}>
             <ActivityIndicator size="small" color="#0F613B" />
           </View>
         )}
 
-        {/* Cuadrícula de hábitos */}
+        {/* Tarjeta grande: progreso + cuadrícula de hábitos */}
         <View style={styles.grid}>
+          <View style={styles.progressCard}>
+            <Text style={styles.progressNumber}>{registeredCount}/6</Text>
+            <Text style={styles.progressEmoji}>🌱</Text>
+            <View style={styles.progressTextGroup}>
+              <Text style={styles.progressText}>
+                {isLockedToday ? 'Hábitos completados hoy' : 'Hábitos evaluados'}
+              </Text>
+              {!isLockedToday && registeredCount < 6 && (
+                <Text style={styles.progressHelpText}>
+                  Te faltan {6 - registeredCount} por completar
+                </Text>
+              )}
+            </View>
+          </View>
           {HABIT_KEYS.map((key) => {
             const item = HABIT_CATALOG[key];
             const currentVal = habits[key];
@@ -563,7 +562,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
               </TouchableOpacity>
             );
           })}
-        </View>
+        
 
         {/* Sección inferior: Bloqueado vs Botón de Confirmación */}
         {isLockedToday ? (
@@ -606,6 +605,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
             </View>
           )
         )}
+        </View>
       </ScrollView>
 
       {/* Modal de calificación */}
@@ -667,13 +667,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: '#DCEEDF',
+    borderRadius: ms(24),
+    borderBottomLeftRadius: ms(6),
+    paddingVertical: vs(16),
+    paddingHorizontal: s(20),
     marginTop: 0,
-    marginBottom: vs(22),
+    marginBottom: vs(32),
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
   greetingRow: { flexDirection: 'row', alignItems: 'center' },
-  greeting: { fontSize: ms(21), fontWeight: 'bold', color: '#1F2937' },
-  welcomeText: { fontSize: ms(12.5), color: '#64748B', marginTop: vs(4), fontWeight: '600' },
+  greeting: { fontSize: ms(21), fontWeight: '600', color: '#0F613B' },
+  welcomeText: { fontSize: ms(13), color: '#3F6A4B', marginTop: vs(2), fontWeight: '500' },
   headerDate: { fontSize: ms(13), color: '#6B7280', marginTop: vs(4), fontWeight: '500' },
  
   // Banner de bloqueo superior
@@ -711,13 +716,14 @@ const styles = StyleSheet.create({
   },
 
   progressCard: {
+    width:'100%',
     flexDirection: 'row',
     borderWidth: 1,
     borderColor: '#D9ECDC',
     borderRadius: ms(18),
     paddingVertical: vs(12),
     paddingHorizontal: s(14),
-    backgroundColor: '#F7FCF8',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     gap: s(10),
@@ -788,9 +794,17 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: ms(15.5), fontWeight: '700', color: '#1F2937' },
   cardSubtitle: { fontSize: ms(11.5), color: '#475569', marginTop: vs(4) },
 
-  confirmationSection: { marginTop: vs(22), alignItems: 'center' },
+  confirmationSection:
+   { 
+    width: '100%',
+    marginTop: vs(16),
+    paddingTop: vs(14),
+    borderTopColor: '#F1F5F9',
+    alignItems: 'center' 
+    },
+    
   globalConfirmButton: {
-    backgroundColor: '#D9DEE3',
+    backgroundColor: '#0F613B',
     width: '85%',
     maxWidth: s(320),
     alignSelf: 'center',
@@ -798,13 +812,10 @@ const styles = StyleSheet.create({
     paddingVertical: vs(12),
     borderRadius: ms(14),
     borderWidth: 1,
-    borderColor: '#B8C0C8',
+    borderColor: '#0F613B',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#64748B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
+    shadowOpacity: 0,
     elevation: 1,
   },
   globalConfirmDisabled: { backgroundColor: '#F3F4F6', borderColor: '#E1E5E9', shadowOpacity: 0 },

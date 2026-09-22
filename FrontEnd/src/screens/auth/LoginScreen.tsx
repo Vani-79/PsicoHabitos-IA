@@ -211,7 +211,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAF9',
+    backgroundColor: '#FFFFFF',
   },
   flexContainer: {
     flex: 1,
