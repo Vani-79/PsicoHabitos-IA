@@ -39,7 +39,7 @@ if (currentEnv.includes('https://') || currentEnv.includes('ngrok') || currentEn
 
 const ip = getLocalIp();
 if (ip) {
-  console.log(`🌐 [IP Auto-Detect] IP local actual de tu Mac: ${ip}`);
+  console.log(`🌐 [IP Auto-Detect] Conectado con  la IP: ${ip}`);
   console.log(`📡 [IP Auto-Detect] Expo y la app conectarán automáticamente a http://${ip}:3000/api`);
 } else {
   console.warn('⚠️ [IP Auto-Detect] No se detectó una IP externa activa.');
