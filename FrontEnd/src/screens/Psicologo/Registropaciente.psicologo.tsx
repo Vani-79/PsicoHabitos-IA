@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,6 +8,7 @@ import {
   ScrollView,
   Image,
   Alert,
+  BackHandler,
   KeyboardAvoidingView,
   ActivityIndicator,
 } from 'react-native';
@@ -20,7 +21,9 @@ import {
   MySqlPatientRecord,
 } from '../../types/patient';
 import { formatToMySqlDateTime } from '../../utils/date';
-import { validatePatientForm } from '../../utils/validators';
+import { isValidEmail, validatePatientForm } from '../../utils/validators';
+
+
 
 interface RegisterPatientScreenProps {
   onBack?: () => void;
@@ -34,6 +37,7 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
   onRegisterSuccess,
 }) => {
   const [isSaving, setIsSaving] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [form, setForm] = useState<PatientRegistrationForm>({
     nombre: '',
     apellidoPaterno: '',
@@ -45,12 +49,50 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
     email: '',
   });
 
+  useEffect(() => {
+  const onBackPress = () => {
+    Alert.alert(
+      '¿Salir del registro?',
+      'Si sales ahora, perderás los datos ingresados y el paciente no será registrado.',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Salir',
+          style: 'destructive',
+          onPress: () => {
+            onBack?.();
+          },
+        },
+      ]
+    );
+
+    return true;
+  };
+
+  const subscription = BackHandler.addEventListener(
+    'hardwareBackPress',
+    onBackPress
+  );
+
+  return () => subscription.remove();
+}, [onBack]);
+
   // Estados para abrir los modales de calendario
   const [showBirthDatePicker, setShowBirthDatePicker] = useState(false);
   const [showSessionDatePicker, setShowSessionDatePicker] = useState(false);
 
   const updateField = (field: keyof PatientRegistrationForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleBlur = (field: keyof PatientRegistrationForm) => {
+    setTouched((prev) => ({
+      ...prev,
+      [field]: true,
+    }));
   };
 
   // Selección de Fecha de Nacimiento desde el modal de calendario
@@ -177,12 +219,29 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
                 Nombre <Text style={styles.requiredStar}>*</Text>
               </Text>
               <TextInput
-                style={styles.input}
-                placeholder="Ej. Valentina"
-                placeholderTextColor="#9CA3AF"
-                value={form.nombre}
-                onChangeText={(text) => updateField('nombre', text)}
-              />
+                  style={[
+                    styles.input,
+                    touched.nombre &&
+                      !form.nombre.trim() &&
+                      styles.inputErrorBorder,
+                  ]}
+                  placeholder="Ingresa tu nombre"
+                  placeholderTextColor="#9CA3AF"
+                  value={form.nombre}
+                  onChangeText={(text) =>
+                    updateField(
+                      'nombre',
+                      text.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'-]/g, '')
+                    )
+                  }
+                  onBlur={() => handleBlur('nombre')}
+                />
+
+                {touched.nombre && !form.nombre.trim() && (
+                  <Text style={styles.fieldErrorText}>
+                    Este campo no puede estar vacío.
+                  </Text>
+                )}
             </View>
 
             {/* Apellido Paterno */}
@@ -191,12 +250,29 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
                 Apellido Paterno <Text style={styles.requiredStar}>*</Text>
               </Text>
               <TextInput
-                style={styles.input}
-                placeholder="Ej. Pérez"
-                placeholderTextColor="#9CA3AF"
-                value={form.apellidoPaterno}
-                onChangeText={(text) => updateField('apellidoPaterno', text)}
-              />
+                  style={[
+                    styles.input,
+                    touched.apellidoPaterno &&
+                      !form.apellidoPaterno.trim() &&
+                      styles.inputErrorBorder,
+                  ]}
+                  placeholder="Ingresa tu apellido paterno"
+                  placeholderTextColor="#9CA3AF"
+                  value={form.apellidoPaterno}
+                  onChangeText={(text) =>
+                    updateField(
+                      'apellidoPaterno',
+                      text.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'-]/g, '')
+                    )
+                  }
+                  onBlur={() => handleBlur('apellidoPaterno')}
+                />
+
+                {touched.apellidoPaterno && !form.apellidoPaterno.trim() && (
+                  <Text style={styles.fieldErrorText}>
+                    Este campo no puede estar vacío.
+                  </Text>
+                )}
             </View>
 
             {/* Apellido Materno */}
@@ -205,12 +281,29 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
                 Apellido Materno <Text style={styles.requiredStar}>*</Text>
               </Text>
               <TextInput
-                style={styles.input}
-                placeholder="Ej. González"
-                placeholderTextColor="#9CA3AF"
-                value={form.apellidoMaterno}
-                onChangeText={(text) => updateField('apellidoMaterno', text)}
-              />
+                  style={[
+                    styles.input,
+                    touched.apellidoMaterno &&
+                      !form.apellidoMaterno.trim() &&
+                      styles.inputErrorBorder,
+                  ]}
+                  placeholder="Ingresa tu apellido materno"
+                  placeholderTextColor="#9CA3AF"
+                  value={form.apellidoMaterno}
+                  onChangeText={(text) =>
+                    updateField(
+                      'apellidoMaterno',
+                      text.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'-]/g, '')
+                    )
+                  }
+                  onBlur={() => handleBlur('apellidoMaterno')}
+                />
+
+                {touched.apellidoMaterno && !form.apellidoMaterno.trim() && (
+                  <Text style={styles.fieldErrorText}>
+                    Este campo no puede estar vacío.
+                  </Text>
+                )}
             </View>
 
             {/* Selector de Fecha de Nacimiento tipo Calendario */}
@@ -242,12 +335,9 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
                 <Text style={styles.inputLabel}>Edad</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Ej. 26"
                   placeholderTextColor="#9CA3AF"
                   value={form.edad}
-                  onChangeText={(text) => updateField('edad', text)}
-                  keyboardType="numeric"
-                  maxLength={3}
+                   editable={false}
                 />
               </View>
 
@@ -312,21 +402,36 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
               <Text style={styles.inputLabel}>
                 Email del Paciente <Text style={styles.requiredStar}>*</Text>
               </Text>
+
               <TextInput
                 style={[
                   styles.input,
-                  form.email.length > 0 && !form.email.includes('@') && styles.inputErrorBorder,
+                  touched.email &&
+                    (!form.email.trim() || !isValidEmail(form.email)) &&
+                    styles.inputErrorBorder,
                 ]}
                 placeholder="paciente@email.com"
                 placeholderTextColor="#9CA3AF"
                 value={form.email}
                 onChangeText={(text) => updateField('email', text)}
+                onBlur={() => handleBlur('email')}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
-              {form.email.length > 0 && !form.email.includes('@') && (
-                <Text style={styles.fieldErrorText}>El correo debe contener un '@'</Text>
+
+              {touched.email && !form.email.trim() && (
+                <Text style={styles.fieldErrorText}>
+                  Este campo no puede estar vacío.
+                </Text>
               )}
+
+              {touched.email &&
+                form.email.trim() &&
+                !isValidEmail(form.email) && (
+                  <Text style={styles.fieldErrorText}>
+                    Ingresa un correo electrónico válido.
+                  </Text>
+                )}
             </View>
 
             {/* Modal de Calendario para Fecha de Nacimiento */}
@@ -376,8 +481,10 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAF9',
+    backgroundColor: '#FFFFFF',
   },
+
+  
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
@@ -464,14 +571,14 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
   inputErrorBorder: {
-    borderColor: '#EF4444',
+    borderColor: '#DC2626',
+    borderWidth: 1,
   },
+
   fieldErrorText: {
-    fontSize: 11.5,
-    color: '#EF4444',
-    marginTop: 4,
-    marginLeft: 2,
-    fontWeight: '500',
+    color: '#DC2626',
+    fontSize: 12,
+    marginTop: 5,
   },
   datePickerTrigger: {
     flexDirection: 'row',

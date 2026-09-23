@@ -46,9 +46,14 @@ export function isValidEmail(email: string): boolean {
 /**
  * Comprueba si una edad numérica es válida y cumple con la edad mínima requerida.
  */
-export function isValidAge(age: string | number, minAge = 16): boolean {
+export function isValidAge(age: string | number, minAge = 16, maxAge = 96): boolean {
   const parsed = typeof age === 'number' ? age : Number.parseInt(age, 10);
-  return !Number.isNaN(parsed) && parsed >= minAge;
+
+  return (
+    !Number.isNaN(parsed) &&
+    parsed >= minAge &&
+    parsed <= maxAge
+  );
 }
 
 /**
