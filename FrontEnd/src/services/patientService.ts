@@ -68,6 +68,29 @@ export const patientService = {
   },
 
   /**
+   * Obtiene los pacientes que tienen consulta o cita programada para el día de hoy.
+   */
+  async getTodayPatients(doctorEmail?: string): Promise<MySqlPatientRecord[]> {
+    try {
+      const queryParams = doctorEmail ? `?doctorEmail=${encodeURIComponent(doctorEmail)}` : '';
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/patients/today${queryParams}`);
+      if (response.ok) {
+        const json = await response.json();
+        if (json.success && Array.isArray(json.data)) {
+          return json.data;
+        }
+      }
+    } catch (err) {
+      console.warn('[patientService] Backend no alcanzable para pacientes de hoy:', err);
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    return localMemoryFallback.filter(
+      (p) => p.fecha_primera_sesion === todayStr
+    );
+  },
+
+  /**
    * Obtiene el listado completo de pacientes registrados del especialista autenticado.
    */
   async getAllPatients(doctorEmail?: string): Promise<MySqlPatientRecord[]> {

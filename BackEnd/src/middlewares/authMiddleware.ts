@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken, TokenPayload } from '../config/jwt';
+import { pool } from '../config/db';
+import { RowDataPacket } from 'mysql2';
 
 // Extender la interfaz Request de Express para incluir req.user tipado
 declare global {
@@ -72,3 +74,47 @@ export function requireRole(...allowedRoles: Array<'psicologo' | 'paciente' | 'a
     next();
   };
 }
+
+/**
+ * Middleware Trigger Unificado de Suscripción:
+ * Bloquea cualquier acción de escritura, creación o visualización de hábitos
+ * si la suscripción del especialista no está activa o se encuentra vencida.
+ */
+export async function requireActiveSubscription(req: Request, res: Response, next: NextFunction): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ success: false, error: 'Sesión no autenticada.' });
+    return;
+  }
+
+  // Si no es psicólogo (ej. admin o paciente), no se aplica restricción de suscripción de especialista
+  if (req.user.role !== 'psicologo') {
+    next();
+    return;
+  }
+
+  try {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT suscripcion_activa, suscripcion_fin,
+              (suscripcion_fin >= NOW() AND suscripcion_activa = 1) AS is_valid
+       FROM psicologos
+       WHERE usuario_id = ?
+       LIMIT 1`,
+      [req.user.userId]
+    );
+
+    if (rows.length === 0 || !rows[0].is_valid) {
+      res.status(403).json({
+        success: false,
+        error: 'Suscripción Finalizada comuníquese con el administrador para renovarla',
+        subscriptionExpired: true,
+      });
+      return;
+    }
+
+    next();
+  } catch (err) {
+    console.error('[requireActiveSubscription] Error validando suscripción:', err);
+    res.status(500).json({ success: false, error: 'Error interno verificando estado de suscripción.' });
+  }
+}
+

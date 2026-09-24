@@ -1,12 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../config/db';
 import { RowDataPacket } from 'mysql2';
-import { authMiddleware, requireRole } from '../middlewares/authMiddleware';
+import { authMiddleware, requireRole, requireActiveSubscription } from '../middlewares/authMiddleware';
 
 export const habitRouter = Router();
 
 // Blindaje global: Todas las rutas de hábitos clínicos requieren autenticación JWT
 habitRouter.use(authMiddleware);
+// Si quien consulta hábitos es un psicólogo, exige suscripción activa y vigente
+habitRouter.use(requireActiveSubscription);
 
 /**
  * Resuelve el paciente_id a partir de email, ID numérico o nombre.

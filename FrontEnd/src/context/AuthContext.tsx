@@ -7,7 +7,7 @@ import React, {
   useCallback,
   ReactNode,
 } from 'react';
-import { TestUser } from '../constants/auth';
+import { TestUser, UserRole } from '../constants/auth';
 import { MySqlPatientRecord } from '../types/patient';
 import {
   authService,
@@ -23,6 +23,7 @@ export interface AuthContextType {
   patients: MySqlPatientRecord[];
   login: (userData: TestUser, rememberMe?: boolean) => Promise<void>;
   logout: () => Promise<void>;
+  switchRole: (targetRole: UserRole) => Promise<boolean>;
   registerPatient: (record: MySqlPatientRecord) => Promise<ApiResponse<MySqlPatientRecord>>;
   refreshPatients: () => Promise<void>;
 }
@@ -46,10 +47,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             authSession.setToken(saved.token);
           }
           const currentUser: TestUser = {
+            id: saved.id,
             email: saved.email,
             role: saved.role,
             name: saved.name,
             token: saved.token,
+            availableRoles: saved.availableRoles,
+            hasMultipleRoles: saved.hasMultipleRoles,
+            subscription: saved.subscription,
           };
           setUser(currentUser);
 
@@ -82,11 +87,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (rememberMe) {
         await storageService.saveRememberedEmail(userData.email);
         await storageService.saveUserSession({
+          id: userData.id,
           email: userData.email,
           role: userData.role,
           name: userData.name,
           token: userData.token,
           rememberMe: true,
+          availableRoles: userData.availableRoles,
+          hasMultipleRoles: userData.hasMultipleRoles,
+          subscription: userData.subscription,
         });
       } else {
         await storageService.clearRememberedEmail();
@@ -134,6 +143,59 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     [user?.email, refreshPatients]
   );
 
+  const switchRole = useCallback(
+    async (targetRole: UserRole): Promise<boolean> => {
+      try {
+        setIsLoading(true);
+        const res = await authService.switchRole(targetRole);
+        if (res.success && res.data) {
+          if (res.data.token) {
+            authSession.setToken(res.data.token);
+          }
+          const updatedUser: TestUser = {
+            id: res.data.id,
+            email: res.data.email,
+            role: res.data.role,
+            name: res.data.name,
+            token: res.data.token,
+            availableRoles: res.data.availableRoles,
+            hasMultipleRoles: res.data.hasMultipleRoles,
+            subscription: res.data.subscription,
+          };
+          setUser(updatedUser);
+
+          const saved = await storageService.getUserSession();
+          if (saved) {
+            await storageService.saveUserSession({
+              ...saved,
+              role: updatedUser.role,
+              name: updatedUser.name,
+              token: updatedUser.token,
+              availableRoles: updatedUser.availableRoles,
+              hasMultipleRoles: updatedUser.hasMultipleRoles,
+              subscription: updatedUser.subscription,
+            });
+          }
+
+          if (targetRole === 'psicologo') {
+            const list = await patientService.getRecentPatients(5, updatedUser.email);
+            setPatients(list);
+          } else {
+            setPatients([]);
+          }
+          return true;
+        }
+        return false;
+      } catch (err) {
+        console.warn('[AuthContext] Error cambiando de rol:', err);
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
   const value = useMemo(
     () => ({
       user,
@@ -141,10 +203,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       patients,
       login,
       logout,
+      switchRole,
       registerPatient,
       refreshPatients,
     }),
-    [user, isLoading, patients, login, logout, registerPatient, refreshPatients]
+    [user, isLoading, patients, login, logout, switchRole, registerPatient, refreshPatients]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -7,21 +7,22 @@ async function main() {
   const nombre = args[0] || process.env.PSICO_NOMBRE;
   const apellidos = args[1] || process.env.PSICO_APELLIDOS;
   const email = args[2] || process.env.PSICO_EMAIL;
+  const meses = Math.max(1, Number(args[3] || process.env.PSICO_MESES) || 1);
 
   if (!nombre || !apellidos || !email) {
     console.log(`
 Uso del comando:
-  node scripts/register-psychologist.js "<Nombre>" "<Apellidos>" "<Correo>"
+  node scripts/register-psychologist.js "<Nombre>" "<Apellidos>" "<Correo>" [Meses=1]
 
-Ejemplo:
-  node scripts/register-psychologist.js "Claudia" "Rojas Mery" "claudia.rojas@gmail.com"
+Ejemplo (Plan Mensual por defecto):
+  node scripts/register-psychologist.js "Claudia" "Rojas Mery" "claudia.rojas@gmail.com" 1
     `);
     process.exit(1);
   }
 
   const targetEmail = String(email).trim().toLowerCase();
 
-  console.log(`\n⏳ Registrando nuevo especialista: ${nombre} ${apellidos} (${targetEmail})...`);
+  console.log(`\n⏳ Registrando nuevo especialista: ${nombre} ${apellidos} (${targetEmail}) con ${meses} mes(es) de suscripción...`);
 
   const conn = await mysql.createConnection({
     host: process.env.DB_HOST || '127.0.0.1',
@@ -32,34 +33,46 @@ Ejemplo:
   });
 
   try {
-    // 1. Validar si el correo ya existe
+    // 1. Validar si ya está registrado en psicologos
+    const [existingPsicos] = await conn.query(
+      'SELECT id FROM psicologos WHERE email = ? LIMIT 1',
+      [targetEmail]
+    );
+
+    if (existingPsicos.length > 0) {
+      console.error(`❌ Error: El correo "${targetEmail}" ya se encuentra registrado como especialista en el sistema.`);
+      process.exit(1);
+    }
+
     const [existingUsers] = await conn.query(
       'SELECT id, rol FROM usuarios WHERE email = ? LIMIT 1',
       [targetEmail]
     );
 
+    let usuarioId;
+
     if (existingUsers.length > 0) {
-      console.error(`❌ Error: El correo "${targetEmail}" ya se encuentra registrado en el sistema (rol: ${existingUsers[0].rol}).`);
-      process.exit(1);
+      usuarioId = existingUsers[0].id;
+      await conn.query("UPDATE usuarios SET rol = 'ambos' WHERE id = ?", [usuarioId]);
+      console.log(`ℹ️ Usuario existente detectado (ID: ${usuarioId}). Se habilitó rol dual 'ambos'.`);
+    } else {
+      // 2. Crear en usuarios
+      const [uResult] = await conn.query(
+        `INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) 
+         VALUES (?, NULL, 'psicologo', TRUE, TRUE)`,
+        [targetEmail]
+      );
+      usuarioId = uResult.insertId;
     }
 
-    // 2. Crear en usuarios
-    const [uResult] = await conn.query(
-      `INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) 
-       VALUES (?, NULL, 'psicologo', TRUE, TRUE)`,
-      [targetEmail]
-    );
-
-    const usuarioId = uResult.insertId;
-
-    // 3. Insertar en psicologos
+    // 3. Insertar en psicologos con suscripción
     await conn.query(
-      `INSERT INTO psicologos (usuario_id, nombre, apellidos, email) 
-       VALUES (?, ?, ?, ?)`,
-      [usuarioId, nombre.trim(), apellidos.trim(), targetEmail]
+      `INSERT INTO psicologos (usuario_id, nombre, apellidos, email, suscripcion_meses, suscripcion_inicio, suscripcion_fin, suscripcion_activa) 
+       VALUES (?, ?, ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? MONTH), TRUE)`,
+      [usuarioId, nombre.trim(), apellidos.trim(), targetEmail, meses, meses]
     );
 
-    console.log(`✅ [Base de Datos] Especialista guardado con éxito (Usuario ID: ${usuarioId}).`);
+    console.log(`✅ [Base de Datos] Especialista guardado con éxito con ${meses} mes(es) de suscripción (Usuario ID: ${usuarioId}).`);
 
     // 3. Enviar correo de bienvenida al especialista
     console.log(`📧 Enviando correo de bienvenida a ${targetEmail}...`);

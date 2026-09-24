@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { MySqlPatientRecord } from '../../types/patient';
 import { DatePickerModal } from '../../components/DatePickerModal';
+import { useAuth } from '../../context/AuthContext';
 
 type Duracion = '30' | '45' | '60';
 type Modalidad = 'presencial' | 'online';
@@ -31,6 +32,7 @@ interface Session {
 interface PatientDetailScreenProps {
   patient: MySqlPatientRecord;
   onBack: () => void;
+  onScheduleSession?: () => void;
 }
 
 const TIME_SLOTS = [
@@ -59,6 +61,9 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
   const [modalidad, setModalidad] = useState<Modalidad>('presencial');
   const [motivo, setMotivo] = useState('');
 
+  const { user } = useAuth();
+  const isSubscriptionActive = user?.subscription ? user.subscription.isActive : true;
+
   const resetForm = () => {
     setFecha('');
     setHora('');
@@ -68,6 +73,13 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
   };
 
   const openScheduleModal = () => {
+    if (!isSubscriptionActive) {
+      Alert.alert(
+        'Suscripción Finalizada',
+        'Suscripción Finalizada comuníquese con el administrador para renovarla'
+      );
+      return;
+    }
     resetForm();
     setModalVisible(true);
   };
@@ -115,18 +127,24 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
         </View>
 
         <TouchableOpacity
-          style={styles.scheduleButton}
+          style={[styles.scheduleButton, !isSubscriptionActive && { backgroundColor: '#9CA3AF' }]}
           onPress={openScheduleModal}
-          activeOpacity={0.85}
+          activeOpacity={isSubscriptionActive ? 0.85 : 0.6}
         >
           <View style={styles.scheduleIconWrapper}>
-            <Ionicons name="calendar" size={22} color="#FFFFFF" />
+            <Ionicons name={isSubscriptionActive ? 'calendar' : 'lock-closed'} size={22} color="#FFFFFF" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.scheduleTitle}>Agendar nueva sesión</Text>
-            <Text style={styles.scheduleSubtitle}>Programa una cita con este paciente</Text>
+            <Text style={styles.scheduleTitle}>
+              {isSubscriptionActive ? 'Agendar nueva sesión' : 'Agendar sesión (Bloqueado)'}
+            </Text>
+            <Text style={styles.scheduleSubtitle}>
+              {isSubscriptionActive
+                ? 'Programa una cita con este paciente'
+                : 'Suscripción finalizada: comuníquese con el administrador'}
+            </Text>
           </View>
-          <Ionicons name="chevron-forward" size={22} color="#A8DED3" />
+          <Ionicons name="chevron-forward" size={22} color={isSubscriptionActive ? '#A8DED3' : '#FCA5A5'} />
         </TouchableOpacity>
 
         <Text style={styles.historyTitle}>Historial de sesiones</Text>

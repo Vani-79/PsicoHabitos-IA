@@ -322,4 +322,74 @@ export const authStyles = StyleSheet.create({
     fontWeight: '700',
     textDecorationLine: 'underline',
   },
+  portalContainer: {
+    marginVertical: 12,
+  },
+  portalCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  portalCardActive: {
+    borderColor: '#0F613B',
+    backgroundColor: '#F0FDF4',
+  },
+  portalIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E8F5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  portalIconCirclePac: {
+    backgroundColor: '#E0F2FE',
+  },
+  portalInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  portalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 3,
+  },
+  portalSubtitle: {
+    fontSize: 12.5,
+    color: '#6B7280',
+    lineHeight: 17,
+  },
+  portalBadge: {
+    backgroundColor: '#DCFCE7',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  portalBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#0F613B',
+    textTransform: 'uppercase',
+  },
+  portalBadgePac: {
+    backgroundColor: '#E0F2FE',
+  },
+  portalBadgeTextPac: {
+    color: '#0369A1',
+  },
 });
+

@@ -2,11 +2,21 @@
  * Servicio de autenticación conectado a la API REST MySQL con detección de creación de contraseña inicial.
  */
 
-import { API_CONFIG, ApiResponse, authSession } from './api';
-import { MOCK_USERS, TestUser, UserRole } from '../constants/auth';
+import { API_CONFIG, ApiResponse, authSession, fetchWithAuth } from './api';
+import { MOCK_USERS, TestUser, UserRole, PsychologistProfileData } from '../constants/auth';
+
+export interface RoleOptionInfo {
+  role: UserRole;
+  title: string;
+  subtitle: string;
+  name: string;
+}
 
 export interface AuthLoginResponse extends ApiResponse<TestUser> {
   requiresPasswordCreation?: boolean;
+  requiresRoleSelection?: boolean;
+  availableRoles?: UserRole[];
+  rolesInfo?: RoleOptionInfo[];
 }
 
 export interface CheckEmailResponse {
@@ -14,6 +24,8 @@ export interface CheckEmailResponse {
   exists: boolean;
   requiresPasswordCreation: boolean;
   role?: UserRole;
+  availableRoles?: UserRole[];
+  hasMultipleRoles?: boolean;
   name?: string;
   error?: string;
 }
@@ -82,7 +94,7 @@ export const authService = {
    * Valida credenciales e inicia sesión del usuario (paciente o psicólogo).
    * Si el usuario no tiene contraseña creada, retorna requiresPasswordCreation: true.
    */
-  async login(email: string, password?: string): Promise<AuthLoginResponse> {
+  async login(email: string, password?: string, selectedRole?: UserRole): Promise<AuthLoginResponse> {
     const targetEmail = email.trim().toLowerCase();
     const cleanPassword = password ? password.trim() : '';
 
@@ -94,7 +106,7 @@ export const authService = {
       const response = await fetch(`${API_CONFIG.BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: targetEmail, password: cleanPassword }),
+        body: JSON.stringify({ email: targetEmail, password: cleanPassword, selectedRole }),
       });
 
       const json = await response.json().catch(() => null);
@@ -108,6 +120,22 @@ export const authService = {
             email: json.email,
             role: json.role,
             name: json.name,
+          },
+        };
+      }
+
+      if (json?.requiresRoleSelection) {
+        return {
+          success: true,
+          requiresRoleSelection: true,
+          availableRoles: json.availableRoles,
+          rolesInfo: json.rolesInfo,
+          data: {
+            email: json.email,
+            role: json.availableRoles?.[0] || 'psicologo',
+            name: json.rolesInfo?.[0]?.name || 'Usuario',
+            availableRoles: json.availableRoles,
+            hasMultipleRoles: true,
           },
         };
       }
@@ -142,6 +170,42 @@ export const authService = {
         name: isPsychologist ? `Ps. ${capitalized}` : capitalized,
       },
     };
+  },
+
+  /**
+   * Cambia el portal activo (especialista <-> paciente) sin cerrar sesión.
+   */
+  async switchRole(targetRole: UserRole): Promise<AuthLoginResponse> {
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/switch-role`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authSession.getToken() ? { Authorization: `Bearer ${authSession.getToken()}` } : {}),
+        },
+        body: JSON.stringify({ targetRole }),
+      });
+
+      const json = await response.json().catch(() => null);
+
+      if (response.ok && json && json.success) {
+        if (json.data?.token) {
+          authSession.setToken(json.data.token);
+        }
+        return json;
+      }
+
+      return {
+        success: false,
+        error: json?.error || 'No se pudo cambiar de portal.',
+      };
+    } catch (err) {
+      console.warn('[authService] Error al cambiar de rol en backend:', err);
+      return {
+        success: false,
+        error: 'Error de conexión al cambiar de portal.',
+      };
+    }
   },
 
   /**
@@ -379,6 +443,24 @@ export const authService = {
         error: 'No se pudo conectar con el servidor para verificar el código.',
       };
     }
+  },
+
+  /**
+   * Obtiene la información del perfil del psicólogo autenticado desde MySQL.
+   */
+  async getPsychologistProfile(): Promise<PsychologistProfileData | null> {
+    try {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/auth/psychologist-profile`);
+      if (response.ok) {
+        const json = await response.json();
+        if (json.success && json.data) {
+          return json.data;
+        }
+      }
+    } catch (err) {
+      console.warn('[authService] Error obteniendo perfil del especialista:', err);
+    }
+    return null;
   },
 
   /**

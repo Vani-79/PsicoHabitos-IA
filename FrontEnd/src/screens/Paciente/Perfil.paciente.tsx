@@ -3,8 +3,10 @@ import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert, ActivityIn
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
+import { ProfileRoleHeader } from '../../components/ProfileRoleHeader';
 import { patientService } from '../../services/patientService';
 import { PatientProfileData } from '../../types/patient';
+import { useAuth } from '../../context/AuthContext';
 
 interface PatientProfileScreenProps {
   onNavigateTab: (tab: PatientTab) => void;
@@ -36,8 +38,15 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
   onLogout,
 }) => {
   const insets = useSafeAreaInsets();
+  const { user, switchRole } = useAuth();
   const [profile, setProfile] = useState<PatientProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const canSwitchToPsychologist =
+    Boolean(user?.hasMultipleRoles) ||
+    Boolean(profile?.hasMultipleRoles) ||
+    Boolean(user?.availableRoles?.includes('psicologo')) ||
+    Boolean(profile?.availableRoles?.includes('psicologo'));
 
   useEffect(() => {
     let isMounted = true;
@@ -191,10 +200,18 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Encabezado */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Mi Perfil</Text>
-      </View>
+      {/* Encabezado con selector desplegable desde 'Mi Perfil' */}
+      <ProfileRoleHeader
+        title="Mi Perfil"
+        currentRole="paciente"
+        canSwitch={canSwitchToPsychologist}
+        onSwitchRole={async (targetRole) => {
+          const success = await switchRole(targetRole);
+          if (!success) {
+            Alert.alert('Error', 'No se pudo cambiar al perfil de psicólogo.');
+          }
+        }}
+      />
 
       <ScrollView
         contentContainerStyle={[
@@ -348,7 +365,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 20,
     shadowColor: '#DC2626',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,

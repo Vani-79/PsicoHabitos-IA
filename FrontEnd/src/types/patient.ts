@@ -48,4 +48,6 @@ export interface PatientProfileData {
   email: string;
   fecha_primera_sesion?: string;
   especialista?: string;
+  availableRoles?: ('paciente' | 'psicologo')[];
+  hasMultipleRoles?: boolean;
 }

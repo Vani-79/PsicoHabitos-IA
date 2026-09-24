@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   id INT AUTO_INCREMENT PRIMARY KEY,
   email VARCHAR(120) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NULL,
-  rol ENUM('psicologo', 'paciente', 'admin') NOT NULL,
+  rol ENUM('psicologo', 'paciente', 'ambos', 'admin') NOT NULL DEFAULT 'paciente',
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   debe_crear_password BOOLEAN NOT NULL DEFAULT FALSE,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -40,12 +40,18 @@ CREATE TABLE IF NOT EXISTS psicologos (
   nombre VARCHAR(60) NOT NULL,
   apellidos VARCHAR(80) NOT NULL,
   email VARCHAR(120) NOT NULL UNIQUE,
+  suscripcion_meses INT NOT NULL DEFAULT 1,
+  suscripcion_inicio DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  suscripcion_fin DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  suscripcion_activa BOOLEAN NOT NULL DEFAULT TRUE,
+  suscripcion_notas TEXT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_psicologos_usuario
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-  INDEX idx_psicologos_email (email)
+  INDEX idx_psicologos_email (email),
+  INDEX idx_psicologos_suscripcion (suscripcion_activa, suscripcion_fin)
 ) ENGINE=InnoDB;
 
 -- ------------------------------------------------------------------------------
@@ -221,5 +227,107 @@ CREATE TABLE IF NOT EXISTS codigos_recuperacion (
   INDEX idx_codigos_email_codigo (email, codigo, usado)
 ) ENGINE=InnoDB;
 
+-- ------------------------------------------------------------------------------
+-- 12. TRIGGERS UNIFICADOS (Suscripción y Ética Clínica)
+-- ------------------------------------------------------------------------------
+DELIMITER $$
 
+-- Trigger unificado para relación psicólogo-paciente (creación de nuevos pacientes)
+DROP TRIGGER IF EXISTS trg_relacion_psicologo_paciente_unificado$$
+CREATE TRIGGER trg_relacion_psicologo_paciente_unificado
+BEFORE INSERT ON relacion_psicologo_paciente
+FOR EACH ROW
+BEGIN
+  DECLARE v_activa BOOLEAN;
+  DECLARE v_fin DATETIME;
+  DECLARE v_psico_usuario INT;
+  DECLARE v_pac_usuario INT;
 
+  -- 1. Control unificado de suscripción activa
+  SELECT suscripcion_activa, suscripcion_fin 
+  INTO v_activa, v_fin 
+  FROM psicologos 
+  WHERE id = NEW.psicologo_id;
+
+  IF v_activa IS NOT TRUE OR v_fin < NOW() THEN
+    SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT = 'Suscripción Finalizada comuníquese con el administrador para renovarla';
+  END IF;
+
+  -- 2. Control de ética clínica (Anti-autoatención)
+  SELECT usuario_id INTO v_psico_usuario FROM psicologos WHERE id = NEW.psicologo_id;
+  SELECT usuario_id INTO v_pac_usuario FROM pacientes WHERE id = NEW.paciente_id;
+
+  IF v_psico_usuario IS NOT NULL AND v_pac_usuario IS NOT NULL AND v_psico_usuario = v_pac_usuario THEN
+    SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT = 'Violación de ética clínica: Un psicólogo no puede ser asignado como paciente de sí mismo.';
+  END IF;
+END$$
+
+DROP TRIGGER IF EXISTS trg_no_autoatencion_relacion_update$$
+CREATE TRIGGER trg_no_autoatencion_relacion_update
+BEFORE UPDATE ON relacion_psicologo_paciente
+FOR EACH ROW
+BEGIN
+  DECLARE v_psico_usuario INT;
+  DECLARE v_pac_usuario INT;
+
+  SELECT usuario_id INTO v_psico_usuario FROM psicologos WHERE id = NEW.psicologo_id;
+  SELECT usuario_id INTO v_pac_usuario FROM pacientes WHERE id = NEW.paciente_id;
+
+  IF v_psico_usuario IS NOT NULL AND v_pac_usuario IS NOT NULL AND v_psico_usuario = v_pac_usuario THEN
+    SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT = 'Violación de ética clínica: Un psicólogo no puede ser asignado como paciente de sí mismo.';
+  END IF;
+END$$
+
+-- Trigger unificado para citas y sesiones clínicas
+DROP TRIGGER IF EXISTS trg_citas_sesiones_unificado$$
+CREATE TRIGGER trg_citas_sesiones_unificado
+BEFORE INSERT ON citas_sesiones
+FOR EACH ROW
+BEGIN
+  DECLARE v_activa BOOLEAN;
+  DECLARE v_fin DATETIME;
+  DECLARE v_psico_usuario INT;
+  DECLARE v_pac_usuario INT;
+
+  -- 1. Control unificado de suscripción activa
+  SELECT suscripcion_activa, suscripcion_fin 
+  INTO v_activa, v_fin 
+  FROM psicologos 
+  WHERE id = NEW.psicologo_id;
+
+  IF v_activa IS NOT TRUE OR v_fin < NOW() THEN
+    SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT = 'Suscripción Finalizada comuníquese con el administrador para renovarla';
+  END IF;
+
+  -- 2. Control de ética clínica (Anti-autoatención)
+  SELECT usuario_id INTO v_psico_usuario FROM psicologos WHERE id = NEW.psicologo_id;
+  SELECT usuario_id INTO v_pac_usuario FROM pacientes WHERE id = NEW.paciente_id;
+
+  IF v_psico_usuario IS NOT NULL AND v_pac_usuario IS NOT NULL AND v_psico_usuario = v_pac_usuario THEN
+    SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT = 'Un especialista no puede agendar citas clínicas consigo mismo.';
+  END IF;
+END$$
+
+DROP TRIGGER IF EXISTS trg_no_autoatencion_citas_update$$
+CREATE TRIGGER trg_no_autoatencion_citas_update
+BEFORE UPDATE ON citas_sesiones
+FOR EACH ROW
+BEGIN
+  DECLARE v_psico_usuario INT;
+  DECLARE v_pac_usuario INT;
+
+  SELECT usuario_id INTO v_psico_usuario FROM psicologos WHERE id = NEW.psicologo_id;
+  SELECT usuario_id INTO v_pac_usuario FROM pacientes WHERE id = NEW.paciente_id;
+
+  IF v_psico_usuario IS NOT NULL AND v_pac_usuario IS NOT NULL AND v_psico_usuario = v_pac_usuario THEN
+    SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT = 'Un especialista no puede agendar citas clínicas consigo mismo.';
+  END IF;
+END$$
+
+DELIMITER ;

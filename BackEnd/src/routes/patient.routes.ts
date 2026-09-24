@@ -2,7 +2,8 @@ import { Router, Request, Response } from 'express';
 import { pool } from '../config/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { emailService } from '../services/emailService';
-import { authMiddleware, requireRole } from '../middlewares/authMiddleware';
+import { authMiddleware, requireRole, requireActiveSubscription } from '../middlewares/authMiddleware';
+import { getUserAvailableRoles } from './auth.routes';
 
 export const patientRouter = Router();
 
@@ -89,6 +90,91 @@ patientRouter.get('/recent', requireRole('psicologo', 'admin'), async (req: Requ
 });
 
 /**
+ * GET /api/patients/today
+ * Retorna los pacientes que tienen una consulta o cita el mismo día que se está revisando el sistema (CURDATE()).
+ * Verifica tanto citas_sesiones (para hoy) como relacion_psicologo_paciente (fecha_primera_sesion hoy).
+ */
+patientRouter.get('/today', requireRole('psicologo', 'admin'), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const psicologoId = await getPsicologoIdByUserId(req.user!.userId);
+
+    if (!psicologoId && req.user!.role !== 'admin') {
+      res.status(403).json({
+        success: false,
+        error: 'No se encontró un perfil de especialista asociado a tu cuenta.',
+      });
+      return;
+    }
+
+    let rows: RowDataPacket[] = [];
+
+    if (psicologoId) {
+      [rows] = await pool.query<RowDataPacket[]>(
+        `SELECT DISTINCT
+          pac.id,
+          pac.nombre, 
+          pac.apellido_paterno, 
+          pac.apellido_materno, 
+          pac.edad, 
+          DATE_FORMAT(pac.fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, 
+          pac.genero, 
+          pac.email, 
+          DATE_FORMAT(r.fecha_primera_sesion, '%Y-%m-%d') as fecha_primera_sesion,
+          DATE_FORMAT(pac.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
+          COALESCE(DATE_FORMAT(cs.fecha_hora_inicio, '%H:%i'), '09:00') as hora_cita,
+          COALESCE(cs.modalidad, 'presencial') as modalidad_cita,
+          COALESCE(cs.fecha_hora_inicio, r.fecha_primera_sesion) as fecha_orden
+        FROM pacientes pac
+        JOIN relacion_psicologo_paciente r ON pac.id = r.paciente_id
+        LEFT JOIN citas_sesiones cs ON cs.paciente_id = pac.id 
+          AND cs.psicologo_id = r.psicologo_id 
+          AND DATE(cs.fecha_hora_inicio) = CURDATE()
+          AND cs.estado != 'cancelada'
+        WHERE r.psicologo_id = ?
+          AND (
+            r.fecha_primera_sesion = CURDATE()
+            OR DATE(cs.fecha_hora_inicio) = CURDATE()
+          )
+        ORDER BY fecha_orden ASC`,
+        [psicologoId]
+      );
+    } else {
+      [rows] = await pool.query<RowDataPacket[]>(
+        `SELECT DISTINCT
+          pac.id,
+          pac.nombre, 
+          pac.apellido_paterno, 
+          pac.apellido_materno, 
+          pac.edad, 
+          DATE_FORMAT(pac.fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, 
+          pac.genero, 
+          pac.email, 
+          DATE_FORMAT(r.fecha_primera_sesion, '%Y-%m-%d') as fecha_primera_sesion,
+          DATE_FORMAT(pac.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
+          COALESCE(DATE_FORMAT(cs.fecha_hora_inicio, '%H:%i'), '09:00') as hora_cita,
+          COALESCE(cs.modalidad, 'presencial') as modalidad_cita,
+          COALESCE(cs.fecha_hora_inicio, r.fecha_primera_sesion) as fecha_orden
+        FROM pacientes pac
+        LEFT JOIN relacion_psicologo_paciente r ON pac.id = r.paciente_id
+        LEFT JOIN citas_sesiones cs ON cs.paciente_id = pac.id 
+          AND DATE(cs.fecha_hora_inicio) = CURDATE()
+          AND cs.estado != 'cancelada'
+        WHERE (
+          r.fecha_primera_sesion = CURDATE()
+          OR DATE(cs.fecha_hora_inicio) = CURDATE()
+        )
+        ORDER BY fecha_orden ASC`
+      );
+    }
+
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error('Error en GET /api/patients/today:', error);
+    res.status(500).json({ success: false, error: 'Error al consultar pacientes del día' });
+  }
+});
+
+/**
  * GET /api/patients/profile?email=...&name=...
  * Consulta la ficha clínica con validación estricta de propiedad (Ownership Check / Anti-BOLA):
  * - Paciente: solo puede consultar su propia ficha.
@@ -167,6 +253,9 @@ patientRouter.get('/profile', async (req: Request, res: Response): Promise<void>
       ? `Ps. ${p.doctor_nombre} ${p.doctor_apellidos}`
       : 'Sin especialista asignado';
 
+    const targetUserId = p.usuario_id || user.userId;
+    const availableRoles = await getUserAvailableRoles(targetUserId);
+
     res.json({
       success: true,
       data: {
@@ -180,6 +269,8 @@ patientRouter.get('/profile', async (req: Request, res: Response): Promise<void>
         email: p.email,
         fecha_primera_sesion: p.fecha_primera_sesion,
         especialista,
+        availableRoles,
+        hasMultipleRoles: availableRoles.length > 1,
       },
     });
   } catch (error) {
@@ -253,7 +344,7 @@ patientRouter.get('/', requireRole('psicologo', 'admin'), async (req: Request, r
  * POST /api/patients
  * Registra un nuevo paciente vinculándolo automáticamente al especialista autenticado.
  */
-patientRouter.post('/', requireRole('psicologo', 'admin'), async (req: Request, res: Response): Promise<void> => {
+patientRouter.post('/', requireRole('psicologo', 'admin'), requireActiveSubscription, async (req: Request, res: Response): Promise<void> => {
   try {
     const {
       nombre,
@@ -274,43 +365,110 @@ patientRouter.post('/', requireRole('psicologo', 'admin'), async (req: Request, 
 
     const targetEmail = String(email).trim().toLowerCase();
 
-    // 1. Validar que el correo no pertenezca a un usuario existente
+    // 1. Prohibir estrictamente autoatención clínica (ética y confidencialidad)
+    if (req.user && req.user.email.toLowerCase() === targetEmail) {
+      res.status(400).json({
+        success: false,
+        error: 'No puedes registrarte a ti mismo como tu propio paciente. Por razones éticas y de supervisión clínica, debes ser registrado por otro especialista.',
+      });
+      return;
+    }
+
+    // 2. Determinar el especialista autenticado para la relación clínica
+    let targetPsicologoId: number | null = null;
+    let doctorName = 'tu especialista';
+
+    if (req.user!.role === 'psicologo') {
+      const [psiRows] = await pool.query<RowDataPacket[]>(
+        'SELECT id, usuario_id, nombre, apellidos FROM psicologos WHERE usuario_id = ? LIMIT 1',
+        [req.user!.userId]
+      );
+      if (psiRows.length > 0) {
+        targetPsicologoId = psiRows[0].id;
+        doctorName = `Ps. ${psiRows[0].nombre} ${psiRows[0].apellidos}`;
+      }
+    }
+
+    if (!targetPsicologoId) {
+      const [firstDoc] = await pool.query<RowDataPacket[]>('SELECT id, nombre, apellidos FROM psicologos LIMIT 1');
+      if (firstDoc.length > 0) {
+        targetPsicologoId = firstDoc[0].id;
+        doctorName = `Ps. ${firstDoc[0].nombre} ${firstDoc[0].apellidos}`;
+      } else {
+        targetPsicologoId = 1;
+      }
+    }
+
+    // 3. Verificar si el paciente ya tiene ficha clínica registrada
+    const [existingPatients] = await pool.query<RowDataPacket[]>(
+      'SELECT id, usuario_id, nombre, apellido_paterno FROM pacientes WHERE email = ? LIMIT 1',
+      [targetEmail]
+    );
+
+    let pacienteId: number;
+
+    if (existingPatients.length > 0) {
+      pacienteId = existingPatients[0].id;
+
+      // Verificar si ya tiene relación con ESTE especialista
+      const [existingRel] = await pool.query<RowDataPacket[]>(
+        'SELECT id FROM relacion_psicologo_paciente WHERE psicologo_id = ? AND paciente_id = ? LIMIT 1',
+        [targetPsicologoId, pacienteId]
+      );
+
+      if (existingRel.length > 0) {
+        res.status(409).json({
+          success: false,
+          error: `Ya tienes asignado a este paciente en tu lista clínica.`,
+        });
+        return;
+      }
+
+      // Si ya existía como paciente de otro especialista, agregar relación con este especialista
+      await pool.query(
+        `INSERT INTO relacion_psicologo_paciente 
+          (psicologo_id, paciente_id, fecha_primera_sesion, estado) 
+         VALUES (?, ?, COALESCE(?, CURDATE()), 'activo')`,
+        [targetPsicologoId, pacienteId, fecha_primera_sesion || null]
+      );
+
+      res.status(201).json({
+        success: true,
+        message: 'Paciente asignado correctamente a tu lista de pacientes.',
+        data: {
+          id: pacienteId,
+          nombre: existingPatients[0].nombre,
+          apellido_paterno: existingPatients[0].apellido_paterno,
+          email: targetEmail,
+          fecha_primera_sesion,
+        },
+      });
+      return;
+    }
+
+    // 4. Determinar o crear cuenta en tabla `usuarios`
     const [existingUsers] = await pool.query<RowDataPacket[]>(
       'SELECT id, rol FROM usuarios WHERE email = ? LIMIT 1',
       [targetEmail]
     );
 
+    let usuarioId: number;
+
     if (existingUsers.length > 0) {
-      const rolEncontrado = existingUsers[0].rol === 'psicologo' ? 'un especialista' : 'un paciente';
-      res.status(409).json({
-        success: false,
-        error: `El correo "${targetEmail}" ya se encuentra registrado como ${rolEncontrado}.`,
-      });
-      return;
+      // El usuario ya existe (ej: es un colega psicólogo). Habilitar rol múltiple 'ambos'
+      usuarioId = existingUsers[0].id;
+      await pool.query("UPDATE usuarios SET rol = 'ambos' WHERE id = ?", [usuarioId]);
+    } else {
+      // Crear cuenta nueva de paciente
+      const [userResult] = await pool.query<ResultSetHeader>(
+        `INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) 
+         VALUES (?, NULL, 'paciente', TRUE, TRUE)`,
+        [targetEmail]
+      );
+      usuarioId = userResult.insertId;
     }
 
-    const [existingPatients] = await pool.query<RowDataPacket[]>(
-      'SELECT id FROM pacientes WHERE email = ? LIMIT 1',
-      [targetEmail]
-    );
-
-    if (existingPatients.length > 0) {
-      res.status(409).json({
-        success: false,
-        error: `Ya existe una ficha clínica registrada para el correo "${targetEmail}".`,
-      });
-      return;
-    }
-
-    // 2. Crear cuenta en tabla `usuarios` con rol 'paciente' y debe_crear_password = TRUE
-    const [userResult] = await pool.query<ResultSetHeader>(
-      `INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) 
-       VALUES (?, NULL, 'paciente', TRUE, TRUE)`,
-      [targetEmail]
-    );
-    const usuarioId = userResult.insertId;
-
-    // 3. Insertar ficha clínica en tabla `pacientes` asociando usuario_id
+    // 5. Insertar ficha clínica en tabla `pacientes`
     const [result] = await pool.query<ResultSetHeader>(
       `INSERT INTO pacientes 
         (usuario_id, nombre, apellido_paterno, apellido_materno, edad, fecha_nacimiento, genero, email, created_at) 
@@ -328,43 +486,16 @@ patientRouter.post('/', requireRole('psicologo', 'admin'), async (req: Request, 
       ]
     );
 
-    const pacienteId = result.insertId;
+    pacienteId = result.insertId;
 
-    // 4. Determinar el especialista autenticado para la relación clínica
-    let targetPsicologoId: number | null = null;
-    let doctorName = 'tu especialista';
-
-    if (req.user!.role === 'psicologo') {
-      const [psiRows] = await pool.query<RowDataPacket[]>(
-        'SELECT id, nombre, apellidos FROM psicologos WHERE usuario_id = ? LIMIT 1',
-        [req.user!.userId]
-      );
-      if (psiRows.length > 0) {
-        targetPsicologoId = psiRows[0].id;
-        doctorName = `Ps. ${psiRows[0].nombre} ${psiRows[0].apellidos}`;
-      }
-    }
-
-    // Si es admin o fallback
-    if (!targetPsicologoId) {
-      const [firstDoc] = await pool.query<RowDataPacket[]>('SELECT id, nombre, apellidos FROM psicologos LIMIT 1');
-      if (firstDoc.length > 0) {
-        targetPsicologoId = firstDoc[0].id;
-        doctorName = `Ps. ${firstDoc[0].nombre} ${firstDoc[0].apellidos}`;
-      } else {
-        targetPsicologoId = 1;
-      }
-    }
-
-    if (pacienteId && fecha_primera_sesion) {
-      await pool.query(
-        `INSERT INTO relacion_psicologo_paciente 
-          (psicologo_id, paciente_id, fecha_primera_sesion, estado) 
-         VALUES (?, ?, ?, 'activo') 
-         ON DUPLICATE KEY UPDATE fecha_primera_sesion = VALUES(fecha_primera_sesion)`,
-        [targetPsicologoId, pacienteId, fecha_primera_sesion]
-      );
-    }
+    // 6. Vincular relación psicólogo - paciente
+    await pool.query(
+      `INSERT INTO relacion_psicologo_paciente 
+        (psicologo_id, paciente_id, fecha_primera_sesion, estado) 
+       VALUES (?, ?, COALESCE(?, CURDATE()), 'activo') 
+       ON DUPLICATE KEY UPDATE fecha_primera_sesion = VALUES(fecha_primera_sesion)`,
+      [targetPsicologoId, pacienteId, fecha_primera_sesion || null]
+    );
 
     // 5. Enviar correo de bienvenida al paciente
     const patientFullName = `${nombre.trim()} ${apellido_paterno.trim()}`;

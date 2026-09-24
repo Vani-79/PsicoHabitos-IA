@@ -33,8 +33,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 }) => {
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
-  const [loginStep, setLoginStep] = useState<'email' | 'password'>('email');
+  const [loginStep, setLoginStep] = useState<'email' | 'password' | 'role_selection'>('email');
   const [userName, setUserName] = useState('');
+  const [availableRoles, setAvailableRoles] = useState<UserRole[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -98,6 +99,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
       const displayName = check.name || 'Usuario';
       setUserName(displayName);
+      if (check.availableRoles) {
+        setAvailableRoles(check.availableRoles);
+      }
 
       if (check.requiresPasswordCreation) {
         // Enviar código de confirmación de 6 dígitos automáticamente
@@ -132,6 +136,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
   /**
    * Paso 2: Valida credenciales e inicia sesión.
+   * Si el usuario posee múltiples roles, avanza al paso de selección de portal.
    */
   const handleLogin = async () => {
     const targetEmail = email.trim().toLowerCase();
@@ -151,6 +156,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         // Si por alguna razón debe crear contraseña
         await authService.sendActivationCode(targetEmail);
         onNavigateToActivation(targetEmail, response.data?.name || userName || 'Usuario');
+        return;
+      }
+
+      // Si el usuario tiene ambos roles (Psicólogo y Paciente)
+      if (response.requiresRoleSelection) {
+        setAvailableRoles(response.availableRoles || ['psicologo', 'paciente']);
+        setLoginStep('role_selection');
         return;
       }
 
@@ -177,12 +189,56 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           rememberMe
         );
       } else {
-
         Alert.alert('Error de acceso', response.error || 'Contraseña incorrecta. Por favor verifica tus datos.');
       }
     } catch (err) {
       console.error('Error al iniciar sesión:', err);
       Alert.alert('Error', 'Ocurrió un error al procesar el inicio de sesión.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Paso 3 (Exclusivo Multi-Rol): Inicia sesión ingresando directamente al portal elegido.
+   */
+  const handleSelectPortalAndLogin = async (selectedRole: UserRole) => {
+    const targetEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    setIsLoading(true);
+
+    try {
+      const response = await authService.login(targetEmail, cleanPassword, selectedRole);
+
+      if (response.success && response.data) {
+        if (rememberMe) {
+          await storageService.saveRememberedEmail(targetEmail);
+          await storageService.saveUserSession({
+            email: response.data.email,
+            role: response.data.role,
+            name: response.data.name,
+            token: response.data.token,
+            rememberMe: true,
+          });
+        } else {
+          await storageService.clearRememberedEmail();
+          await storageService.clearUserSession();
+        }
+
+        onSuccess(
+          response.data.email,
+          response.data.role,
+          response.data.name,
+          response.data.token,
+          rememberMe
+        );
+      } else {
+        Alert.alert('Error de acceso', response.error || 'No se pudo acceder al portal seleccionado.');
+      }
+    } catch (err) {
+      console.error('Error al ingresar con rol seleccionado:', err);
+      Alert.alert('Error', 'Ocurrió un problema al ingresar al portal.');
     } finally {
       setIsLoading(false);
     }
@@ -202,21 +258,31 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <View style={authStyles.welcomeBadge}>
         <Ionicons name="shield-checkmark" size={16} color="#0F613B" />
         <Text style={authStyles.welcomeBadgeText}>
-          {loginStep === 'email' ? 'ACCESO SEGURO' : 'INICIAR SESIÓN'}
+          {loginStep === 'email'
+            ? 'ACCESO SEGURO'
+            : loginStep === 'password'
+            ? 'INICIAR SESIÓN'
+            : 'SELECCIÓN DE PORTAL'}
         </Text>
       </View>
 
       <Text style={authStyles.cardTitle}>
-        {loginStep === 'email' ? 'Bienvenido a PsicoHábitos' : `Hola, ${userName || 'Usuario'}`}
+        {loginStep === 'role_selection'
+          ? 'Elige tu Portal'
+          : loginStep === 'email'
+          ? 'Bienvenido a PsicoHábitos'
+          : `Hola, ${userName || 'Usuario'}`}
       </Text>
       <Text style={authStyles.cardSubtitle}>
-        {loginStep === 'email'
+        {loginStep === 'role_selection'
+          ? `Tu cuenta tiene perfiles activos como Especialista y como Paciente. Selecciona a qué portal deseas ingresar:`
+          : loginStep === 'email'
           ? 'Ingresa tu correo para continuar'
           : 'Ingresa tu contraseña para acceder a tu cuenta'}
       </Text>
 
       {/* PASO 1: INGRESO DE CORREO */}
-      {loginStep === 'email' ? (
+      {loginStep === 'email' && (
         <>
           <View style={authStyles.inputGroup}>
             <Text style={authStyles.inputLabel}>Correo Electrónico</Text>
@@ -247,8 +313,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             )}
           </TouchableOpacity>
         </>
-      ) : (
-        /* PASO 2: INGRESO DE CONTRASEÑA */
+      )}
+
+      {/* PASO 2: INGRESO DE CONTRASEÑA */}
+      {loginStep === 'password' && (
         <>
           {/* Chip de correo seleccionado con opción de cambiar */}
           <View style={authStyles.emailChipContainer}>
@@ -327,6 +395,68 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </TouchableOpacity>
           </View>
         </>
+      )}
+
+      {/* PASO 3: SELECCIÓN DE PORTAL (MULTI-ROL) */}
+      {loginStep === 'role_selection' && (
+        <View style={authStyles.portalContainer}>
+          {/* Opción Portal Psicólogo / Especialista */}
+          <TouchableOpacity
+            style={[authStyles.portalCard, authStyles.portalCardActive]}
+            onPress={() => handleSelectPortalAndLogin('psicologo')}
+            activeOpacity={0.85}
+            disabled={isLoading}
+          >
+            <View style={authStyles.portalIconCircle}>
+              <Ionicons name="medkit" size={24} color="#0F613B" />
+            </View>
+            <View style={authStyles.portalInfo}>
+              <View style={authStyles.portalBadge}>
+                <Text style={authStyles.portalBadgeText}>Modo Especialista</Text>
+              </View>
+              <Text style={authStyles.portalTitle}>Portal Psicólogo</Text>
+              <Text style={authStyles.portalSubtitle}>
+                Atención clínica, gestión de pacientes, agenda y fichas
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#0F613B" />
+          </TouchableOpacity>
+
+          {/* Opción Portal Paciente */}
+          <TouchableOpacity
+            style={authStyles.portalCard}
+            onPress={() => handleSelectPortalAndLogin('paciente')}
+            activeOpacity={0.85}
+            disabled={isLoading}
+          >
+            <View style={[authStyles.portalIconCircle, authStyles.portalIconCirclePac]}>
+              <Ionicons name="heart" size={24} color="#0369A1" />
+            </View>
+            <View style={authStyles.portalInfo}>
+              <View style={[authStyles.portalBadge, authStyles.portalBadgePac]}>
+                <Text style={[authStyles.portalBadgeText, authStyles.portalBadgeTextPac]}>Modo Paciente</Text>
+              </View>
+              <Text style={authStyles.portalTitle}>Portal Paciente</Text>
+              <Text style={authStyles.portalSubtitle}>
+                Registro de hábitos, recursos terapéuticos y charlas con Hope
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#0369A1" />
+          </TouchableOpacity>
+
+          {isLoading && (
+            <ActivityIndicator size="small" color="#0F613B" style={{ marginVertical: 12 }} />
+          )}
+
+          {/* Enlace para volver */}
+          <TouchableOpacity
+            style={[authStyles.modifyEmailLink, { marginTop: 8 }]}
+            onPress={() => setLoginStep('password')}
+            disabled={isLoading}
+          >
+            <Text style={authStyles.modifyEmailText}>← Volver a ingresar contraseña</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );

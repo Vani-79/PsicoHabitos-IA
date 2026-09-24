@@ -1,11 +1,35 @@
 export type UserRole = 'paciente' | 'psicologo';
 
+export interface SubscriptionInfo {
+  isActive: boolean;
+  status: 'activa' | 'expirada' | 'inactiva';
+  finDate?: string;
+  daysRemaining?: number;
+  meses?: number;
+}
+
 export interface TestUser {
   id?: number;
   email: string;
   role: UserRole;
   name: string;
   token?: string;
+  availableRoles?: UserRole[];
+  hasMultipleRoles?: boolean;
+  subscription?: SubscriptionInfo;
+}
+
+export interface PsychologistProfileData {
+  nombre: string;
+  email?: string;
+  fechaIngreso: string;
+  fechaVencimiento?: string;
+  mesesSuscripcion?: number;
+  tipoSuscripcion?: string;
+  estadoSuscripcion: 'Activo' | 'Inactivo';
+  suscripcionActiva: boolean;
+  availableRoles?: UserRole[];
+  hasMultipleRoles?: boolean;
 }
 
 

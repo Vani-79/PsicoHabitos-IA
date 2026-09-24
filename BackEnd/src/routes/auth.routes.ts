@@ -6,6 +6,7 @@ import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { emailService } from '../services/emailService';
 import { generateToken } from '../config/jwt';
 import { authLimiter, otpVerificationLimiter } from '../middlewares/rateLimiter';
+import { authMiddleware } from '../middlewares/authMiddleware';
 
 export const authRouter = Router();
 
@@ -35,6 +36,59 @@ export function validatePasswordComplexity(password: string): { isValid: boolean
     return { isValid: false, error: 'La contraseña debe contener al menos un carácter especial (ej. @, #, $, !).' };
   }
   return { isValid: true };
+}
+
+/**
+ * Obtiene la lista de roles clínicos y administrativos disponibles para un usuario.
+ */
+export async function getUserAvailableRoles(usuarioId: number): Promise<Array<'psicologo' | 'paciente' | 'admin'>> {
+  const roles: Array<'psicologo' | 'paciente' | 'admin'> = [];
+  try {
+    const [adminRows] = await pool.query<RowDataPacket[]>(
+      "SELECT rol FROM usuarios WHERE id = ? AND rol = 'admin' LIMIT 1",
+      [usuarioId]
+    );
+    if (adminRows.length > 0) {
+      roles.push('admin');
+      return roles;
+    }
+
+    const [psicoRows] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM psicologos WHERE usuario_id = ? LIMIT 1',
+      [usuarioId]
+    );
+    if (psicoRows.length > 0) {
+      roles.push('psicologo');
+    }
+
+    const [pacRows] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM pacientes WHERE usuario_id = ? LIMIT 1',
+      [usuarioId]
+    );
+    if (pacRows.length > 0) {
+      roles.push('paciente');
+    }
+
+    // Asegurar compatibilidad con usuarios que tengan rol = 'ambos' o rol directo
+    const [uRows] = await pool.query<RowDataPacket[]>(
+      'SELECT rol FROM usuarios WHERE id = ? LIMIT 1',
+      [usuarioId]
+    );
+    if (uRows.length > 0) {
+      if (uRows[0].rol === 'ambos') {
+        if (!roles.includes('psicologo')) roles.push('psicologo');
+        if (!roles.includes('paciente')) roles.push('paciente');
+      } else if (uRows[0].rol === 'psicologo' && !roles.includes('psicologo')) {
+        roles.push('psicologo');
+      } else if (uRows[0].rol === 'paciente' && !roles.includes('paciente')) {
+        roles.push('paciente');
+      }
+    }
+  } catch (err) {
+    console.warn('[getUserAvailableRoles] Error consultando roles:', err);
+  }
+
+  return roles;
 }
 
 /**
@@ -90,13 +144,17 @@ authRouter.post('/check-email', authLimiter, async (req: Request, res: Response)
     if (userRows.length > 0) {
       const user = userRows[0];
       const requiresPassword = Boolean(user.debe_crear_password || !user.password_hash);
-      const name = await getUserDisplayName(user.id, user.rol, user.email);
+      const availableRoles = await getUserAvailableRoles(user.id);
+      const primaryRole = availableRoles[0] || (user.rol === 'ambos' ? 'psicologo' : user.rol);
+      const name = await getUserDisplayName(user.id, primaryRole, user.email);
 
       res.json({
         success: true,
         exists: true,
         requiresPasswordCreation: requiresPassword,
-        role: user.rol,
+        role: primaryRole,
+        availableRoles,
+        hasMultipleRoles: availableRoles.length > 1,
         name,
       });
       return;
@@ -330,6 +388,26 @@ authRouter.get('/register-psychologist', (_req: Request, res: Response): void =>
     input:focus {
       border-color: #0F613B;
     }
+    select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #D1D5DB;
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+      background: #FFFFFF;
+      color: #1F2937;
+      transition: border-color 0.2s;
+    }
+    select:focus {
+      border-color: #0F613B;
+    }
+    .hint {
+      display: block;
+      font-size: 12px;
+      color: #6B7280;
+      margin-top: 5px;
+    }
     .row {
       display: flex;
       gap: 12px;
@@ -381,7 +459,7 @@ authRouter.get('/register-psychologist', (_req: Request, res: Response): void =>
   <div class="card">
     <div class="badge">Portal Administrador</div>
     <h1>Alta de Especialista</h1>
-    <p class="desc">Registra a un nuevo psicólogo/a en la plataforma. El sistema le enviará un correo automático de bienvenida invitándolo/a a definir su contraseña para acceder a su portal.</p>
+    <p class="desc">Registra a un nuevo psicólogo/a en la plataforma y configura su suscripción inicial calculada por los meses acordados. El sistema le enviará un correo automático de bienvenida invitándolo/a a definir su contraseña para acceder a su portal.</p>
     
     <form id="psicoForm">
       <div class="row">
@@ -398,6 +476,17 @@ authRouter.get('/register-psychologist', (_req: Request, res: Response): void =>
       <div class="form-group">
         <label for="email">Correo Electrónico *</label>
         <input type="email" id="email" name="email" placeholder="ejemplo@correo.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="suscripcion_meses">Plan de Suscripción Inicial *</label>
+        <select id="suscripcion_meses" name="suscripcion_meses" required>
+          <option value="1" selected>Plan Mensual (1 Mes) — Predeterminado</option>
+          <option value="3">Plan Trimestral (3 Meses)</option>
+          <option value="6">Plan Semestral (6 Meses)</option>
+          <option value="12">Plan Anual (12 Meses)</option>
+        </select>
+        <span class="hint">El especialista tendrá acceso completo durante el período seleccionado desde la fecha de hoy.</span>
       </div>
 
       <button type="submit" id="submitBtn">Registrar y Enviar Correo</button>
@@ -421,6 +510,7 @@ authRouter.get('/register-psychologist', (_req: Request, res: Response): void =>
         nombre: document.getElementById('nombre').value.trim(),
         apellidos: document.getElementById('apellidos').value.trim(),
         email: document.getElementById('email').value.trim(),
+        suscripcion_meses: Number(document.getElementById('suscripcion_meses').value) || 1,
       };
 
       try {
@@ -433,9 +523,10 @@ authRouter.get('/register-psychologist', (_req: Request, res: Response): void =>
 
         if (data.success) {
           alertBox.className = 'alert alert-success';
-          alertBox.innerHTML = '✅ <strong>¡Especialista registrado con éxito!</strong><br>Se ha guardado en la base de datos y se ha enviado el correo de bienvenida a <strong>' + payload.email + '</strong>. Ya puede abrir la app y crear su contraseña.';
+          alertBox.innerHTML = '✅ <strong>¡Especialista registrado con éxito!</strong><br>Se ha registrado con ' + payload.suscripcion_meses + ' mes(es) de suscripción activa y se ha enviado el correo de bienvenida a <strong>' + payload.email + '</strong>. Ya puede abrir la app y crear su contraseña.';
           alertBox.style.display = 'block';
           form.reset();
+          document.getElementById('suscripcion_meses').value = '1';
         } else {
           alertBox.className = 'alert alert-error';
           alertBox.innerHTML = '❌ ' + (data.error || 'Ocurrió un error al registrar.');
@@ -459,10 +550,12 @@ authRouter.get('/register-psychologist', (_req: Request, res: Response): void =>
 /**
  * POST /api/auth/register-psychologist
  * Registra a un nuevo especialista con correo sin contraseña para que active su cuenta.
+ * Asigna suscripción inicial calculada según los meses especificados (por defecto 1 mes).
  */
 authRouter.post('/register-psychologist', async (req: Request, res: Response): Promise<void> => {
   try {
     const { nombre, apellidos, email } = req.body;
+    const suscripcion_meses = Math.max(1, Number(req.body.suscripcion_meses) || 1);
 
     if (!nombre || !apellidos || !email) {
       res.status(400).json({ success: false, error: 'Faltan campos obligatorios para el especialista' });
@@ -471,39 +564,51 @@ authRouter.post('/register-psychologist', async (req: Request, res: Response): P
 
     const targetEmail = String(email).trim().toLowerCase();
 
-    // 1. Validar si el correo ya está registrado en usuarios
+    // 1. Validar si ya está registrado en psicologos
+    const [existingPsicos] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM psicologos WHERE email = ? LIMIT 1',
+      [targetEmail]
+    );
+
+    if (existingPsicos.length > 0) {
+      res.status(409).json({
+        success: false,
+        error: `El correo "${targetEmail}" ya se encuentra registrado como especialista en la plataforma.`,
+      });
+      return;
+    }
+
+    // 2. Determinar o crear cuenta en usuarios
     const [existingUsers] = await pool.query<RowDataPacket[]>(
       'SELECT id, rol FROM usuarios WHERE email = ? LIMIT 1',
       [targetEmail]
     );
 
+    let usuarioId: number;
+
     if (existingUsers.length > 0) {
-      const rolEncontrado = existingUsers[0].rol === 'paciente' ? 'un paciente' : 'un especialista / psicólogo';
-      res.status(409).json({
-        success: false,
-        error: `El correo "${targetEmail}" ya se encuentra registrado en la plataforma como ${rolEncontrado}. No es posible registrar un nuevo especialista con este correo.`,
-      });
-      return;
+      usuarioId = existingUsers[0].id;
+      await pool.query("UPDATE usuarios SET rol = 'ambos' WHERE id = ?", [usuarioId]);
+    } else {
+      const [uResult] = await pool.query<ResultSetHeader>(
+        `INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) 
+         VALUES (?, NULL, 'psicologo', TRUE, TRUE)`,
+        [targetEmail]
+      );
+      usuarioId = uResult.insertId;
     }
 
-    // 2. Crear en usuarios con debe_crear_password = TRUE
-    const [uResult] = await pool.query<ResultSetHeader>(
-      `INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) 
-       VALUES (?, NULL, 'psicologo', TRUE, TRUE)`,
-      [targetEmail]
-    );
-
-    const usuarioId = uResult.insertId;
-
-    // 3. Insertar en psicologos
+    // 3. Insertar en psicologos con suscripción calculada
     await pool.query(
-      `INSERT INTO psicologos (usuario_id, nombre, apellidos, email) 
-       VALUES (?, ?, ?, ?)`,
+      `INSERT INTO psicologos (usuario_id, nombre, apellidos, email, suscripcion_meses, suscripcion_inicio, suscripcion_fin, suscripcion_activa) 
+       VALUES (?, ?, ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? MONTH), TRUE)`,
       [
         usuarioId,
         nombre.trim(),
         apellidos.trim(),
         targetEmail,
+        suscripcion_meses,
+        suscripcion_meses,
       ]
     );
 
@@ -537,7 +642,7 @@ authRouter.post('/register-psychologist', async (req: Request, res: Response): P
  */
 authRouter.post('/login', authLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password } = req.body;
+    const { email, password, selectedRole } = req.body;
 
     if (!email) {
       res.status(400).json({ success: false, error: 'Por favor ingresa tu correo electrónico.' });
@@ -555,15 +660,19 @@ authRouter.post('/login', authLimiter, async (req: Request, res: Response): Prom
 
     if (userRows.length > 0) {
       const user = userRows[0];
+      const availableRoles = await getUserAvailableRoles(user.id);
+      const defaultRole = (availableRoles[0] as any) || (user.rol === 'ambos' ? 'psicologo' : user.rol);
 
       // Verificar si tiene contraseña pendiente de creación
       if (user.debe_crear_password || !user.password_hash) {
-        const name = await getUserDisplayName(user.id, user.rol, user.email);
+        const name = await getUserDisplayName(user.id, defaultRole, user.email);
         res.json({
           success: false,
           requiresPasswordCreation: true,
           email: user.email,
-          role: user.rol,
+          role: defaultRole,
+          availableRoles,
+          hasMultipleRoles: availableRoles.length > 1,
           name,
           message: 'Tu cuenta está registrada pero aún no has creado una contraseña. Por favor crea tu contraseña para continuar.',
         });
@@ -590,21 +699,84 @@ authRouter.post('/login', authLimiter, async (req: Request, res: Response): Prom
         return;
       }
 
-      const name = await getUserDisplayName(user.id, user.rol, user.email);
+      // Si el usuario tiene ambos roles (o más) y aún NO indicó a qué portal acceder
+      if (availableRoles.length > 1 && !selectedRole) {
+        const psicoName = await getUserDisplayName(user.id, 'psicologo', user.email);
+        const pacName = await getUserDisplayName(user.id, 'paciente', user.email);
+
+        res.json({
+          success: true,
+          requiresRoleSelection: true,
+          email: user.email,
+          availableRoles,
+          rolesInfo: [
+            {
+              role: 'psicologo',
+              title: 'Portal Especialista',
+              subtitle: 'Atención clínica, gestión de pacientes y agenda',
+              name: psicoName,
+            },
+            {
+              role: 'paciente',
+              title: 'Portal Paciente',
+              subtitle: 'Registro de hábitos diarios, recursos y sesiones con Hope',
+              name: pacName,
+            },
+          ],
+          message: 'Múltiples perfiles clínicos detectados. Por favor selecciona el portal.',
+        });
+        return;
+      }
+
+      let effectiveRole: 'psicologo' | 'paciente' | 'admin' = defaultRole;
+      if (selectedRole && (availableRoles.includes(selectedRole as any) || selectedRole === user.rol)) {
+        effectiveRole = selectedRole as any;
+      }
+
+      const name = await getUserDisplayName(user.id, effectiveRole, user.email);
       const token = generateToken({
         userId: user.id,
         email: user.email,
-        role: user.rol,
+        role: effectiveRole,
       });
+
+      // Consultar estado de suscripción si accede al portal de especialista
+      let subscription: { isActive: boolean; status: 'activa' | 'expirada' | 'inactiva'; finDate?: string; daysRemaining: number; meses?: number } | undefined = undefined;
+      if (effectiveRole === 'psicologo') {
+        const [psicoRows] = await pool.query<RowDataPacket[]>(
+          `SELECT id, suscripcion_meses, 
+                  DATE_FORMAT(suscripcion_inicio, '%Y-%m-%d') as suscripcion_inicio, 
+                  DATE_FORMAT(suscripcion_fin, '%Y-%m-%d') as suscripcion_fin, 
+                  suscripcion_activa,
+                  DATEDIFF(suscripcion_fin, NOW()) as dias_restantes,
+                  (suscripcion_fin >= NOW() AND suscripcion_activa = 1) as is_valid
+           FROM psicologos WHERE usuario_id = ? LIMIT 1`,
+          [user.id]
+        );
+        if (psicoRows.length > 0) {
+          const p = psicoRows[0];
+          const isSubValid = Boolean(p.is_valid);
+          subscription = {
+            isActive: isSubValid,
+            status: !p.suscripcion_activa ? 'inactiva' : (p.dias_restantes < 0 ? 'expirada' : 'activa'),
+            finDate: !isSubValid ? 'Vencida' : p.suscripcion_fin,
+            daysRemaining: Math.max(0, p.dias_restantes || 0),
+            meses: p.suscripcion_meses,
+          };
+        }
+      }
 
       res.json({
         success: true,
         data: {
           id: user.id,
           email: user.email,
-          role: user.rol,
+          role: effectiveRole,
+          availableRoles,
+          hasMultipleRoles: availableRoles.length > 1,
           name,
           token,
+          subscription,
         },
       });
       return;
@@ -644,6 +816,168 @@ authRouter.post('/login', authLimiter, async (req: Request, res: Response): Prom
   } catch (error) {
     console.error('Error en /api/auth/login:', error);
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
+/**
+ * POST /api/auth/switch-role
+ * Permite a un usuario con múltiples perfiles alternar entre el portal de especialista y paciente.
+ */
+authRouter.post('/switch-role', authMiddleware, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { targetRole } = req.body;
+    const userId = req.user!.userId;
+    const email = req.user!.email;
+
+    if (!targetRole || !['psicologo', 'paciente'].includes(targetRole)) {
+      res.status(400).json({ success: false, error: 'targetRole inválido. Debe ser "psicologo" o "paciente".' });
+      return;
+    }
+
+    const availableRoles = await getUserAvailableRoles(userId);
+
+    if (!availableRoles.includes(targetRole)) {
+      res.status(403).json({
+        success: false,
+        error: `No tienes perfil asignado como ${targetRole}.`,
+      });
+      return;
+    }
+
+    const name = await getUserDisplayName(userId, targetRole, email);
+    const token = generateToken({
+      userId,
+      email,
+      role: targetRole,
+    });
+
+    let subscription: { isActive: boolean; status: 'activa' | 'expirada' | 'inactiva'; finDate?: string; daysRemaining: number; meses?: number } | undefined = undefined;
+    if (targetRole === 'psicologo') {
+      const [psicoRows] = await pool.query<RowDataPacket[]>(
+        `SELECT id, suscripcion_meses, 
+                DATE_FORMAT(suscripcion_inicio, '%Y-%m-%d') as suscripcion_inicio, 
+                DATE_FORMAT(suscripcion_fin, '%Y-%m-%d') as suscripcion_fin, 
+                suscripcion_activa,
+                DATEDIFF(suscripcion_fin, NOW()) as dias_restantes,
+                (suscripcion_fin >= NOW() AND suscripcion_activa = 1) as is_valid
+         FROM psicologos WHERE usuario_id = ? LIMIT 1`,
+        [userId]
+      );
+      if (psicoRows.length > 0) {
+        const p = psicoRows[0];
+        const isSubValid = Boolean(p.is_valid);
+        subscription = {
+          isActive: isSubValid,
+          status: !p.suscripcion_activa ? 'inactiva' : (p.dias_restantes < 0 ? 'expirada' : 'activa'),
+          finDate: !isSubValid ? 'Vencida' : p.suscripcion_fin,
+          daysRemaining: Math.max(0, p.dias_restantes || 0),
+          meses: p.suscripcion_meses,
+        };
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Cambiado exitosamente al portal de ${targetRole}.`,
+      data: {
+        id: userId,
+        email,
+        role: targetRole,
+        availableRoles,
+        hasMultipleRoles: true,
+        name,
+        token,
+        subscription,
+      },
+    });
+  } catch (error) {
+    console.error('Error en /api/auth/switch-role:', error);
+    res.status(500).json({ success: false, error: 'Error al cambiar de portal.' });
+  }
+});
+
+/**
+ * GET /api/auth/psychologist-profile
+ * Retorna los datos para la pantalla de perfil del especialista idéntica al paciente:
+ * - Nombre: Nombre completo del especialista
+ * - Fecha de Ingreso a Psicoactivos: Día en que hizo su primer login / creó su contraseña
+ * - Tipo de suscripción: Cantidad de Meses (ej: Plan Mensual (1 Mes))
+ * - Estado de la suscripción: Activo / Inactivo
+ * - Disponibilidad de roles (para cambiar de perfil)
+ */
+authRouter.get('/psychologist-profile', authMiddleware, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const userEmail = req.user!.email;
+
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT 
+        p.id,
+        p.usuario_id,
+        p.nombre,
+        p.apellidos,
+        COALESCE(p.email, u.email) as email,
+        p.suscripcion_meses,
+        DATE_FORMAT(p.suscripcion_inicio, '%d/%m/%Y') as suscripcion_inicio,
+        DATE_FORMAT(p.suscripcion_fin, '%d/%m/%Y') as fecha_vencimiento,
+        p.suscripcion_activa,
+        DATEDIFF(p.suscripcion_fin, NOW()) as dias_restantes,
+        (p.suscripcion_fin >= NOW() AND p.suscripcion_activa = 1) as is_valid,
+        DATE_FORMAT(COALESCE(u.created_at, p.created_at), '%d/%m/%Y') as fecha_ingreso,
+        COALESCE(u.created_at, p.created_at) as created_at_raw
+       FROM psicologos p
+       LEFT JOIN usuarios u ON u.id = p.usuario_id
+       WHERE p.usuario_id = ? OR LOWER(p.email) = ?
+       LIMIT 1`,
+      [userId, userEmail.toLowerCase()]
+    );
+
+    let nombre = '';
+    let email = userEmail;
+    let fechaIngreso = '';
+    let fechaVencimiento = 'No registrada';
+    let isActive = true;
+
+    if (rows.length > 0) {
+      const p = rows[0];
+      nombre = `${p.nombre} ${p.apellidos}`.trim();
+      email = p.email || userEmail;
+      fechaIngreso = p.fecha_ingreso || 'No registrada';
+      isActive = Boolean(p.is_valid);
+      fechaVencimiento = !isActive ? 'Vencida' : (p.fecha_vencimiento || 'No registrada');
+    } else {
+      const [uRows] = await pool.query<RowDataPacket[]>(
+        "SELECT id, email, DATE_FORMAT(created_at, '%d/%m/%Y') as fecha_ingreso FROM usuarios WHERE id = ? LIMIT 1",
+        [userId]
+      );
+      if (uRows.length > 0) {
+        fechaIngreso = uRows[0].fecha_ingreso || 'No registrada';
+        email = uRows[0].email || userEmail;
+      }
+      const fallbackName = userEmail.split('@')[0];
+      nombre = fallbackName.charAt(0).toUpperCase() + fallbackName.slice(1);
+      isActive = false;
+      fechaVencimiento = 'Vencida';
+    }
+
+    const availableRoles = await getUserAvailableRoles(userId);
+
+    res.json({
+      success: true,
+      data: {
+        nombre,
+        email,
+        fechaIngreso,
+        fechaVencimiento: !isActive ? 'Vencida' : fechaVencimiento,
+        estadoSuscripcion: isActive ? 'Activo' : 'Inactivo',
+        suscripcionActiva: isActive,
+        availableRoles,
+        hasMultipleRoles: availableRoles.length > 1,
+      },
+    });
+  } catch (error) {
+    console.error('Error en GET /api/auth/psychologist-profile:', error);
+    res.status(500).json({ success: false, error: 'Error al consultar perfil del psicólogo' });
   }
 });
 

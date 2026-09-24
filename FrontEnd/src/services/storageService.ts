@@ -1,16 +1,20 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { UserRole } from '../constants/auth';
+import { UserRole, SubscriptionInfo } from '../constants/auth';
 
 const KEY_REMEMBERED_EMAIL = 'psicohabitos_remembered_email';
 const KEY_USER_SESSION = 'psicohabitos_user_session';
 
 export interface StoredSession {
+  id?: number;
   email: string;
   role: UserRole;
   name: string;
   token?: string;
   rememberMe: boolean;
+  availableRoles?: UserRole[];
+  hasMultipleRoles?: boolean;
+  subscription?: SubscriptionInfo;
 }
 
 /**

@@ -6,6 +6,7 @@ import { testDbConnection } from './config/db';
 import { authRouter } from './routes/auth.routes';
 import { patientRouter } from './routes/patient.routes';
 import { habitRouter } from './routes/habit.routes';
+import { adminRouter } from './routes/admin.routes';
 import { generalLimiter } from './middlewares/rateLimiter';
 
 dotenv.config();
@@ -18,6 +19,16 @@ const PORT = Number(process.env.PORT) || 3000;
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+        fontSrc: ["'self'", "https:", "data:"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'"],
+      },
+    },
   })
 );
 
@@ -58,6 +69,7 @@ const corsOptions: cors.CorsOptions = {
 // Middlewares
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use('/api', generalLimiter);
 
 // Verificación de estado del servidor (Health Check)
@@ -66,7 +78,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 // Enlace amigable para el formulario de registro de especialistas
-app.get(['/RegistroNuevoPsicologo', '/registronuevopsicologo'], (req, res, next) => {
+app.get(['/register-psychologist', '/RegistroNuevoPsicologo', '/registronuevopsicologo'], (req, res, next) => {
   req.url = '/register-psychologist';
   authRouter(req, res, next);
 });
@@ -75,6 +87,7 @@ app.get(['/RegistroNuevoPsicologo', '/registronuevopsicologo'], (req, res, next)
 app.use('/api/auth', authRouter);
 app.use('/api/patients', patientRouter);
 app.use('/api/habits', habitRouter);
+app.use('/', adminRouter);
 
 // Manejador de errores (captura bloqueos de CORS)
 app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {

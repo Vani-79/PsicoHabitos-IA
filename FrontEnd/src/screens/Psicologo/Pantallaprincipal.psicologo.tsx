@@ -2,8 +2,10 @@ import {
   PsychologistBottomNav,
   PsychologistTab,
 } from '../../components/PsychologistBottomNav';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { PsychologistProfileScreen } from './PsychologistProfileScreen';
 import { MySqlPatientRecord } from '../../types/patient';
+import { patientService } from '../../services/patientService';
 import {
   StyleSheet,
   Text,
@@ -11,9 +13,11 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../context/AuthContext';
 
 interface PsychologistDashboardScreenProps {
   doctorName: string;
@@ -32,13 +36,91 @@ export const PsychologistDashboardScreen: React.FC<
   onRegisterPatient,
   onSelectPatient,
 }) => {
-  const [activeTab, setActiveTab] =
-  useState<PsychologistTab>('inicio');
-  const recentPatients = patients.slice(-5).reverse();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<PsychologistTab>('inicio');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [todayPatients, setTodayPatients] = useState<MySqlPatientRecord[]>([]);
+  const [loadingToday, setLoadingToday] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchTodayPatients = async () => {
+      setLoadingToday(true);
+      try {
+        const list = await patientService.getTodayPatients(user?.email);
+        if (isMounted) {
+          if (list.length > 0) {
+            setTodayPatients(list);
+          } else {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const localFiltered = patients.filter(
+              (p) => p.fecha_primera_sesion === todayStr
+            );
+            setTodayPatients(localFiltered);
+          }
+        }
+      } catch (err) {
+        console.warn('[Pantallaprincipal] Error al cargar pacientes del día:', err);
+      } finally {
+        if (isMounted) setLoadingToday(false);
+      }
+    };
+
+    fetchTodayPatients();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.email, patients]);
+
+  // Control unificado de suscripción:
+  // Si la suscripción no está activa o ya venció, se bloquean todas las acciones clínicas
+  // permitiendo exclusivamente navegar entre pestañas, leer el aviso y cerrar sesión.
+  const isSubscriptionActive = user?.subscription ? user.subscription.isActive : true;
+
+  const showSubscriptionAlert = () => {
+    Alert.alert(
+      'Suscripción Finalizada',
+      'Suscripción Finalizada comuníquese con el administrador para renovarla',
+      [{ text: 'Entendido', style: 'default' }]
+    );
+  };
+
+  const handleRegisterPatientPress = () => {
+    if (!isSubscriptionActive) {
+      showSubscriptionAlert();
+      return;
+    }
+    onRegisterPatient();
+  };
+
+  const handlePatientPress = (patient: MySqlPatientRecord) => {
+    if (!isSubscriptionActive) {
+      showSubscriptionAlert();
+      return;
+    }
+    onSelectPatient(patient);
+  };
+
+  const filteredPatients = patients.filter((p) => {
+    const fullName = `${p.nombre} ${p.apellido_paterno} ${p.apellido_materno || ''}`.toLowerCase();
+    return fullName.includes(searchTerm.toLowerCase()) || p.email.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  const recentPatients = filteredPatients.slice(-5).reverse();
+
+  if (activeTab === 'perfil') {
+    return (
+      <PsychologistProfileScreen
+        doctorName={doctorName}
+        onNavigateTab={setActiveTab}
+        onLogout={onLogout}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-
       {/* Barra Superior */}
       <View style={styles.topBar}>
         <View>
@@ -50,190 +132,208 @@ export const PsychologistDashboardScreen: React.FC<
             {doctorName}
           </Text>
         </View>
-
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={onLogout}
-          activeOpacity={0.8}
-          hitSlop={{
-            top: 8,
-            bottom: 8,
-            left: 8,
-            right: 8,
-          }}
-        >
-          <Ionicons
-            name="log-out-outline"
-            size={22}
-            color="#DC2626"
-          />
-        </TouchableOpacity>
       </View>
+
+      {/* Banner de Suscripción Inactiva / Expirada */}
+      {!isSubscriptionActive && (
+        <View style={styles.subscriptionBanner}>
+          <Ionicons name="alert-circle" size={24} color="#991B1B" />
+          <View style={styles.subscriptionBannerTextWrapper}>
+            <Text style={styles.subscriptionBannerTitle}>Suscripción Finalizada</Text>
+            <Text style={styles.subscriptionBannerMessage}>
+              Comuníquese con el administrador para renovarla
+            </Text>
+          </View>
+        </View>
+      )}
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-
-        {/* Sección de registro de pacientes */}
-        <View style={styles.actionSection}>
-          <TouchableOpacity
-            style={styles.registerPatientButton}
-            onPress={onRegisterPatient}
-            activeOpacity={0.85}
-          >
-            <View style={styles.buttonIconWrapper}>
-              <Ionicons
-                name="person-add"
-                size={26}
-                color="#FFFFFF"
-              />
-            </View>
-
-            <View style={styles.buttonTextWrapper}>
-              <Text style={styles.registerButtonTitle}>
-                Registrar Nuevo Paciente
-              </Text>
-
-              <Text style={styles.registerButtonSubtitle}>
-                Crea una ficha clínica y asocia un nuevo paciente
-              </Text>
-            </View>
-
-            <Ionicons
-              name="chevron-forward"
-              size={24}
-              color="#A8DED3"
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Sección de pacientes */}
-        <View style={styles.patientsSection}>
-
-          <Text style={styles.sectionTitle}>
-            Pacientes
-          </Text>
-
-          <Text style={styles.sectionSubtitle}>
-            {recentPatients.length > 0
-              ? 'Últimos pacientes asignados a tu consulta'
-              : 'Pacientes asignados a tu consulta'}
-          </Text>
-
-          <TextInput
-            style={styles.searchInput}
-            placeholder="🔍 Buscar paciente..."
-            placeholderTextColor="#9CA3AF"
-          />
-
-          {recentPatients.length === 0 ? (
-
-            /* Estado vacío */
-            <View style={styles.emptyStateCard}>
-              <Ionicons
-                name="people-outline"
-                size={44}
-                color="#9CA3AF"
-              />
-
-              <Text style={styles.emptyStateTitle}>
-                Aún no tienes pacientes asignados
-              </Text>
-
-              <Text style={styles.emptyStateText}>
-                Presiona el botón "Registrar Nuevo Paciente" de arriba
-                para crear una ficha clínica y comenzar la atención.
-              </Text>
-            </View>
-
-          ) : (
-
-            /* Lista de pacientes */
-            recentPatients.map((patient, index) => (
+        {/* PESTAÑA 1: INICIO */}
+        {activeTab === 'inicio' && (
+          <>
+            {/* Sección de registro de pacientes */}
+            <View style={styles.actionSection}>
               <TouchableOpacity
-                key={`${patient.email}-${index}`}
-                style={styles.patientCard}
-                onPress={() => onSelectPatient(patient)}
-                activeOpacity={0.8}
+                style={[
+                  styles.registerPatientButton,
+                  !isSubscriptionActive && styles.registerButtonDisabled,
+                ]}
+                onPress={handleRegisterPatientPress}
+                activeOpacity={isSubscriptionActive ? 0.85 : 0.6}
               >
-
-                {/* Línea verde lateral */}
-                <View style={styles.patientAccent} />
-
-                {/* Nombre */}
-                <View style={styles.patientHeader}>
-
-                  <View style={styles.patientStatusDot} />
-
-                  <Text style={styles.patientName}>
-                    {patient.nombre}{' '}
-                    {patient.apellido_paterno}{' '}
-                    {patient.apellido_materno}
-                  </Text>
-
-                </View>
-
-                {/* Edad y género */}
-                <Text style={styles.patientBasicInfo}>
-                  {patient.edad} años · {patient.genero}
-                </Text>
-
-                {/* Última sesión */}
-                <View style={styles.patientDateRow}>
-
-                  <Text style={styles.patientDateLabel}>
-                    Última sesión:
-                  </Text>
-
-                  <Text style={styles.patientDateValue}>
-                    {patient.fecha_primera_sesion}
-                  </Text>
-
-                </View>
-
-                {/* Próxima sesión */}
-                <View style={styles.patientDateRow}>
-
-                  <Text style={styles.patientDateLabel}>
-                    Próxima sesión:
-                  </Text>
-
-                  <Text style={styles.patientDateValue}>
-                    Pendiente
-                  </Text>
-
-                </View>
-
-                {/* Ver ficha */}
-                <View style={styles.viewPatientRow}>
-
-                  <Text style={styles.viewPatientText}>
-                    Ver ficha
-                  </Text>
-
+                <View style={styles.buttonIconWrapper}>
                   <Ionicons
-                    name="chevron-forward"
-                    size={18}
-                    color="#0F613B"
+                    name={isSubscriptionActive ? 'person-add' : 'lock-closed'}
+                    size={26}
+                    color="#FFFFFF"
                   />
-
                 </View>
 
+                <View style={styles.buttonTextWrapper}>
+                  <Text style={styles.registerButtonTitle}>
+                    {isSubscriptionActive ? 'Registrar Nuevo Paciente' : 'Registrar Paciente (Bloqueado)'}
+                  </Text>
+
+                  <Text style={styles.registerButtonSubtitle}>
+                    {isSubscriptionActive
+                      ? 'Crea una ficha clínica y asocia un nuevo paciente'
+                      : 'Suscripción finalizada: comuníquese con el administrador'}
+                  </Text>
+                </View>
+
+                <Ionicons
+                  name="chevron-forward"
+                  size={24}
+                  color={isSubscriptionActive ? '#A8DED3' : '#FCA5A5'}
+                />
               </TouchableOpacity>
-            ))
+            </View>
 
-          )}
+            {/* Sección de pacientes del día */}
+            <View style={styles.patientsSection}>
+              <Text style={styles.sectionTitle}>Pacientes del Día</Text>
 
-        </View>
+              {todayPatients.length === 0 ? (
+                <View style={styles.emptyStateCard}>
+                  <Ionicons name="calendar-outline" size={44} color="#9CA3AF" />
+                  <Text style={styles.emptyStateTitle}>Sin pacientes para hoy</Text>
+                  <Text style={styles.emptyStateText}>
+                    No tienes consultas o citas programadas para el día de hoy.
+                  </Text>
+                </View>
+              ) : (
+                todayPatients.map((patient, index) => (
+                  <TouchableOpacity
+                    key={`today-${patient.email}-${index}`}
+                    style={[
+                      styles.patientCard,
+                      !isSubscriptionActive && styles.patientCardDisabled,
+                    ]}
+                    onPress={() => handlePatientPress(patient)}
+                    activeOpacity={isSubscriptionActive ? 0.8 : 0.6}
+                  >
+                    <View style={styles.patientAccent} />
+                    <View style={styles.patientHeader}>
+                      <View style={styles.patientStatusDot} />
+                      <Text style={styles.patientName}>
+                        {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno || ''}
+                      </Text>
+                    </View>
 
-            </ScrollView>
+                    <Text style={styles.patientBasicInfo}>
+                      {patient.edad} años · {patient.genero}
+                    </Text>
 
+                    {(patient as any).hora_cita ? (
+                      <View style={styles.patientDateRow}>
+                        <Text style={styles.patientDateLabel}>Cita programada:</Text>
+                        <Text style={styles.patientDateValue}>{(patient as any).hora_cita} hrs</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.patientDateRow}>
+                        <Text style={styles.patientDateLabel}>Consulta:</Text>
+                        <Text style={styles.patientDateValue}>Hoy ({patient.fecha_primera_sesion || 'Agendada'})</Text>
+                      </View>
+                    )}
+
+                    <View style={styles.viewPatientRow}>
+                      <Text
+                        style={[
+                          styles.viewPatientText,
+                          !isSubscriptionActive && { color: '#9CA3AF' },
+                        ]}
+                      >
+                        {isSubscriptionActive ? 'Ver ficha' : 'Ficha bloqueada'}
+                      </Text>
+                      <Ionicons
+                        name={isSubscriptionActive ? 'chevron-forward' : 'lock-closed'}
+                        size={18}
+                        color={isSubscriptionActive ? '#0F613B' : '#9CA3AF'}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
+            </View>
+          </>
+        )}
+
+        {/* PESTAÑA 2: PACIENTES */}
+        {activeTab === 'pacientes' && (
+          <View style={styles.patientsSection}>
+            <Text style={styles.sectionTitle}>Todos los Pacientes</Text>
+            <Text style={styles.sectionSubtitle}>
+              Listado general de pacientes ({filteredPatients.length})
+            </Text>
+
+            <TextInput
+              style={styles.searchInput}
+              placeholder="🔍 Buscar paciente por nombre o email..."
+              placeholderTextColor="#9CA3AF"
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+              editable={isSubscriptionActive}
+              onPressIn={() => {
+                if (!isSubscriptionActive) showSubscriptionAlert();
+              }}
+            />
+
+            {filteredPatients.length === 0 ? (
+              <View style={styles.emptyStateCard}>
+                <Ionicons name="people-outline" size={44} color="#9CA3AF" />
+                <Text style={styles.emptyStateTitle}>Sin pacientes registrados</Text>
+              </View>
+            ) : (
+              filteredPatients.map((patient, index) => (
+                <TouchableOpacity
+                  key={`all-${patient.email}-${index}`}
+                  style={[
+                    styles.patientCard,
+                    !isSubscriptionActive && styles.patientCardDisabled,
+                  ]}
+                  onPress={() => handlePatientPress(patient)}
+                  activeOpacity={isSubscriptionActive ? 0.8 : 0.6}
+                >
+                  <View style={styles.patientAccent} />
+                  <View style={styles.patientHeader}>
+                    <View style={styles.patientStatusDot} />
+                    <Text style={styles.patientName}>
+                      {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno}
+                    </Text>
+                  </View>
+                  <Text style={styles.patientBasicInfo}>
+                    {patient.edad} años · {patient.genero} · {patient.email}
+                  </Text>
+                  <View style={styles.viewPatientRow}>
+                    <Text
+                      style={[
+                        styles.viewPatientText,
+                        !isSubscriptionActive && { color: '#9CA3AF' },
+                      ]}
+                    >
+                      {isSubscriptionActive ? 'Ver ficha' : 'Ficha bloqueada'}
+                    </Text>
+                    <Ionicons
+                      name={isSubscriptionActive ? 'chevron-forward' : 'lock-closed'}
+                      size={18}
+                      color={isSubscriptionActive ? '#0F613B' : '#9CA3AF'}
+                    />
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Navegación inferior con pestañas (siempre disponible) */}
       <PsychologistBottomNav
         activeTab={activeTab}
         onChangeTab={setActiveTab}
       />
-
     </SafeAreaView>
   );
 };
@@ -505,6 +605,174 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
     maxWidth: 280,
+  },
+
+  /* =========================
+     BANNER DE SUSCRIPCIÓN
+  ========================= */
+
+  subscriptionBanner: {
+    backgroundColor: '#FEE2E2',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#FCA5A5',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  subscriptionBannerTextWrapper: {
+    marginLeft: 12,
+    flex: 1,
+  },
+
+  subscriptionBannerTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#991B1B',
+  },
+
+  subscriptionBannerMessage: {
+    fontSize: 12.5,
+    color: '#7F1D1D',
+    marginTop: 2,
+    lineHeight: 16,
+    fontWeight: '600',
+  },
+
+  registerButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+    shadowOpacity: 0.05,
+  },
+
+  patientCardDisabled: {
+    opacity: 0.75,
+    borderColor: '#E5E7EB',
+  },
+
+  /* =========================
+     PESTAÑA PERFIL
+  ========================= */
+
+  profileSection: {
+    paddingVertical: 10,
+  },
+
+  profileAvatarCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5EBF0',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+
+  avatarCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+
+  profileDoctorName: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+
+  profileDoctorEmail: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 12,
+  },
+
+  profileRoleBadge: {
+    backgroundColor: '#DEF7EC',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+
+  profileRoleBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#03543F',
+  },
+
+  subscriptionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#E5EBF0',
+    marginBottom: 24,
+  },
+
+  subscriptionCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+
+  subscriptionCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+
+  subscriptionCardBody: {
+    paddingLeft: 32,
+  },
+
+  subscriptionCardStatus: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 6,
+  },
+
+  subscriptionCardDate: {
+    fontSize: 13,
+    color: '#4B5563',
+    marginBottom: 8,
+  },
+
+  subscriptionCardWarning: {
+    fontSize: 13,
+    color: '#DC2626',
+    fontWeight: '600',
+    lineHeight: 18,
+  },
+
+  profileLogoutButton: {
+    backgroundColor: '#DC2626',
+    borderRadius: 14,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+
+  profileLogoutButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 
 });
