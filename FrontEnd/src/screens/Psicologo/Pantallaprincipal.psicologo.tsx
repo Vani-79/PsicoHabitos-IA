@@ -505,15 +505,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 16,
 
-    borderTopRightRadius: 16,
-    borderBottomRightRadius: 16,
-    borderTopLeftRadius: 0,
-    borderBottomLeftRadius: 0,
+    borderRadius: 16,
 
     backgroundColor: '#FFFFFF',
 
     borderWidth: 1,
-    borderColor: '#6CB59388',
+    borderColor: '#E7F0EA',
 
     overflow: 'hidden',
     position: 'relative',
@@ -524,8 +521,10 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    width: 8,
-    backgroundColor: '#6CB593',
+    width: 6,
+    backgroundColor: '#3FB889',
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
   },
 
   patientHeader: {
@@ -535,10 +534,10 @@ const styles = StyleSheet.create({
   },
 
   patientStatusDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    backgroundColor: '#6CB593',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#3FB889',
     marginRight: 8,
   },
 
@@ -556,7 +555,7 @@ const styles = StyleSheet.create({
 
   patientBasicInfo: {
     fontSize: 13.5,
-    color: '#60756D',
+    color: '#6B8577',
     marginBottom: 3,
     fontWeight: '500',
   },
@@ -604,7 +603,7 @@ const styles = StyleSheet.create({
   viewPatientText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#0F613B',
+    color: '#1B8A5A',
     marginRight: 3,
   },
 

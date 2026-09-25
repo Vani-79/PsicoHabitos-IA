@@ -22,6 +22,8 @@ interface TimePickerModalProps {
   onSelectTime: (time: string) => void;
   onClose: () => void;
   title?: string;
+  selectedDate?: string; //si es hoy, se filtran las horas ya pasadas
+  busySessions?: { hora: string; duracion: number} [];
 }
 
 export const TimePickerModal: React.FC<TimePickerModalProps> = ({
@@ -30,7 +32,34 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   onSelectTime,
   onClose,
   title = 'Seleccionar hora',
+  selectedDate,
+  busySessions = [],
 }) => {
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const isToday = selectedDate === todayStr;
+  const nowMinutes = today.getHours() * 60 + today.getMinutes();
+
+  const BUFFER_MINUTES = 15;
+
+const isSlotBusy = (slotMinutes: number) => {
+  return busySessions.some((b) => {
+    const [bh, bm] = b.hora.split(':').map(Number);
+    const busyStart = bh * 60 + bm - BUFFER_MINUTES;
+    const busyEnd = busyStart + (Number(b.duracion) || 60) + BUFFER_MINUTES * 2;
+    return slotMinutes >= busyStart && slotMinutes < busyEnd;
+  });
+};
+  const availableSlots = TIME_SLOTS.filter((slot) => {
+    const [h, m] = slot.split(':').map(Number);
+    const slotMinutes = h * 60 + m;
+
+    if (isToday && slotMinutes <= nowMinutes + 30) return false;
+    if (isSlotBusy(slotMinutes)) return false;
+
+    return true;
+  });
+
   return (
     <Modal
       animationType="fade"
@@ -48,7 +77,12 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
           </View>
 
           <ScrollView style={styles.scrollList} showsVerticalScrollIndicator={false}>
-            {TIME_SLOTS.map((slot) => {
+            {availableSlots.length === 0 && (
+              <Text style={styles.noSlotsText}>
+                No quedan horarios disponibles para hoy. Elige otra fecha.
+              </Text>
+            )}
+            {availableSlots.map((slot) => {
               const isSelected = selectedTime === slot;
               return (
                 <TouchableOpacity
@@ -135,5 +169,12 @@ const styles = StyleSheet.create({
   timeOptionTextActive: {
     color: '#0F613B',
     fontWeight: '700',
+  },
+
+  noSlotsText: {
+    fontSize: 13.5,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    paddingVertical: 20,
   },
 });

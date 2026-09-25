@@ -16,6 +16,7 @@ interface DatePickerModalProps {
   title?: string;
   maxDate?: Date;
   minDate?: Date;
+  yearOrder?: 'asc' | 'desc'; // asc = año mas cercano al primero 
   onClose: () => void;
   onSelectDate: (formattedDate: string, dateObj: Date) => void;
 }
@@ -62,6 +63,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
   title = 'Seleccionar Fecha',
   maxDate,
   minDate,
+  yearOrder = 'desc',
   onClose,
   onSelectDate,
 }) => {
@@ -116,8 +118,8 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
     for (let y = startYear; y >= endYear; y--) {
       years.push(y);
     }
-    return years;
-  }, [maxDate, minDate]);
+    return yearOrder === 'asc' ? years.reverse() : years;
+  }, [maxDate, minDate, yearOrder]);
 
   // Calcular días del mes actual
   const daysInMonth = useMemo(() => {
@@ -194,24 +196,39 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
     setSelectedDate(newDate);
   };
 
-  const handleSelectYear = (year: number) => {
+const handleSelectYear = (year: number) => {
     setDisplayedYear(year);
 
-    // Ajustar mes si el año es el año máximo y el mes supera el mes máximo
-    let targetMonth = displayedMonth;
-    if (year === maxDate?.getFullYear() && targetMonth > maxDate.getMonth()) {
-      targetMonth = maxDate.getMonth();
-      setDisplayedMonth(targetMonth);
+    // En contexto de agendar hacia adelante (yearOrder="asc"), saltar directo
+    // al 1 de enero del año elegido, en vez de intentar mantener el mes anterior.
+    let targetMonth: number;
+    let targetDay: number;
+
+    if (yearOrder === 'asc') {
+      targetMonth = 0;
+      targetDay = 1;
+
+      // Si ese 1 de enero cae antes del mínimo permitido, usar el mínimo
+      if (minDate && year === minDate.getFullYear()) {
+        targetMonth = minDate.getMonth();
+        targetDay = minDate.getDate();
+      }
+    } else {
+      // Comportamiento original: mantener el mismo mes/día si es posible
+      targetMonth = displayedMonth;
+      if (year === maxDate?.getFullYear() && targetMonth > maxDate.getMonth()) {
+        targetMonth = maxDate.getMonth();
+      }
+
+      const daysInTargetMonth = new Date(year, targetMonth + 1, 0).getDate();
+      targetDay = Math.min(selectedDate.getDate(), daysInTargetMonth);
+
+      if (year === maxDate?.getFullYear() && targetMonth === maxDate.getMonth()) {
+        targetDay = Math.min(targetDay, maxDate.getDate());
+      }
     }
 
-    const daysInTargetMonth = new Date(year, targetMonth + 1, 0).getDate();
-    let targetDay = Math.min(selectedDate.getDate(), daysInTargetMonth);
-
-    // Ajustar si el día excede maxDate
-    if (year === maxDate?.getFullYear() && targetMonth === maxDate.getMonth()) {
-      targetDay = Math.min(targetDay, maxDate.getDate());
-    }
-
+    setDisplayedMonth(targetMonth);
     setSelectedDate(new Date(year, targetMonth, targetDay));
     setViewMode('calendar');
   };
@@ -696,16 +713,17 @@ const styles = StyleSheet.create({
   yearGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: 10,
     paddingBottom: 10,
   },
   yearChip: {
-    width: '31%',
+    minWidth: 90,
     paddingVertical: 10,
+    paddingHorizontal: 16,
     backgroundColor: '#F9FAFB',
     borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 10,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },

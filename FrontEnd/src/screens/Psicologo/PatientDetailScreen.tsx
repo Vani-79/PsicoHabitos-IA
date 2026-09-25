@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -22,20 +22,9 @@ import { useAuth } from '../../context/AuthContext';
 type Duracion = '30' | '45' | '60' | '75' | '90';
 type Modalidad = 'presencial' | 'online';
 
-interface Session {
-  id: string;
-  fecha: string;
-  hora: string;
-  duracion: Duracion;
-  modalidad: Modalidad;
-  motivo: string;
-  estado: 'Programada' | 'Completada';
-}
-
 interface PatientDetailScreenProps {
   patient: MySqlPatientRecord;
   onBack: () => void;
-  onScheduleSession?: () => void;
 }
 
 const DURATIONS: { key: Duracion; label: string }[] = [
@@ -46,12 +35,56 @@ const DURATIONS: { key: Duracion; label: string }[] = [
   { key: '90', label: '90 min' },
 ];
 
+const SESSIONS_PER_PAGE = 3;
+
+// ── Helpers de fecha/hora ────────────────────────────────────────────────
+
+const getTodayStr = (): string => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const timeToMinutes = (t: string): number => {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+};
+
+/** true si la hora sigue siendo válida para la fecha dada
+ *  (si la fecha es hoy, exige al menos 30 min de anticipación). */
+const isTimeStillValid = (dateStr: string, timeStr: string): boolean => {
+  if (!dateStr || !timeStr) return true;
+  if (dateStr !== getTodayStr()) return true;
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  return timeToMinutes(timeStr) > nowMinutes + 30;
+};
+
+/** true si [startA, startA+durA) se cruza con [startB, startB+durB) */
+const rangesOverlap = (startA: number, durA: number, startB: number, durB: number): boolean => {
+  const endA = startA + durA;
+  const endB = startB + durB;
+  return startA < endB && startB < endA;
+};
+
 export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
   patient,
   onBack,
 }) => {
+  const { user } = useAuth();
+  const isSubscriptionActive = user?.subscription ? user.subscription.isActive : true;
+
+  // Historial de sesiones (de este paciente)
   const [sessions, setSessions] = useState<AppointmentSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const totalPages = Math.ceil(sessions.length / SESSIONS_PER_PAGE);
+  const paginatedSessions = sessions.slice(
+    currentPage * SESSIONS_PER_PAGE,
+    currentPage * SESSIONS_PER_PAGE + SESSIONS_PER_PAGE
+  );
+
+  // Modal de agendar sesión
   const [isSaving, setIsSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -59,18 +92,19 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
 
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
-  const [duracion, setDuracion] = useState<Duracion>('60');
-  const [modalidad, setModalidad] = useState<Modalidad>('presencial');
+  const [duracion, setDuracion] = useState<Duracion | ''>('');
+  const [modalidad, setModalidad] = useState<Modalidad | ''>('');
   const [observaciones, setObservaciones] = useState('');
 
-  const { user } = useAuth();
-  const isSubscriptionActive = user?.subscription ? user.subscription.isActive : true;
+  // Citas ya ocupadas (de TODOS los pacientes del psicólogo) para la fecha elegida
+  const [busySessions, setBusySessions] = useState<{ hora: string; duracion: number }[]>([]);
 
   const loadSessions = async () => {
     if (!patient.id) return;
     setLoadingSessions(true);
     const data = await appointmentService.getPatientAppointments(patient.id);
     setSessions(data);
+    setCurrentPage(0);
     setLoadingSessions(false);
   };
 
@@ -78,12 +112,47 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
     loadSessions();
   }, [patient.id]);
 
+  const loadBusySessionsForDate = async (dateStr: string) => {
+    if (!dateStr) {
+      setBusySessions([]);
+      return;
+    }
+    try {
+      // ⚠️ Ajusta el nombre/parámetros si tu appointmentService usa otros distintos.
+      const monthStr = dateStr.slice(0, 7); // 'YYYY-MM'
+      const monthAppointments = await appointmentService.getPsychologistCalendar({ month: monthStr });
+
+      const busyForDay = monthAppointments
+        .filter((a) => a.fecha === dateStr && a.estado !== 'Cancelada')
+        .map((a) => ({ hora: a.hora, duracion: Number(a.duracion) || 60 }));
+
+      setBusySessions(busyForDay);
+    } catch (err) {
+      console.warn('Error al cargar horarios ocupados:', err);
+      setBusySessions([]);
+    }
+  };
+
+  // Si cambia la fecha: recarga los horarios ocupados de ese día y
+  // revalida que la hora ya elegida (si había una) siga siendo válida.
+  useEffect(() => {
+    if (fecha && hora && !isTimeStillValid(fecha, hora)) {
+      setHora('');
+      Alert.alert(
+        'Hora ya no disponible',
+        'La hora que habías elegido ya pasó para la fecha seleccionada. Por favor, elige una nueva hora.'
+      );
+    }
+    loadBusySessionsForDate(fecha);
+  }, [fecha]);
+
   const resetForm = () => {
     setFecha('');
     setHora('');
-    setDuracion('60');
-    setModalidad('presencial');
+    setDuracion('');
+    setModalidad('');
     setObservaciones('');
+    setBusySessions([]);
   };
 
   const openScheduleModal = () => {
@@ -98,13 +167,80 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
     setModalVisible(true);
   };
 
+  const handleOpenTimePicker = () => {
+    if (!fecha) {
+      Alert.alert('Selecciona primero la fecha', 'Elige la fecha de la sesión antes de escoger la hora.');
+      return;
+    }
+    setShowTimePicker(true);
+  };
+
+  const hasUnsavedChanges = () => {
+  return Boolean(fecha || hora || duracion || modalidad || observaciones.trim());
+};
+
+const handleCloseModal = () => {
+  if (!hasUnsavedChanges()) {
+    setModalVisible(false);
+    return;
+  }
+  Alert.alert(
+    '¿Descartar cambios?',
+    'Tienes datos sin guardar. Si sales ahora, se perderán.',
+    [
+      { text: 'Seguir editando', style: 'cancel' },
+      {
+        text: 'Descartar',
+        style: 'destructive',
+        onPress: () => {
+          resetForm();
+          setModalVisible(false);
+        },
+      },
+    ]
+  );
+};
+
   const handleSaveSession = async () => {
-    if (!fecha || !hora) {
-      Alert.alert('Campos incompletos', 'Selecciona la fecha y hora para agendar la sesión.');
+    if (!fecha) {
+      Alert.alert('Falta la fecha', 'Selecciona la fecha de la sesión.');
+      return;
+    }
+    if (!hora) {
+      Alert.alert('Falta la hora', 'Selecciona la hora de la sesión.');
+      return;
+    }
+    if (!duracion) {
+      Alert.alert('Falta la duración', 'Selecciona la duración de la sesión.');
+      return;
+    }
+    if (!modalidad) {
+      Alert.alert('Falta la modalidad', 'Selecciona si la sesión será presencial u online.');
+      return;
+    }
+    if (!isTimeStillValid(fecha, hora)) {
+      Alert.alert('Hora inválida', 'La hora seleccionada ya pasó. Por favor, elige una hora futura.');
+      setHora('');
       return;
     }
     if (!patient.id) {
       Alert.alert('Error', 'No se encontró el ID del paciente.');
+      return;
+    }
+
+    // Choque de horario: bloquea si se cruza con otra sesión existente
+    const newStartMinutes = timeToMinutes(hora);
+    const newDuration = Number(duracion);
+    const hasConflict = busySessions.some((b) =>
+      rangesOverlap(newStartMinutes, newDuration, timeToMinutes(b.hora), b.duracion)
+    );
+
+    if (hasConflict) {
+      Alert.alert(
+        'Horario ocupado',
+        'Ya existe una sesión que se cruza con este horario y duración. Elige otra hora.'
+      );
+      setHora('');
       return;
     }
 
@@ -113,7 +249,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
       paciente_id: patient.id,
       fecha,
       hora,
-      duracion: Number(duracion) || 60,
+      duracion: newDuration,
       modalidad,
       observaciones: observaciones.trim(),
     });
@@ -186,7 +322,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
             </Text>
           </View>
         ) : (
-          sessions.map((session) => (
+          paginatedSessions.map((session) => (
             <View key={session.id} style={styles.sessionCard}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.sessionDate}>
@@ -219,6 +355,54 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
             </View>
           ))
         )}
+
+        {totalPages > 1 && (
+          <View style={styles.paginationRow}>
+            <TouchableOpacity
+              style={[styles.pageButton, currentPage === 0 && styles.pageButtonDisabled]}
+              onPress={() => setCurrentPage((p) => Math.max(0, p - 1))}
+              disabled={currentPage === 0}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="chevron-back"
+                size={18}
+                color={currentPage === 0 ? '#CBD5E1' : '#0F613B'}
+              />
+              <Text style={[styles.pageButtonText, currentPage === 0 && styles.pageButtonTextDisabled]}>
+                Anterior
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={styles.pageIndicator}>
+              {currentPage + 1} / {totalPages}
+            </Text>
+
+            <TouchableOpacity
+              style={[
+                styles.pageButton,
+                currentPage >= totalPages - 1 && styles.pageButtonDisabled,
+              ]}
+              onPress={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={currentPage >= totalPages - 1}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.pageButtonText,
+                  currentPage >= totalPages - 1 && styles.pageButtonTextDisabled,
+                ]}
+              >
+                Siguiente
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={currentPage >= totalPages - 1 ? '#CBD5E1' : '#0F613B'}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
       {/* Modal para agendar sesión */}
@@ -226,9 +410,9 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
         animationType="fade"
         transparent
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={handleCloseModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
+        <Pressable style={styles.modalOverlay} onPress={handleCloseModal}>
           <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text style={styles.modalTitle}>Agendar nueva sesión</Text>
@@ -247,16 +431,21 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
                 <Ionicons name="chevron-down" size={16} color="#6B7280" />
               </TouchableOpacity>
 
-              {/* Hora */}
+              {/* Hora (bloqueada hasta elegir fecha) */}
               <Text style={styles.fieldLabel}>Hora</Text>
               <TouchableOpacity
-                style={styles.pickerTrigger}
-                onPress={() => setShowTimePicker(true)}
+                style={[styles.pickerTrigger, !fecha && styles.pickerTriggerDisabled]}
+                onPress={handleOpenTimePicker}
                 activeOpacity={0.8}
               >
-                <Ionicons name="time" size={18} color="#0F613B" style={styles.pickerIcon} />
+                <Ionicons
+                  name="time"
+                  size={18}
+                  color={fecha ? '#0F613B' : '#9CA3AF'}
+                  style={styles.pickerIcon}
+                />
                 <Text style={[styles.pickerValueText, !hora && styles.pickerPlaceholder]}>
-                  {hora || 'Seleccionar hora'}
+                  {hora || (fecha ? 'Seleccionar hora' : 'Primero elige la fecha')}
                 </Text>
                 <Ionicons name="chevron-down" size={16} color="#6B7280" />
               </TouchableOpacity>
@@ -305,7 +494,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
               <Text style={styles.fieldLabel}>Observaciones</Text>
               <TextInput
                 style={[styles.input, { minHeight: 64, textAlignVertical: 'top', paddingTop: 10 }]}
-                placeholder="Observaciones de la sesión, notas o acuerdos..."
+                placeholder="Ej. Seguimiento de ansiedad, evaluación inicial, acuerdos previos..."
                 placeholderTextColor="#9CA3AF"
                 value={observaciones}
                 onChangeText={setObservaciones}
@@ -321,11 +510,11 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
                 {isSaving ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.saveButtonText}>Guardar sesión</Text>
+                  <Text style={styles.saveButtonText}>Agendar</Text>
                 )}
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={{ marginTop: 8 }}>
+              <TouchableOpacity onPress={handleCloseModal} style={{ marginTop: 8 }}>
                 <Text style={styles.cancelText}>Cancelar</Text>
               </TouchableOpacity>
             </ScrollView>
@@ -333,20 +522,24 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
         </Pressable>
       </Modal>
 
-      {/* DatePickerModal para la fecha de la cita */}
+      {/* DatePickerModal para la fecha de la cita: solo hoy en adelante, hasta 6 meses */}
       <DatePickerModal
         visible={showDatePicker}
         title="Fecha de la Sesión"
-        initialDate={fecha || new Date().toISOString().split('T')[0]}
-        maxDate={new Date(2030, 11, 31)}
+        initialDate={fecha || getTodayStr()}
+        minDate={new Date()}
+        maxDate={new Date(new Date().setMonth(new Date().getMonth() + 6))}
+        yearOrder="asc"
         onClose={() => setShowDatePicker(false)}
         onSelectDate={(formattedDate: string) => setFecha(formattedDate)}
       />
 
-      {/* TimePickerModal reutilizable */}
+      {/* TimePickerModal: filtra horas pasadas y horas ya ocupadas ese día */}
       <TimePickerModal
         visible={showTimePicker}
         selectedTime={hora || '10:00'}
+        selectedDate={fecha}
+        busySessions={busySessions}
         title="Selecciona la hora de la sesión"
         onClose={() => setShowTimePicker(false)}
         onSelectTime={(selected) => setHora(selected)}
@@ -373,9 +566,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#6cb59388',
+    borderColor: '#E7F0EA',
     borderLeftWidth: 8,
-    borderLeftColor: '#6CB593',
+    borderLeftColor: '#3FB889',
     padding: 16,
     marginBottom: 18,
   },
@@ -435,6 +628,27 @@ const styles = StyleSheet.create({
   statusBadgeCompleted: { backgroundColor: '#E8F5E9' },
   statusBadgeTextCompleted: { color: '#0F613B' },
 
+  paginationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  pageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    gap: 4,
+  },
+  pageButtonDisabled: { opacity: 0.5 },
+  pageButtonText: { fontSize: 13.5, fontWeight: '700', color: '#0F613B' },
+  pageButtonTextDisabled: { color: '#CBD5E1' },
+  pageIndicator: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
@@ -446,13 +660,6 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 360,
     maxHeight: '85%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-  },
-  timeModalContent: {
-    width: '100%',
-    maxWidth: 300,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 20,
@@ -469,12 +676,16 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     marginBottom: 14,
   },
+  pickerTriggerDisabled: {
+    backgroundColor: '#F9FAFB',
+    borderColor: '#E5E7EB',
+  },
   pickerIcon: { marginRight: 10 },
   pickerValueText: { flex: 1, fontSize: 14, fontWeight: '500', color: '#1F2937' },
   pickerPlaceholder: { color: '#9CA3AF', fontWeight: '400' },
-  chipRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
   chip: {
-    flex: 1,
+    flexGrow: 1,
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
     borderRadius: 10,
@@ -497,14 +708,4 @@ const styles = StyleSheet.create({
   saveButton: { backgroundColor: '#0F613B', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
   saveButtonText: { color: '#FFFFFF', fontSize: 15.5, fontWeight: '700' },
   cancelText: { color: '#6B7280', fontSize: 13, fontWeight: '600', textAlign: 'center', marginTop: 8 },
-
-  timeOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    marginBottom: 4,
-  },
-  timeOptionActive: { backgroundColor: '#E8F5E9' },
-  timeOptionText: { fontSize: 15, fontWeight: '500', color: '#374151', textAlign: 'center' },
-  timeOptionTextActive: { color: '#0F613B', fontWeight: '700' },
 });
