@@ -26,7 +26,26 @@ const formatBirthDate = (dateStr?: string): string => {
   return cleanDate;
 };
 
-const formatAge = (edad?: number | string): string => {
+const formatAge = (edad?: number | string, birthDateStr?: string): string => {
+  if (birthDateStr) {
+    const raw = birthDateStr.split('T')[0];
+    const parts = raw.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const birthDate = new Date(year, month, day);
+      const today = new Date();
+      let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        calculatedAge--;
+      }
+      if (!isNaN(calculatedAge) && calculatedAge >= 0) {
+        return `${calculatedAge} años`;
+      }
+    }
+  }
   if (edad === undefined || edad === null || edad === '') return 'No registrada';
   return `${edad} años`;
 };
@@ -141,7 +160,7 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
               </View>
               <View style={styles.infoTextWrapper}>
                 <Text style={styles.infoLabel}>Edad</Text>
-                <Text style={styles.infoValue}>{formatAge(profile.edad)}</Text>
+                <Text style={styles.infoValue}>{formatAge(profile.edad, profile.fecha_nacimiento)}</Text>
               </View>
             </View>
 

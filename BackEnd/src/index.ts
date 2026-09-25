@@ -7,6 +7,7 @@ import { authRouter } from './routes/auth.routes';
 import { patientRouter } from './routes/patient.routes';
 import { habitRouter } from './routes/habit.routes';
 import { adminRouter } from './routes/admin.routes';
+import { appointmentRouter } from './routes/appointment.routes';
 import { generalLimiter } from './middlewares/rateLimiter';
 
 dotenv.config();
@@ -86,6 +87,7 @@ app.get(['/register-psychologist', '/RegistroNuevoPsicologo', '/registronuevopsi
 // Rutas API
 app.use('/api/auth', authRouter);
 app.use('/api/patients', patientRouter);
+app.use('/api/appointments', appointmentRouter);
 app.use('/api/habits', habitRouter);
 app.use('/', adminRouter);
 

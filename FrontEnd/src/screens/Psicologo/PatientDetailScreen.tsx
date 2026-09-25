@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,14 +9,17 @@ import {
   Pressable,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { MySqlPatientRecord } from '../../types/patient';
+import { MySqlPatientRecord, AppointmentSession } from '../../types/patient';
 import { DatePickerModal } from '../../components/DatePickerModal';
+import { TimePickerModal } from '../../components/TimePickerModal';
+import { appointmentService } from '../../services/appointmentService';
 import { useAuth } from '../../context/AuthContext';
 
-type Duracion = '30' | '45' | '60';
+type Duracion = '30' | '45' | '60' | '75' | '90';
 type Modalidad = 'presencial' | 'online';
 
 interface Session {
@@ -35,41 +38,52 @@ interface PatientDetailScreenProps {
   onScheduleSession?: () => void;
 }
 
-const TIME_SLOTS = [
-  '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-  '12:00', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00',
-];
-
 const DURATIONS: { key: Duracion; label: string }[] = [
   { key: '30', label: '30 min' },
   { key: '45', label: '45 min' },
   { key: '60', label: '60 min' },
+  { key: '75', label: '75 min' },
+  { key: '90', label: '90 min' },
 ];
 
 export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
   patient,
   onBack,
 }) => {
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessions, setSessions] = useState<AppointmentSession[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
-  const [duracion, setDuracion] = useState<Duracion>('30');
+  const [duracion, setDuracion] = useState<Duracion>('60');
   const [modalidad, setModalidad] = useState<Modalidad>('presencial');
-  const [motivo, setMotivo] = useState('');
+  const [observaciones, setObservaciones] = useState('');
 
   const { user } = useAuth();
   const isSubscriptionActive = user?.subscription ? user.subscription.isActive : true;
 
+  const loadSessions = async () => {
+    if (!patient.id) return;
+    setLoadingSessions(true);
+    const data = await appointmentService.getPatientAppointments(patient.id);
+    setSessions(data);
+    setLoadingSessions(false);
+  };
+
+  useEffect(() => {
+    loadSessions();
+  }, [patient.id]);
+
   const resetForm = () => {
     setFecha('');
     setHora('');
-    setDuracion('30');
+    setDuracion('60');
     setModalidad('presencial');
-    setMotivo('');
+    setObservaciones('');
   };
 
   const openScheduleModal = () => {
@@ -84,25 +98,35 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
     setModalVisible(true);
   };
 
-  const handleSaveSession = () => {
-    if (!fecha || !hora || !motivo.trim()) {
-      Alert.alert('Campos incompletos', 'Selecciona fecha, hora y escribe el motivo de la sesión.');
+  const handleSaveSession = async () => {
+    if (!fecha || !hora) {
+      Alert.alert('Campos incompletos', 'Selecciona la fecha y hora para agendar la sesión.');
+      return;
+    }
+    if (!patient.id) {
+      Alert.alert('Error', 'No se encontró el ID del paciente.');
       return;
     }
 
-    const newSession: Session = {
-      id: `${Date.now()}`,
+    setIsSaving(true);
+    const res = await appointmentService.createAppointment({
+      paciente_id: patient.id,
       fecha,
       hora,
-      duracion,
+      duracion: Number(duracion) || 60,
       modalidad,
-      motivo: motivo.trim(),
-      estado: 'Programada',
-    };
+      observaciones: observaciones.trim(),
+    });
+    setIsSaving(false);
 
-    setSessions((prev) => [newSession, ...prev]);
-    setModalVisible(false);
-    resetForm();
+    if (res.success) {
+      Alert.alert('¡Sesión agendada!', 'La sesión se ha programado exitosamente.');
+      setModalVisible(false);
+      resetForm();
+      loadSessions();
+    } else {
+      Alert.alert('Error al agendar', res.error || 'No se pudo guardar la sesión.');
+    }
   };
 
   return (
@@ -149,7 +173,12 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
 
         <Text style={styles.historyTitle}>Historial de sesiones</Text>
 
-        {sessions.length === 0 ? (
+        {loadingSessions ? (
+          <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+            <ActivityIndicator size="small" color="#0F613B" />
+            <Text style={{ marginTop: 8, color: '#6B7280', fontSize: 13 }}>Cargando sesiones...</Text>
+          </View>
+        ) : sessions.length === 0 ? (
           <View style={styles.emptyHistoryCard}>
             <Ionicons name="calendar-outline" size={36} color="#9CA3AF" />
             <Text style={styles.emptyHistoryText}>
@@ -161,10 +190,16 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
             <View key={session.id} style={styles.sessionCard}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.sessionDate}>
-                  {session.fecha} · {session.hora} · {session.duracion} min ·{' '}
+                  {session.fecha} · {session.hora} {session.horaFin ? `- ${session.horaFin}` : ''} · {session.duracion} min ·{' '}
                   {session.modalidad === 'presencial' ? 'Presencial' : 'Online'}
                 </Text>
-                <Text style={styles.sessionMotivo}>{session.motivo}</Text>
+                {session.observaciones ? (
+                  <Text style={styles.sessionMotivo}>{session.observaciones}</Text>
+                ) : (
+                  <Text style={[styles.sessionMotivo, { fontStyle: 'italic', color: '#9CA3AF' }]}>
+                    Sin observaciones registradas
+                  </Text>
+                )}
               </View>
               <View
                 style={[
@@ -266,22 +301,28 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
                 </TouchableOpacity>
               </View>
 
-              {/* Motivo */}
-              <Text style={styles.fieldLabel}>Motivo de la sesión</Text>
+              {/* Observaciones */}
+              <Text style={styles.fieldLabel}>Observaciones</Text>
               <TextInput
-                style={styles.input}
-                placeholder="Ej. Sesión de seguimiento"
+                style={[styles.input, { minHeight: 64, textAlignVertical: 'top', paddingTop: 10 }]}
+                placeholder="Observaciones de la sesión, notas o acuerdos..."
                 placeholderTextColor="#9CA3AF"
-                value={motivo}
-                onChangeText={setMotivo}
+                value={observaciones}
+                onChangeText={setObservaciones}
+                multiline
               />
 
               <TouchableOpacity
-                style={styles.saveButton}
+                style={[styles.saveButton, isSaving && { opacity: 0.7 }]}
                 onPress={handleSaveSession}
                 activeOpacity={0.85}
+                disabled={isSaving}
               >
-                <Text style={styles.saveButtonText}>Guardar sesión</Text>
+                {isSaving ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Guardar sesión</Text>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity onPress={() => setModalVisible(false)} style={{ marginTop: 8 }}>
@@ -292,7 +333,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
         </Pressable>
       </Modal>
 
-      {/* Reutiliza tu DatePickerModal existente */}
+      {/* DatePickerModal para la fecha de la cita */}
       <DatePickerModal
         visible={showDatePicker}
         title="Fecha de la Sesión"
@@ -302,36 +343,14 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
         onSelectDate={(formattedDate: string) => setFecha(formattedDate)}
       />
 
-      {/* Selector simple de hora (lista de horarios) */}
-      <Modal
-        animationType="fade"
-        transparent
+      {/* TimePickerModal reutilizable */}
+      <TimePickerModal
         visible={showTimePicker}
-        onRequestClose={() => setShowTimePicker(false)}
-      >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowTimePicker(false)}>
-          <Pressable style={styles.timeModalContent} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.modalTitle}>Selecciona la hora</Text>
-            <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
-              {TIME_SLOTS.map((slot) => (
-                <TouchableOpacity
-                  key={slot}
-                  style={[styles.timeOption, hora === slot && styles.timeOptionActive]}
-                  onPress={() => {
-                    setHora(slot);
-                    setShowTimePicker(false);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.timeOptionText, hora === slot && styles.timeOptionTextActive]}>
-                    {slot}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        selectedTime={hora || '10:00'}
+        title="Selecciona la hora de la sesión"
+        onClose={() => setShowTimePicker(false)}
+        onSelectTime={(selected) => setHora(selected)}
+      />
     </SafeAreaView>
   );
 };

@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export type PsychologistTab = 'pacientes' | 'inicio' | 'perfil';
+export type PsychologistTab = 'inicio' | 'pacientes' | 'calendario' | 'perfil';
 
 interface PsychologistBottomNavProps {
   activeTab: PsychologistTab;
@@ -23,32 +23,6 @@ export const PsychologistBottomNav: React.FC<
   return (
     <View style={styles.container}>
 
-      {/* Pacientes */}
-      <TouchableOpacity
-        style={styles.tab}
-        onPress={() => onChangeTab('pacientes')}
-        activeOpacity={0.8}
-      >
-        <Ionicons
-          name="people-outline"
-          size={23}
-          color={
-            activeTab === 'pacientes'
-              ? '#0F613B'
-              : '#9CA3AF'
-          }
-        />
-
-        <Text
-          style={[
-            styles.label,
-            activeTab === 'pacientes' && styles.activeLabel,
-          ]}
-        >
-          Pacientes
-        </Text>
-      </TouchableOpacity>
-
       {/* Inicio */}
       <TouchableOpacity
         style={styles.tab}
@@ -56,22 +30,44 @@ export const PsychologistBottomNav: React.FC<
         activeOpacity={0.8}
       >
         <Ionicons
-          name="home-outline"
-          size={23}
-          color={
-            activeTab === 'inicio'
-              ? '#0F613B'
-              : '#9CA3AF'
-          }
+          name={activeTab === 'inicio' ? 'home' : 'home-outline'}
+          size={22}
+          color={activeTab === 'inicio' ? '#0F613B' : '#9CA3AF'}
         />
-
-        <Text
-          style={[
-            styles.label,
-            activeTab === 'inicio' && styles.activeLabel,
-          ]}
-        >
+        <Text style={[styles.label, activeTab === 'inicio' && styles.activeLabel]}>
           Inicio
+        </Text>
+      </TouchableOpacity>
+
+      {/* Pacientes */}
+      <TouchableOpacity
+        style={styles.tab}
+        onPress={() => onChangeTab('pacientes')}
+        activeOpacity={0.8}
+      >
+        <Ionicons
+          name={activeTab === 'pacientes' ? 'people' : 'people-outline'}
+          size={22}
+          color={activeTab === 'pacientes' ? '#0F613B' : '#9CA3AF'}
+        />
+        <Text style={[styles.label, activeTab === 'pacientes' && styles.activeLabel]}>
+          Pacientes
+        </Text>
+      </TouchableOpacity>
+
+      {/* Calendario */}
+      <TouchableOpacity
+        style={styles.tab}
+        onPress={() => onChangeTab('calendario')}
+        activeOpacity={0.8}
+      >
+        <Ionicons
+          name={activeTab === 'calendario' ? 'calendar' : 'calendar-outline'}
+          size={22}
+          color={activeTab === 'calendario' ? '#0F613B' : '#9CA3AF'}
+        />
+        <Text style={[styles.label, activeTab === 'calendario' && styles.activeLabel]}>
+          Calendario
         </Text>
       </TouchableOpacity>
 
@@ -82,21 +78,11 @@ export const PsychologistBottomNav: React.FC<
         activeOpacity={0.8}
       >
         <Ionicons
-          name="person-outline"
-          size={23}
-          color={
-            activeTab === 'perfil'
-              ? '#0F613B'
-              : '#9CA3AF'
-          }
+          name={activeTab === 'perfil' ? 'person' : 'person-outline'}
+          size={22}
+          color={activeTab === 'perfil' ? '#0F613B' : '#9CA3AF'}
         />
-
-        <Text
-          style={[
-            styles.label,
-            activeTab === 'perfil' && styles.activeLabel,
-          ]}
-        >
+        <Text style={[styles.label, activeTab === 'perfil' && styles.activeLabel]}>
           Perfil
         </Text>
       </TouchableOpacity>

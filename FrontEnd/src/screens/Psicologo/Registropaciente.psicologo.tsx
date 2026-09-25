@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { DatePickerModal } from '../../components/DatePickerModal';
+import { TimePickerModal } from '../../components/TimePickerModal';
 import {
   Gender,
   PatientRegistrationForm,
@@ -22,6 +23,14 @@ import {
 } from '../../types/patient';
 import { formatToMySqlDateTime } from '../../utils/date';
 import { isValidEmail, validatePatientForm } from '../../utils/validators';
+
+const SESSION_DURATIONS = [
+  { key: '30', label: '30 min' },
+  { key: '45', label: '45 min' },
+  { key: '60', label: '60 min' },
+  { key: '75', label: '75 min' },
+  { key: '90', label: '90 min' },
+];
 
 
 
@@ -46,6 +55,10 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
     fechaNacimiento: '',
     genero: '',
     fechaPrimeraSesion: '',
+    horaPrimeraSesion: '10:00',
+    duracionPrimeraSesion: '60',
+    modalidadPrimeraSesion: 'presencial',
+    observacionesPrimeraSesion: '',
     email: '',
   });
 
@@ -80,9 +93,10 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
   return () => subscription.remove();
 }, [onBack]);
 
-  // Estados para abrir los modales de calendario
+  // Estados para abrir los modales de calendario y hora
   const [showBirthDatePicker, setShowBirthDatePicker] = useState(false);
   const [showSessionDatePicker, setShowSessionDatePicker] = useState(false);
+  const [showSessionTimePicker, setShowSessionTimePicker] = useState(false);
 
   const updateField = (field: keyof PatientRegistrationForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -139,6 +153,10 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
       fecha_nacimiento: form.fechaNacimiento,        // Columna DATE en MySQL
       genero: form.genero as Gender,                  // ENUM('masculino','femenino','otro')
       fecha_primera_sesion: form.fechaPrimeraSesion,    // Columna DATE en MySQL
+      hora_primera_sesion: form.horaPrimeraSesion || '10:00',
+      duracion_primera_sesion: Number(form.duracionPrimeraSesion) || 60,
+      modalidad_primera_sesion: form.modalidadPrimeraSesion || 'presencial',
+      observaciones_primera_sesion: (form.observacionesPrimeraSesion || '').trim(),
       email: form.email.trim().toLowerCase(),
       created_at: createdAt,                          // DATETIME en MySQL
     };
@@ -397,6 +415,119 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
               </TouchableOpacity>
             </View>
 
+            {/* Hora de Inicio de Primera Sesión */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Hora de Inicio de la Primera Sesión</Text>
+              <TouchableOpacity
+                style={styles.datePickerTrigger}
+                onPress={() => setShowSessionTimePicker(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="time-outline" size={20} color="#0F613B" style={styles.dateIcon} />
+                <Text style={styles.datePickerValueText}>
+                  {form.horaPrimeraSesion || '10:00'} hrs
+                </Text>
+                <Ionicons name="chevron-down" size={18} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Duración de Primera Sesión */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Duración de la Sesión</Text>
+              <View style={styles.chipRow}>
+                {SESSION_DURATIONS.map((d) => (
+                  <TouchableOpacity
+                    key={d.key}
+                    style={[
+                      styles.durationChip,
+                      form.duracionPrimeraSesion === d.key && styles.durationChipActive,
+                    ]}
+                    onPress={() => updateField('duracionPrimeraSesion', d.key)}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.durationChipText,
+                        form.duracionPrimeraSesion === d.key && styles.durationChipTextActive,
+                      ]}
+                    >
+                      {d.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Modalidad de Primera Sesión */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Modalidad de la Sesión</Text>
+              <View style={styles.chipRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.durationChip,
+                    styles.flexChip,
+                    form.modalidadPrimeraSesion === 'presencial' && styles.durationChipActive,
+                  ]}
+                  onPress={() => updateField('modalidadPrimeraSesion', 'presencial')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="business-outline"
+                    size={16}
+                    color={form.modalidadPrimeraSesion === 'presencial' ? '#0F613B' : '#4B5563'}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text
+                    style={[
+                      styles.durationChipText,
+                      form.modalidadPrimeraSesion === 'presencial' && styles.durationChipTextActive,
+                    ]}
+                  >
+                    Presencial
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.durationChip,
+                    styles.flexChip,
+                    form.modalidadPrimeraSesion === 'online' && styles.durationChipActive,
+                  ]}
+                  onPress={() => updateField('modalidadPrimeraSesion', 'online')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="videocam-outline"
+                    size={16}
+                    color={form.modalidadPrimeraSesion === 'online' ? '#0F613B' : '#4B5563'}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text
+                    style={[
+                      styles.durationChipText,
+                      form.modalidadPrimeraSesion === 'online' && styles.durationChipTextActive,
+                    ]}
+                  >
+                    Online
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Observaciones de Primera Sesión */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Observaciones de la Sesión</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Observaciones iniciales, motivo de consulta, etc."
+                placeholderTextColor="#9CA3AF"
+                value={form.observacionesPrimeraSesion}
+                onChangeText={(text) => updateField('observacionesPrimeraSesion', text)}
+                multiline
+                numberOfLines={3}
+              />
+            </View>
+
             {/* Email del Paciente */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>
@@ -452,6 +583,15 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
               maxDate={new Date()}
               onClose={() => setShowSessionDatePicker(false)}
               onSelectDate={handleSelectSessionDate}
+            />
+
+            {/* Modal para Selección de Hora de Primera Sesión */}
+            <TimePickerModal
+              visible={showSessionTimePicker}
+              selectedTime={form.horaPrimeraSesion || '10:00'}
+              title="Hora de Inicio de la Primera Sesión"
+              onClose={() => setShowSessionTimePicker(false)}
+              onSelectTime={(time) => updateField('horaPrimeraSesion', time)}
             />
 
             {/* Botón Registrar Paciente */}
@@ -655,5 +795,43 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16.5,
     fontWeight: '700',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  durationChip: {
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  durationChipActive: {
+    backgroundColor: '#EAF5EE',
+    borderColor: '#0F613B',
+  },
+  durationChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  durationChipTextActive: {
+    color: '#0F613B',
+    fontWeight: '700',
+  },
+  flexChip: {
+    flex: 1,
+  },
+  textArea: {
+    minHeight: 76,
+    textAlignVertical: 'top',
+    paddingTop: 10,
   },
 });

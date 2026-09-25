@@ -4,6 +4,7 @@ import {
 } from '../../components/PsychologistBottomNav';
 import React, { useState, useEffect } from 'react';
 import { PsychologistProfileScreen } from './PsychologistProfileScreen';
+import { PsychologistCalendarScreen } from './PsychologistCalendarScreen';
 import { MySqlPatientRecord } from '../../types/patient';
 import { patientService } from '../../services/patientService';
 import {
@@ -115,6 +116,15 @@ export const PsychologistDashboardScreen: React.FC<
         doctorName={doctorName}
         onNavigateTab={setActiveTab}
         onLogout={onLogout}
+      />
+    );
+  }
+
+  if (activeTab === 'calendario') {
+    return (
+      <PsychologistCalendarScreen
+        doctorName={doctorName}
+        onNavigateTab={setActiveTab}
       />
     );
   }
@@ -304,9 +314,19 @@ export const PsychologistDashboardScreen: React.FC<
                       {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno}
                     </Text>
                   </View>
-                  <Text style={styles.patientBasicInfo}>
-                    {patient.edad} años · {patient.genero} · {patient.email}
-                  </Text>
+                  <View style={styles.patientMetaContainer}>
+                    <Text style={styles.patientBasicInfo}>
+                      {patient.edad} años · {patient.genero ? patient.genero.charAt(0).toUpperCase() + patient.genero.slice(1) : ''}
+                    </Text>
+                    {patient.email ? (
+                      <View style={styles.patientEmailRow}>
+                        <Ionicons name="mail-outline" size={13} color="#60756D" style={{ marginRight: 5 }} />
+                        <Text style={styles.patientEmailText} numberOfLines={1} ellipsizeMode="tail">
+                          {patient.email}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
                   <View style={styles.viewPatientRow}>
                     <Text
                       style={[
@@ -529,11 +549,28 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
 
-  patientBasicInfo: {
+  patientMetaContainer: {
     marginLeft: 17,
-    fontSize: 14,
+    marginBottom: 6,
+  },
+
+  patientBasicInfo: {
+    fontSize: 13.5,
     color: '#60756D',
-    marginBottom: 12,
+    marginBottom: 3,
+    fontWeight: '500',
+  },
+
+  patientEmailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 1,
+  },
+
+  patientEmailText: {
+    fontSize: 13,
+    color: '#60756D',
+    flexShrink: 1,
   },
 
   patientDateRow: {

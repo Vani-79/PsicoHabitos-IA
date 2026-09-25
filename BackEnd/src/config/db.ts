@@ -46,6 +46,41 @@ export async function testDbConnection(): Promise<void> {
         INDEX idx_codigos_email_codigo (email, codigo, usado)
       ) ENGINE=InnoDB;
     `);
+
+    // Asegurar existencia de tabla citas_sesiones
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS citas_sesiones (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        psicologo_id INT NOT NULL,
+        paciente_id INT NOT NULL,
+        fecha_hora_inicio DATETIME NOT NULL,
+        fecha_hora_fin DATETIME NOT NULL,
+        modalidad ENUM('presencial', 'online') NOT NULL DEFAULT 'presencial',
+        estado ENUM('programada', 'completada', 'cancelada', 'no_asistio') NOT NULL DEFAULT 'programada',
+        observaciones TEXT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_citas_paciente_fecha (paciente_id, fecha_hora_inicio),
+        INDEX idx_citas_psicologo_fecha (psicologo_id, fecha_hora_inicio)
+      ) ENGINE=InnoDB;
+    `);
+
+    // Backfill idempotente de sesiones iniciales para pacientes previamente registrados
+    await connection.query(`
+      INSERT INTO citas_sesiones (psicologo_id, paciente_id, fecha_hora_inicio, fecha_hora_fin, modalidad, estado, observaciones)
+      SELECT 
+        r.psicologo_id,
+        r.paciente_id,
+        CONCAT(DATE_FORMAT(r.fecha_primera_sesion, '%Y-%m-%d'), ' 10:00:00') as fecha_hora_inicio,
+        CONCAT(DATE_FORMAT(r.fecha_primera_sesion, '%Y-%m-%d'), ' 11:00:00') as fecha_hora_fin,
+        'presencial' as modalidad,
+        IF(CONCAT(DATE_FORMAT(r.fecha_primera_sesion, '%Y-%m-%d'), ' 11:00:00') < NOW(), 'completada', 'programada') as estado,
+        'Primera sesión inicial de evaluación clínica' as observaciones
+      FROM relacion_psicologo_paciente r
+      WHERE NOT EXISTS (
+        SELECT 1 FROM citas_sesiones cs 
+        WHERE cs.paciente_id = r.paciente_id AND cs.psicologo_id = r.psicologo_id
+      )
+    `);
     connection.release();
   } catch (error) {
     console.error('❌ [MySQL] Error al conectar con la base de datos:', error);

@@ -8,6 +8,10 @@ export interface PatientRegistrationForm {
   fechaNacimiento: string;     // Formato 'YYYY-MM-DD'
   genero: Gender | '';
   fechaPrimeraSesion: string;  // Formato 'YYYY-MM-DD'
+  horaPrimeraSesion?: string;   // Formato 'HH:mm'
+  duracionPrimeraSesion?: string; // '30' | '45' | '60' | '75' | '90'
+  modalidadPrimeraSesion?: 'presencial' | 'online';
+  observacionesPrimeraSesion?: string;
   email: string;
   password?: string;
   confirmPassword?: string;
@@ -32,6 +36,10 @@ export interface MySqlPatientRecord {
   fecha_nacimiento: string;     // DATE NOT NULL ('YYYY-MM-DD')
   genero: Gender;               // ENUM('masculino', 'femenino', 'otro') NOT NULL
   fecha_primera_sesion: string; // DATE NOT NULL ('YYYY-MM-DD')
+  hora_primera_sesion?: string;
+  duracion_primera_sesion?: number;
+  modalidad_primera_sesion?: 'presencial' | 'online';
+  observaciones_primera_sesion?: string;
   email: string;                // VARCHAR(150) UNIQUE NOT NULL
   password_hash?: string;       // VARCHAR(255) NOT NULL
   created_at: string;           // DATETIME / TIMESTAMP ('YYYY-MM-DD HH:MM:SS')
@@ -50,4 +58,20 @@ export interface PatientProfileData {
   especialista?: string;
   availableRoles?: ('paciente' | 'psicologo')[];
   hasMultipleRoles?: boolean;
+}
+
+export interface AppointmentSession {
+  id: string;
+  paciente_id?: number;
+  paciente_nombre?: string;
+  paciente_email?: string;
+  fecha: string;
+  hora: string;
+  horaFin?: string;
+  duracion: string;
+  modalidad: 'presencial' | 'online';
+  estado: 'Programada' | 'Completada' | 'Cancelada';
+  observaciones: string;
+  motivo?: string;
+  doctorNombre?: string;
 }

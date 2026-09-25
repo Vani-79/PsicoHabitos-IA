@@ -47,7 +47,7 @@ patientRouter.get('/recent', requireRole('psicologo', 'admin'), async (req: Requ
           pac.nombre, 
           pac.apellido_paterno, 
           pac.apellido_materno, 
-          pac.edad, 
+          COALESCE(TIMESTAMPDIFF(YEAR, pac.fecha_nacimiento, CURDATE()), pac.edad) as edad, 
           DATE_FORMAT(pac.fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, 
           pac.genero, 
           pac.email, 
@@ -68,7 +68,7 @@ patientRouter.get('/recent', requireRole('psicologo', 'admin'), async (req: Requ
           pac.nombre, 
           pac.apellido_paterno, 
           pac.apellido_materno, 
-          pac.edad, 
+          COALESCE(TIMESTAMPDIFF(YEAR, pac.fecha_nacimiento, CURDATE()), pac.edad) as edad, 
           DATE_FORMAT(pac.fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, 
           pac.genero, 
           pac.email, 
@@ -115,7 +115,7 @@ patientRouter.get('/today', requireRole('psicologo', 'admin'), async (req: Reque
           pac.nombre, 
           pac.apellido_paterno, 
           pac.apellido_materno, 
-          pac.edad, 
+          COALESCE(TIMESTAMPDIFF(YEAR, pac.fecha_nacimiento, CURDATE()), pac.edad) as edad, 
           DATE_FORMAT(pac.fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, 
           pac.genero, 
           pac.email, 
@@ -145,7 +145,7 @@ patientRouter.get('/today', requireRole('psicologo', 'admin'), async (req: Reque
           pac.nombre, 
           pac.apellido_paterno, 
           pac.apellido_materno, 
-          pac.edad, 
+          COALESCE(TIMESTAMPDIFF(YEAR, pac.fecha_nacimiento, CURDATE()), pac.edad) as edad, 
           DATE_FORMAT(pac.fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, 
           pac.genero, 
           pac.email, 
@@ -205,7 +205,7 @@ patientRouter.get('/profile', async (req: Request, res: Response): Promise<void>
         pac.nombre, 
         pac.apellido_paterno, 
         pac.apellido_materno, 
-        pac.edad, 
+        COALESCE(TIMESTAMPDIFF(YEAR, pac.fecha_nacimiento, CURDATE()), pac.edad) as edad, 
         DATE_FORMAT(pac.fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, 
         pac.genero, 
         pac.email, 
@@ -301,7 +301,7 @@ patientRouter.get('/', requireRole('psicologo', 'admin'), async (req: Request, r
           pac.nombre, 
           pac.apellido_paterno, 
           pac.apellido_materno, 
-          pac.edad, 
+          COALESCE(TIMESTAMPDIFF(YEAR, pac.fecha_nacimiento, CURDATE()), pac.edad) as edad, 
           DATE_FORMAT(pac.fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, 
           pac.genero, 
           pac.email, 
@@ -321,7 +321,7 @@ patientRouter.get('/', requireRole('psicologo', 'admin'), async (req: Request, r
           pac.nombre, 
           pac.apellido_paterno, 
           pac.apellido_materno, 
-          pac.edad, 
+          COALESCE(TIMESTAMPDIFF(YEAR, pac.fecha_nacimiento, CURDATE()), pac.edad) as edad, 
           DATE_FORMAT(pac.fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, 
           pac.genero, 
           pac.email, 
@@ -356,6 +356,10 @@ patientRouter.post('/', requireRole('psicologo', 'admin'), requireActiveSubscrip
       fecha_primera_sesion,
       email,
       created_at,
+      hora_primera_sesion,
+      duracion_primera_sesion,
+      modalidad_primera_sesion,
+      observaciones_primera_sesion,
     } = req.body;
 
     if (!nombre || !apellido_paterno || !email) {
@@ -432,6 +436,38 @@ patientRouter.post('/', requireRole('psicologo', 'admin'), requireActiveSubscrip
         [targetPsicologoId, pacienteId, fecha_primera_sesion || null]
       );
 
+      // Registrar primera sesión en citas_sesiones
+      const existingSessionDate = fecha_primera_sesion || new Date().toISOString().split('T')[0];
+      const existingSessionTime = (hora_primera_sesion || '10:00').trim();
+      const existingDurationMinutes = Number(duracion_primera_sesion) || 60;
+      const existingSessionModality = modalidad_primera_sesion === 'online' ? 'online' : 'presencial';
+      const existingSessionNotes = (observaciones_primera_sesion || 'Primera sesión de apertura de ficha clínica').trim();
+
+      await pool.query(
+        `INSERT INTO citas_sesiones 
+          (psicologo_id, paciente_id, fecha_hora_inicio, fecha_hora_fin, modalidad, estado, observaciones)
+         VALUES (
+           ?, 
+           ?, 
+           STR_TO_DATE(?, '%Y-%m-%d %H:%i'), 
+           DATE_ADD(STR_TO_DATE(?, '%Y-%m-%d %H:%i'), INTERVAL ? MINUTE), 
+           ?, 
+           IF(DATE_ADD(STR_TO_DATE(?, '%Y-%m-%d %H:%i'), INTERVAL ? MINUTE) < NOW(), 'completada', 'programada'), 
+           ?
+         )`,
+        [
+          targetPsicologoId,
+          pacienteId,
+          `${existingSessionDate} ${existingSessionTime}`,
+          `${existingSessionDate} ${existingSessionTime}`,
+          existingDurationMinutes,
+          existingSessionModality,
+          `${existingSessionDate} ${existingSessionTime}`,
+          existingDurationMinutes,
+          existingSessionNotes,
+        ]
+      );
+
       res.status(201).json({
         success: true,
         message: 'Paciente asignado correctamente a tu lista de pacientes.',
@@ -468,7 +504,22 @@ patientRouter.post('/', requireRole('psicologo', 'admin'), requireActiveSubscrip
       usuarioId = userResult.insertId;
     }
 
-    // 5. Insertar ficha clínica en tabla `pacientes`
+    // 5. Determinar edad exacta al registrar a partir de la fecha de nacimiento
+    let finalEdad = Number(edad) || 0;
+    if (fecha_nacimiento) {
+      const birth = new Date(fecha_nacimiento);
+      if (!isNaN(birth.getTime())) {
+        const today = new Date();
+        let calc = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+          calc--;
+        }
+        if (calc >= 0) finalEdad = calc;
+      }
+    }
+
+    // Insertar ficha clínica en tabla `pacientes`
     const [result] = await pool.query<ResultSetHeader>(
       `INSERT INTO pacientes 
         (usuario_id, nombre, apellido_paterno, apellido_materno, edad, fecha_nacimiento, genero, email, created_at) 
@@ -478,7 +529,7 @@ patientRouter.post('/', requireRole('psicologo', 'admin'), requireActiveSubscrip
         nombre.trim(),
         apellido_paterno.trim(),
         (apellido_materno || '').trim(),
-        Number(edad) || 0,
+        finalEdad,
         fecha_nacimiento,
         genero,
         targetEmail,
@@ -497,7 +548,39 @@ patientRouter.post('/', requireRole('psicologo', 'admin'), requireActiveSubscrip
       [targetPsicologoId, pacienteId, fecha_primera_sesion || null]
     );
 
-    // 5. Enviar correo de bienvenida al paciente
+    // 6.b Registrar la primera sesión en citas_sesiones con su hora, duración, modalidad y observaciones
+    const firstSessionDate = fecha_primera_sesion || new Date().toISOString().split('T')[0];
+    const firstSessionTime = (hora_primera_sesion || '10:00').trim();
+    const firstDurationMinutes = Number(duracion_primera_sesion) || 60;
+    const firstSessionModality = modalidad_primera_sesion === 'online' ? 'online' : 'presencial';
+    const firstSessionNotes = (observaciones_primera_sesion || 'Primera sesión de apertura de ficha clínica').trim();
+
+    await pool.query(
+      `INSERT INTO citas_sesiones 
+        (psicologo_id, paciente_id, fecha_hora_inicio, fecha_hora_fin, modalidad, estado, observaciones)
+       VALUES (
+         ?, 
+         ?, 
+         STR_TO_DATE(?, '%Y-%m-%d %H:%i'), 
+         DATE_ADD(STR_TO_DATE(?, '%Y-%m-%d %H:%i'), INTERVAL ? MINUTE), 
+         ?, 
+         IF(DATE_ADD(STR_TO_DATE(?, '%Y-%m-%d %H:%i'), INTERVAL ? MINUTE) < NOW(), 'completada', 'programada'), 
+         ?
+       )`,
+      [
+        targetPsicologoId,
+        pacienteId,
+        `${firstSessionDate} ${firstSessionTime}`,
+        `${firstSessionDate} ${firstSessionTime}`,
+        firstDurationMinutes,
+        firstSessionModality,
+        `${firstSessionDate} ${firstSessionTime}`,
+        firstDurationMinutes,
+        firstSessionNotes,
+      ]
+    );
+
+    // 7. Enviar correo de bienvenida al paciente
     const patientFullName = `${nombre.trim()} ${apellido_paterno.trim()}`;
     emailService.sendPatientWelcomeEmail({
       to: targetEmail,
@@ -514,7 +597,7 @@ patientRouter.post('/', requireRole('psicologo', 'admin'), requireActiveSubscrip
         nombre,
         apellido_paterno,
         apellido_materno,
-        edad: Number(edad),
+        edad: finalEdad,
         fecha_nacimiento,
         genero,
         fecha_primera_sesion,
