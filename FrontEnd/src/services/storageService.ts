@@ -15,6 +15,7 @@ export interface StoredSession {
   availableRoles?: UserRole[];
   hasMultipleRoles?: boolean;
   subscription?: SubscriptionInfo;
+  fechaIngreso?: string;
 }
 
 /**

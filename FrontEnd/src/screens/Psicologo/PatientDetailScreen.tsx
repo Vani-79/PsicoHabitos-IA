@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -25,6 +25,7 @@ type Modalidad = 'presencial' | 'online';
 interface PatientDetailScreenProps {
   patient: MySqlPatientRecord;
   onBack: () => void;
+  onScheduleSession?: () => void;
 }
 
 const DURATIONS: { key: Duracion; label: string }[] = [
@@ -73,6 +74,13 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
   const { user } = useAuth();
   const isSubscriptionActive = user?.subscription ? user.subscription.isActive : true;
 
+  const minBookingDate = useMemo(() => new Date(), []);
+  const maxBookingDate = useMemo(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 6);
+    return d;
+  }, []);
+
   // Historial de sesiones (de este paciente)
   const [sessions, setSessions] = useState<AppointmentSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
@@ -99,6 +107,20 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
   // Citas ya ocupadas (de TODOS los pacientes del psicólogo) para la fecha elegida
   const [busySessions, setBusySessions] = useState<{ hora: string; duracion: number }[]>([]);
 
+  // Estados para modal de modificar y/o eliminar cita programada
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingSession, setEditingSession] = useState<AppointmentSession | null>(null);
+  const [editFecha, setEditFecha] = useState('');
+  const [editHora, setEditHora] = useState('');
+  const [editModalidad, setEditModalidad] = useState<Modalidad>('presencial');
+  const [editDuracion, setEditDuracion] = useState<Duracion>('60');
+  const [editObservaciones, setEditObservaciones] = useState('');
+  const [showEditDatePicker, setShowEditDatePicker] = useState(false);
+  const [showEditTimePicker, setShowEditTimePicker] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [busySessionsForEdit, setBusySessionsForEdit] = useState<{ hora: string; duracion: number }[]>([]);
+
   const loadSessions = async () => {
     if (!patient.id) return;
     setLoadingSessions(true);
@@ -118,17 +140,15 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
       return;
     }
     try {
-      // ⚠️ Ajusta el nombre/parámetros si tu appointmentService usa otros distintos.
-      const monthStr = dateStr.slice(0, 7); // 'YYYY-MM'
-      const monthAppointments = await appointmentService.getPsychologistCalendar({ month: monthStr });
+      const dayAppointments = await appointmentService.getPsychologistCalendar({ date: dateStr });
 
-      const busyForDay = monthAppointments
-        .filter((a) => a.fecha === dateStr && a.estado !== 'Cancelada')
+      const busyForDay = dayAppointments
+        .filter((a) => a.estado !== 'Cancelada')
         .map((a) => ({ hora: a.hora, duracion: Number(a.duracion) || 60 }));
 
       setBusySessions(busyForDay);
     } catch (err) {
-      console.warn('Error al cargar horarios ocupados:', err);
+      console.warn('[PatientDetailScreen] Error al cargar horarios ocupados:', err);
       setBusySessions([]);
     }
   };
@@ -265,6 +285,173 @@ const handleCloseModal = () => {
     }
   };
 
+  // ── Handlers para Modificar / Cancelar Cita Programada ──────────────────
+
+  const loadBusySessionsForEditDate = async (dateStr: string, currentSessionId?: string) => {
+    if (!dateStr) {
+      setBusySessionsForEdit([]);
+      return;
+    }
+    try {
+      const dayAppointments = await appointmentService.getPsychologistCalendar({ date: dateStr });
+      const busyForDay = dayAppointments
+        .filter((a) => a.estado !== 'Cancelada' && String(a.id) !== String(currentSessionId))
+        .map((a) => ({ hora: a.hora, duracion: Number(a.duracion) || 60 }));
+      setBusySessionsForEdit(busyForDay);
+    } catch (err) {
+      console.warn('[PatientDetailScreen] Error al cargar horarios ocupados para edición:', err);
+      setBusySessionsForEdit([]);
+    }
+  };
+
+  const handleOpenEditModal = (session: AppointmentSession) => {
+    if (session.estado !== 'Programada') return;
+    setEditingSession(session);
+    setEditFecha(session.fecha);
+    setEditHora(session.hora);
+    setEditModalidad((session.modalidad === 'online' ? 'online' : 'presencial') as Modalidad);
+    const rawDur = String(session.duracion || '60');
+    setEditDuracion(['30', '45', '60', '75', '90'].includes(rawDur) ? (rawDur as Duracion) : '60');
+    setEditObservaciones(session.observaciones || '');
+    loadBusySessionsForEditDate(session.fecha, session.id);
+    setEditModalVisible(true);
+  };
+
+  const hasEditChanges = () => {
+    if (!editingSession) return false;
+    return (
+      editFecha !== editingSession.fecha ||
+      editHora !== editingSession.hora ||
+      editModalidad !== (editingSession.modalidad === 'online' ? 'online' : 'presencial') ||
+      editDuracion !== String(editingSession.duracion || '60') ||
+      editObservaciones.trim() !== (editingSession.observaciones || '').trim()
+    );
+  };
+
+  const handleCloseEditModal = () => {
+    if (!hasEditChanges()) {
+      setEditModalVisible(false);
+      setEditingSession(null);
+      return;
+    }
+    Alert.alert(
+      '¿Descartar modificaciones?',
+      'Tienes cambios sin guardar en esta cita. Si sales ahora, se perderán las modificaciones.',
+      [
+        { text: 'Seguir editando', style: 'cancel' },
+        {
+          text: 'Descartar',
+          style: 'destructive',
+          onPress: () => {
+            setEditModalVisible(false);
+            setEditingSession(null);
+          },
+        },
+      ]
+    );
+  };
+
+  // Recargar ocupados al cambiar fecha en edición
+  useEffect(() => {
+    if (editModalVisible && editFecha) {
+      loadBusySessionsForEditDate(editFecha, editingSession?.id);
+      if (editHora && !isTimeStillValid(editFecha, editHora)) {
+        setEditHora('');
+        Alert.alert('Hora ya no disponible', 'La hora seleccionada ya pasó para la fecha elegida.');
+      }
+    }
+  }, [editFecha, editModalVisible]);
+
+  const handleSaveEditSession = async () => {
+    if (!editingSession) return;
+    if (!editFecha) {
+      Alert.alert('Falta la fecha', 'Selecciona la fecha para la sesión.');
+      return;
+    }
+    if (!editHora) {
+      Alert.alert('Falta la hora', 'Selecciona la hora para la sesión.');
+      return;
+    }
+    if (!isTimeStillValid(editFecha, editHora)) {
+      Alert.alert('Hora inválida', 'La hora seleccionada ya pasó. Elige una hora futura.');
+      return;
+    }
+
+    const startMin = timeToMinutes(editHora);
+    const durMin = Number(editDuracion) || 60;
+    const hasConflict = busySessionsForEdit.some((b) =>
+      rangesOverlap(startMin, durMin, timeToMinutes(b.hora), b.duracion)
+    );
+
+    if (hasConflict) {
+      Alert.alert(
+        'Horario ocupado',
+        'Ya existe otra sesión que se cruza con este horario y duración. Por favor, selecciona otra hora.'
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Confirmar modificaciones',
+      `¿Deseas guardar los cambios en esta cita?\n\n• Fecha: ${editFecha}\n• Hora: ${editHora} hrs\n• Duración: ${editDuracion} min\n• Modalidad: ${editModalidad === 'online' ? 'Online' : 'Presencial'}`,
+      [
+        { text: 'Volver a revisar', style: 'cancel' },
+        {
+          text: 'Confirmar',
+          onPress: async () => {
+            setIsUpdating(true);
+            const res = await appointmentService.updateAppointment(editingSession.id, {
+              fecha: editFecha,
+              hora: editHora,
+              duracion: durMin,
+              modalidad: editModalidad,
+              observaciones: editObservaciones.trim(),
+            });
+            setIsUpdating(false);
+
+            if (res.success) {
+              Alert.alert('¡Cita modificada!', 'La sesión ha sido reprogramada exitosamente.');
+              setEditModalVisible(false);
+              setEditingSession(null);
+              await loadSessions();
+            } else {
+              Alert.alert('Error', res.error || 'No se pudo actualizar la cita.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteSession = () => {
+    if (!editingSession) return;
+    Alert.alert(
+      '¿Cancelar cita programada?',
+      `¿Estás seguro de que deseas cancelar la cita del ${editingSession.fecha} a las ${editingSession.hora} hrs? Esta acción liberará el horario de tu agenda.`,
+      [
+        { text: 'No, mantener cita', style: 'cancel' },
+        {
+          text: 'Sí, cancelar cita',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true);
+            const res = await appointmentService.deleteAppointment(editingSession.id);
+            setIsDeleting(false);
+
+            if (res.success) {
+              Alert.alert('Cita cancelada', 'La cita programada ha sido eliminada con éxito.');
+              setEditModalVisible(false);
+              setEditingSession(null);
+              await loadSessions();
+            } else {
+              Alert.alert('Error', res.error || 'No se pudo cancelar la cita.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topBar}>
@@ -337,20 +524,33 @@ const handleCloseModal = () => {
                   </Text>
                 )}
               </View>
-              <View
-                style={[
-                  styles.statusBadge,
-                  session.estado === 'Completada' && styles.statusBadgeCompleted,
-                ]}
-              >
-                <Text
+              <View style={styles.sessionCardRightCol}>
+                <View
                   style={[
-                    styles.statusBadgeText,
-                    session.estado === 'Completada' && styles.statusBadgeTextCompleted,
+                    styles.statusBadge,
+                    session.estado === 'Completada' && styles.statusBadgeCompleted,
                   ]}
                 >
-                  {session.estado}
-                </Text>
+                  <Text
+                    style={[
+                      styles.statusBadgeText,
+                      session.estado === 'Completada' && styles.statusBadgeTextCompleted,
+                    ]}
+                  >
+                    {session.estado}
+                  </Text>
+                </View>
+
+                {session.estado === 'Programada' && (
+                  <TouchableOpacity
+                    style={styles.manageButton}
+                    onPress={() => handleOpenEditModal(session)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="create-outline" size={13} color="#0F613B" style={{ marginRight: 3 }} />
+                    <Text style={styles.manageButtonText}>Modificar</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           ))
@@ -527,8 +727,8 @@ const handleCloseModal = () => {
         visible={showDatePicker}
         title="Fecha de la Sesión"
         initialDate={fecha || getTodayStr()}
-        minDate={new Date()}
-        maxDate={new Date(new Date().setMonth(new Date().getMonth() + 6))}
+        minDate={minBookingDate}
+        maxDate={maxBookingDate}
         yearOrder="asc"
         onClose={() => setShowDatePicker(false)}
         onSelectDate={(formattedDate: string) => setFecha(formattedDate)}
@@ -543,6 +743,181 @@ const handleCloseModal = () => {
         title="Selecciona la hora de la sesión"
         onClose={() => setShowTimePicker(false)}
         onSelectTime={(selected) => setHora(selected)}
+      />
+
+      {/* Modal Pop-up para Modificar o Cancelar Sesión Programada */}
+      <Modal
+        animationType="fade"
+        transparent
+        visible={editModalVisible}
+        onRequestClose={handleCloseEditModal}
+      >
+        <Pressable style={styles.modalOverlay} onPress={handleCloseEditModal}>
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={styles.modalHeaderRow}>
+                <Text style={styles.modalHeaderTitle}>Modificar Cita</Text>
+                <TouchableOpacity onPress={handleCloseEditModal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="close" size={22} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.infoBanner}>
+                <Text style={styles.infoBannerText}>
+                  Paciente: <Text style={{ fontWeight: '700' }}>{patient.nombre} {patient.apellido_paterno}</Text>
+                </Text>
+              </View>
+
+              {/* Fecha */}
+              <Text style={styles.fieldLabel}>Fecha de la sesión</Text>
+              <TouchableOpacity
+                style={styles.pickerTrigger}
+                onPress={() => setShowEditDatePicker(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="calendar-outline" size={18} color="#0F613B" style={styles.pickerIcon} />
+                <Text style={styles.pickerValueText}>{editFecha}</Text>
+                <Ionicons name="chevron-down" size={16} color="#6B7280" />
+              </TouchableOpacity>
+
+              {/* Hora */}
+              <Text style={styles.fieldLabel}>Hora</Text>
+              <TouchableOpacity
+                style={styles.pickerTrigger}
+                onPress={() => setShowEditTimePicker(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="time-outline" size={18} color="#0F613B" style={styles.pickerIcon} />
+                <Text style={styles.pickerValueText}>{editHora} hrs</Text>
+                <Ionicons name="chevron-down" size={16} color="#6B7280" />
+              </TouchableOpacity>
+
+              {/* Duración */}
+              <Text style={styles.fieldLabel}>Duración</Text>
+              <View style={styles.chipRow}>
+                {DURATIONS.map((d) => (
+                  <TouchableOpacity
+                    key={d.key}
+                    style={[styles.chip, editDuracion === d.key && styles.chipActive]}
+                    onPress={() => setEditDuracion(d.key)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.chipText, editDuracion === d.key && styles.chipTextActive]}>
+                      {d.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Modalidad */}
+              <Text style={styles.fieldLabel}>Modalidad</Text>
+              <View style={styles.chipRow}>
+                <TouchableOpacity
+                  style={[styles.chip, editModalidad === 'presencial' && styles.chipActive]}
+                  onPress={() => setEditModalidad('presencial')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="business-outline"
+                    size={16}
+                    color={editModalidad === 'presencial' ? '#0F613B' : '#6B7280'}
+                  />
+                  <Text
+                    style={[styles.chipText, editModalidad === 'presencial' && styles.chipTextActive]}
+                  >
+                    Presencial
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.chip, editModalidad === 'online' && styles.chipActive]}
+                  onPress={() => setEditModalidad('online')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="videocam-outline"
+                    size={16}
+                    color={editModalidad === 'online' ? '#0F613B' : '#6B7280'}
+                  />
+                  <Text
+                    style={[styles.chipText, editModalidad === 'online' && styles.chipTextActive]}
+                  >
+                    Online
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Observaciones */}
+              <Text style={styles.fieldLabel}>Observaciones</Text>
+              <TextInput
+                style={[styles.input, { minHeight: 64, textAlignVertical: 'top', paddingTop: 10 }]}
+                placeholder="Observaciones de la sesión..."
+                placeholderTextColor="#9CA3AF"
+                value={editObservaciones}
+                onChangeText={setEditObservaciones}
+                multiline
+              />
+
+              {/* Botón Guardar Modificaciones */}
+              <TouchableOpacity
+                style={[styles.saveButton, (isUpdating || isDeleting) && { opacity: 0.7 }]}
+                onPress={handleSaveEditSession}
+                activeOpacity={0.85}
+                disabled={isUpdating || isDeleting}
+              >
+                {isUpdating ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Guardar modificaciones</Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Botón Cancelar / Eliminar Cita */}
+              <TouchableOpacity
+                style={[styles.deleteButton, (isUpdating || isDeleting) && { opacity: 0.7 }]}
+                onPress={handleDeleteSession}
+                activeOpacity={0.85}
+                disabled={isUpdating || isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#DC2626" />
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <Ionicons name="trash-outline" size={17} color="#DC2626" />
+                    <Text style={styles.deleteButtonText}>Cancelar y eliminar cita</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={handleCloseEditModal} style={{ marginTop: 10 }}>
+                <Text style={styles.cancelText}>Volver</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* DatePickerModal para editar fecha */}
+      <DatePickerModal
+        visible={showEditDatePicker}
+        title="Modificar Fecha de la Sesión"
+        initialDate={editFecha || getTodayStr()}
+        minDate={minBookingDate}
+        maxDate={maxBookingDate}
+        yearOrder="asc"
+        onClose={() => setShowEditDatePicker(false)}
+        onSelectDate={(formattedDate: string) => setEditFecha(formattedDate)}
+      />
+
+      {/* TimePickerModal para editar hora */}
+      <TimePickerModal
+        visible={showEditTimePicker}
+        selectedTime={editHora || '10:00'}
+        selectedDate={editFecha}
+        busySessions={busySessionsForEdit}
+        title="Modificar hora de la sesión"
+        onClose={() => setShowEditTimePicker(false)}
+        onSelectTime={(selected) => setEditHora(selected)}
       />
     </SafeAreaView>
   );
@@ -708,4 +1083,60 @@ const styles = StyleSheet.create({
   saveButton: { backgroundColor: '#0F613B', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
   saveButtonText: { color: '#FFFFFF', fontSize: 15.5, fontWeight: '700' },
   cancelText: { color: '#6B7280', fontSize: 13, fontWeight: '600', textAlign: 'center', marginTop: 8 },
+
+  sessionCardRightCol: {
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  manageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EAF5EE',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBE5D6',
+  },
+  manageButtonText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#0F613B',
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  modalHeaderTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  infoBanner: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 14,
+  },
+  infoBannerText: {
+    fontSize: 12.5,
+    color: '#4B5563',
+  },
+  deleteButton: {
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  deleteButtonText: {
+    color: '#DC2626',
+    fontSize: 14,
+    fontWeight: '700',
+  },
 });

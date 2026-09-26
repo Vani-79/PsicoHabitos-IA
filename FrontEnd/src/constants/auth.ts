@@ -17,6 +17,7 @@ export interface TestUser {
   availableRoles?: UserRole[];
   hasMultipleRoles?: boolean;
   subscription?: SubscriptionInfo;
+  fechaIngreso?: string;
 }
 
 export interface PsychologistProfileData {

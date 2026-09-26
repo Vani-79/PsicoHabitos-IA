@@ -16,6 +16,8 @@ import {
 } from '../../components/PsychologistBottomNav';
 import { DatePickerModal } from '../../components/DatePickerModal';
 import { appointmentService } from '../../services/appointmentService';
+import { authService } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 import { AppointmentSession } from '../../types/patient';
 
 interface PsychologistCalendarScreenProps {
@@ -91,11 +93,65 @@ const formatFullDateSpanish = (dateStr: string): string => {
   return `${dayFullName}, ${d.getDate()} de ${monthName}`;
 };
 
+const parseEntryDate = (dateStr?: string): Date | null => {
+  if (!dateStr || dateStr === 'No registrada') return null;
+  let y = 0;
+  let m = 0;
+  let d = 1;
+  if (dateStr.includes('/')) {
+    const parts = dateStr.split('/').map(Number);
+    if (parts.length === 3) {
+      d = parts[0];
+      m = parts[1] - 1;
+      y = parts[2];
+    }
+  } else if (dateStr.includes('-')) {
+    const parts = dateStr.split('-').map(Number);
+    if (parts.length === 3) {
+      y = parts[0];
+      m = parts[1] - 1;
+      d = parts[2];
+    }
+  }
+  if (y > 1900 && m >= 0 && m <= 11 && d >= 1 && d <= 31) {
+    const parsed = new Date(y, m, d);
+    if (!isNaN(parsed.getTime())) return parsed;
+  }
+  return null;
+};
+
 export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProps> = ({
   doctorName = 'Especialista',
   onNavigateTab,
 }) => {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+
+  // Fecha del primer ingreso del psicólogo en la app
+  const [minCalendarDate, setMinCalendarDate] = useState<Date | null>(() => {
+    return parseEntryDate(user?.fechaIngreso);
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchEntryDate = async () => {
+      try {
+        const profile = await authService.getPsychologistProfile();
+        if (isMounted && profile?.fechaIngreso) {
+          const parsed = parseEntryDate(profile.fechaIngreso);
+          if (parsed) {
+            setMinCalendarDate(parsed);
+          }
+        }
+      } catch (err) {
+        console.warn('[PsychologistCalendarScreen] Error obteniendo fecha de ingreso:', err);
+      }
+    };
+    fetchEntryDate();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Fecha base para la semana y fecha seleccionada (por defecto: HOY)
   const todayDate = useMemo(() => new Date(), []);
@@ -163,37 +219,6 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
     setRefreshing(true);
     await fetchAppointments();
     setRefreshing(false);
-  };
-
-  // Navegación de semana anterior y posterior
-  const handlePrevWeek = () => {
-    setBaseDate((prev) => {
-      const nextDate = new Date(prev);
-      nextDate.setDate(prev.getDate() - 7);
-      // Actualizar el día seleccionado al mismo día de la semana anterior
-      const selectedParts = selectedDateStr.split('-');
-      if (selectedParts.length === 3) {
-        const sel = new Date(Number(selectedParts[0]), Number(selectedParts[1]) - 1, Number(selectedParts[2]));
-        sel.setDate(sel.getDate() - 7);
-        setSelectedDateStr(formatLocalDate(sel));
-      }
-      return nextDate;
-    });
-  };
-
-  const handleNextWeek = () => {
-    setBaseDate((prev) => {
-      const nextDate = new Date(prev);
-      nextDate.setDate(prev.getDate() + 7);
-      // Actualizar el día seleccionado al mismo día de la semana siguiente
-      const selectedParts = selectedDateStr.split('-');
-      if (selectedParts.length === 3) {
-        const sel = new Date(Number(selectedParts[0]), Number(selectedParts[1]) - 1, Number(selectedParts[2]));
-        sel.setDate(sel.getDate() + 7);
-        setSelectedDateStr(formatLocalDate(sel));
-      }
-      return nextDate;
-    });
   };
 
   // Botón rápido para volver a HOY
@@ -295,6 +320,9 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
           {weekDays.map((day) => {
             const isSelected = selectedDateStr === day.dateStr;
             const hasApts = datesWithAppointments.has(day.dateStr);
+            const isDayDisabled = minCalendarDate
+              ? day.dateObj < new Date(minCalendarDate.getFullYear(), minCalendarDate.getMonth(), minCalendarDate.getDate())
+              : false;
 
             return (
               <TouchableOpacity
@@ -303,8 +331,10 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
                   styles.dayCard,
                   isSelected && styles.dayCardActive,
                   day.isToday && !isSelected && styles.dayCardToday,
+                  isDayDisabled && styles.dayCardDisabled,
                 ]}
                 onPress={() => setSelectedDateStr(day.dateStr)}
+                disabled={isDayDisabled}
                 activeOpacity={0.8}
               >
                 <Text
@@ -482,11 +512,13 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
         )}
       </ScrollView>
 
-      {/* Modal Desplegable con Cuadrícula Completa de Mes */}
+      {/* Modal Desplegable con Cuadrícula Completa de Mes (bloqueando años anteriores al ingreso) */}
       <DatePickerModal
         visible={showMonthPickerModal}
         title="Seleccionar Fecha en el Calendario"
         initialDate={selectedDateStr}
+        minDate={minCalendarDate || new Date(new Date().getFullYear(), 0, 1)}
+        yearOrder="asc"
         onClose={() => setShowMonthPickerModal(false)}
         onSelectDate={handleSelectCustomDate}
       />
@@ -567,6 +599,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
+  },
+  dayCardDisabled: {
+    opacity: 0.35,
+    backgroundColor: '#F3F4F6',
   },
   monthDropdownButton: {
     flexDirection: 'row',

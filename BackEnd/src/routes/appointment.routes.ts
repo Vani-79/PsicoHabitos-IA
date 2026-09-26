@@ -367,3 +367,167 @@ appointmentRouter.get(
     }
   }
 );
+
+/**
+ * PUT /api/appointments/:id
+ * Permite al especialista modificar una sesión que se encuentre programada.
+ */
+appointmentRouter.put(
+  '/:id',
+  requireRole('psicologo', 'admin'),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const appointmentId = Number(req.params.id);
+      if (!appointmentId) {
+        res.status(400).json({ success: false, error: 'ID de cita inválido.' });
+        return;
+      }
+
+      const { fecha, hora, duracion, modalidad, observaciones } = req.body;
+      if (!fecha || !hora) {
+        res.status(400).json({ success: false, error: 'Faltan campos requeridos (fecha, hora).' });
+        return;
+      }
+
+      let psicologoId: number | null = null;
+      if (req.user!.role === 'psicologo') {
+        psicologoId = await getPsicologoIdByUserId(req.user!.userId);
+        if (!psicologoId) {
+          res.status(403).json({ success: false, error: 'Perfil de especialista no encontrado.' });
+          return;
+        }
+      }
+
+      // 1. Obtener la cita actual y validar pertenencia
+      let checkSql = 'SELECT * FROM citas_sesiones WHERE id = ? LIMIT 1';
+      const checkParams: any[] = [appointmentId];
+      if (psicologoId) {
+        checkSql = 'SELECT * FROM citas_sesiones WHERE id = ? AND psicologo_id = ? LIMIT 1';
+        checkParams.push(psicologoId);
+      }
+
+      const [existingRows] = await pool.query<RowDataPacket[]>(checkSql, checkParams);
+      if (existingRows.length === 0) {
+        res.status(404).json({ success: false, error: 'Cita no encontrada o no tienes permiso para modificarla.' });
+        return;
+      }
+
+      const currentApt = existingRows[0];
+      if (currentApt.estado !== 'programada') {
+        res.status(400).json({ success: false, error: 'Solo se pueden modificar sesiones que se encuentren en estado programada.' });
+        return;
+      }
+
+      const targetPsicoId = currentApt.psicologo_id;
+      const durationMinutes = Number(duracion) || Number(currentApt.duracion) || 60;
+      const modalityClean = modalidad === 'online' ? 'online' : 'presencial';
+      const cleanNotes = observaciones !== undefined ? String(observaciones).trim() : currentApt.observaciones;
+      const startDateTimeStr = `${fecha} ${hora}`;
+
+      // 2. Verificar que no choque con otra cita del mismo psicólogo en ese horario (excluyendo esta misma cita)
+      const [conflictRows] = await pool.query<RowDataPacket[]>(
+        `SELECT id FROM citas_sesiones 
+         WHERE psicologo_id = ? 
+           AND id != ? 
+           AND estado != 'cancelada'
+           AND (
+             (fecha_hora_inicio < DATE_ADD(STR_TO_DATE(?, '%Y-%m-%d %H:%i'), INTERVAL ? MINUTE))
+             AND
+             (fecha_hora_fin > STR_TO_DATE(?, '%Y-%m-%d %H:%i'))
+           )
+         LIMIT 1`,
+        [targetPsicoId, appointmentId, startDateTimeStr, durationMinutes, startDateTimeStr]
+      );
+
+      if (conflictRows.length > 0) {
+        res.status(409).json({ success: false, error: 'El horario seleccionado se cruza con otra cita ya agendada.' });
+        return;
+      }
+
+      // 3. Actualizar la cita
+      await pool.query(
+        `UPDATE citas_sesiones SET
+           fecha_hora_inicio = STR_TO_DATE(?, '%Y-%m-%d %H:%i'),
+           fecha_hora_fin = DATE_ADD(STR_TO_DATE(?, '%Y-%m-%d %H:%i'), INTERVAL ? MINUTE),
+           modalidad = ?,
+           observaciones = ?
+         WHERE id = ?`,
+        [startDateTimeStr, startDateTimeStr, durationMinutes, modalityClean, cleanNotes, appointmentId]
+      );
+
+      res.json({
+        success: true,
+        message: 'Sesión actualizada exitosamente.',
+        data: {
+          id: String(appointmentId),
+          fecha,
+          hora,
+          duracion: String(durationMinutes),
+          modalidad: modalityClean,
+          observaciones: cleanNotes,
+        },
+      });
+    } catch (error) {
+      console.error('Error en PUT /api/appointments/:id:', error);
+      res.status(500).json({ success: false, error: 'Error al actualizar la cita clínica.' });
+    }
+  }
+);
+
+/**
+ * DELETE /api/appointments/:id
+ * Permite al especialista eliminar o cancelar una sesión programada.
+ */
+appointmentRouter.delete(
+  '/:id',
+  requireRole('psicologo', 'admin'),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const appointmentId = Number(req.params.id);
+      if (!appointmentId) {
+        res.status(400).json({ success: false, error: 'ID de cita inválido.' });
+        return;
+      }
+
+      let psicologoId: number | null = null;
+      if (req.user!.role === 'psicologo') {
+        psicologoId = await getPsicologoIdByUserId(req.user!.userId);
+        if (!psicologoId) {
+          res.status(403).json({ success: false, error: 'Perfil de especialista no encontrado.' });
+          return;
+        }
+      }
+
+      // 1. Obtener la cita actual y validar pertenencia
+      let checkSql = 'SELECT * FROM citas_sesiones WHERE id = ? LIMIT 1';
+      const checkParams: any[] = [appointmentId];
+      if (psicologoId) {
+        checkSql = 'SELECT * FROM citas_sesiones WHERE id = ? AND psicologo_id = ? LIMIT 1';
+        checkParams.push(psicologoId);
+      }
+
+      const [existingRows] = await pool.query<RowDataPacket[]>(checkSql, checkParams);
+      if (existingRows.length === 0) {
+        res.status(404).json({ success: false, error: 'Cita no encontrada o no tienes permiso para eliminarla.' });
+        return;
+      }
+
+      const currentApt = existingRows[0];
+      if (currentApt.estado !== 'programada') {
+        res.status(400).json({ success: false, error: 'Solo se pueden cancelar sesiones que se encuentren en estado programada.' });
+        return;
+      }
+
+      // 2. Eliminar la cita de la base de datos
+      await pool.query('DELETE FROM citas_sesiones WHERE id = ?', [appointmentId]);
+
+      res.json({
+        success: true,
+        message: 'Sesión cancelada y eliminada exitosamente.',
+      });
+    } catch (error) {
+      console.error('Error en DELETE /api/appointments/:id:', error);
+      res.status(500).json({ success: false, error: 'Error al cancelar la sesión clínica.' });
+    }
+  }
+);

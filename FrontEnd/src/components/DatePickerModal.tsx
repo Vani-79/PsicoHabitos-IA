@@ -249,8 +249,13 @@ const handleSelectYear = (year: number) => {
   };
 
   const isMonthDisabled = (monthIndex: number) => {
-    if (!maxDate) return false;
-    return displayedYear === maxDate.getFullYear() && monthIndex > maxDate.getMonth();
+    if (maxDate && displayedYear === maxDate.getFullYear() && monthIndex > maxDate.getMonth()) {
+      return true;
+    }
+    if (minDate && displayedYear === minDate.getFullYear() && monthIndex < minDate.getMonth()) {
+      return true;
+    }
+    return false;
   };
 
   const handleConfirm = () => {
@@ -513,16 +518,8 @@ const handleSelectYear = (year: number) => {
             </View>
           )}
 
-          {/* Barra de Botones Inferiores: Hoy, Cancelar y Aceptar */}
+          {/* Barra de Botones Inferiores: Cancelar y Aceptar */}
           <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.todayButton}
-              onPress={handleSelectToday}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.todayButtonText}>Hoy</Text>
-            </TouchableOpacity>
-
             <View style={styles.actionButtonsRow}>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -778,7 +775,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     marginTop: 14,
     paddingTop: 12,

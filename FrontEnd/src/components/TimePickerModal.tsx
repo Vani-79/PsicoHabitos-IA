@@ -10,11 +10,21 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export const TIME_SLOTS = [
-  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-  '12:00', '12:30', '13:00', '14:00', '14:30', '15:00', '15:30', '16:00',
-  '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00',
-];
+const generateTimeSlots = (): string[] => {
+  const slots: string[] = [];
+  for (let hour = 8; hour <= 20; hour++) {
+    const hStr = String(hour).padStart(2, '0');
+    slots.push(`${hStr}:00`);
+    if (hour < 20) {
+      slots.push(`${hStr}:15`);
+      slots.push(`${hStr}:30`);
+      slots.push(`${hStr}:45`);
+    }
+  }
+  return slots;
+};
+
+export const TIME_SLOTS = generateTimeSlots();
 
 interface TimePickerModalProps {
   visible: boolean;
@@ -22,8 +32,8 @@ interface TimePickerModalProps {
   onSelectTime: (time: string) => void;
   onClose: () => void;
   title?: string;
-  selectedDate?: string; //si es hoy, se filtran las horas ya pasadas
-  busySessions?: { hora: string; duracion: number} [];
+  selectedDate?: string; // si es hoy, se filtran las horas ya pasadas
+  busySessions?: { hora: string; duracion: number }[];
 }
 
 export const TimePickerModal: React.FC<TimePickerModalProps> = ({
@@ -40,16 +50,15 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   const isToday = selectedDate === todayStr;
   const nowMinutes = today.getHours() * 60 + today.getMinutes();
 
-  const BUFFER_MINUTES = 15;
+  const isSlotBusy = (slotMinutes: number) => {
+    return busySessions.some((b) => {
+      const [bh, bm] = b.hora.split(':').map(Number);
+      const busyStart = bh * 60 + bm;
+      const busyEnd = busyStart + (Number(b.duracion) || 60);
+      return slotMinutes >= busyStart && slotMinutes < busyEnd;
+    });
+  };
 
-const isSlotBusy = (slotMinutes: number) => {
-  return busySessions.some((b) => {
-    const [bh, bm] = b.hora.split(':').map(Number);
-    const busyStart = bh * 60 + bm - BUFFER_MINUTES;
-    const busyEnd = busyStart + (Number(b.duracion) || 60) + BUFFER_MINUTES * 2;
-    return slotMinutes >= busyStart && slotMinutes < busyEnd;
-  });
-};
   const availableSlots = TIME_SLOTS.filter((slot) => {
     const [h, m] = slot.split(':').map(Number);
     const slotMinutes = h * 60 + m;
@@ -79,7 +88,9 @@ const isSlotBusy = (slotMinutes: number) => {
           <ScrollView style={styles.scrollList} showsVerticalScrollIndicator={false}>
             {availableSlots.length === 0 && (
               <Text style={styles.noSlotsText}>
-                No quedan horarios disponibles para hoy. Elige otra fecha.
+                {isToday
+                  ? 'No quedan horarios disponibles para hoy. Elige otra fecha.'
+                  : 'No hay horarios disponibles para esta fecha. Elige otra fecha.'}
               </Text>
             )}
             {availableSlots.map((slot) => {

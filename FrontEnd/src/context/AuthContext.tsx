@@ -55,6 +55,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             availableRoles: saved.availableRoles,
             hasMultipleRoles: saved.hasMultipleRoles,
             subscription: saved.subscription,
+            fechaIngreso: saved.fechaIngreso,
           };
           setUser(currentUser);
 
@@ -96,6 +97,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           availableRoles: userData.availableRoles,
           hasMultipleRoles: userData.hasMultipleRoles,
           subscription: userData.subscription,
+          fechaIngreso: userData.fechaIngreso,
         });
       } else {
         await storageService.clearRememberedEmail();

@@ -740,17 +740,21 @@ authRouter.post('/login', authLimiter, async (req: Request, res: Response): Prom
         role: effectiveRole,
       });
 
-      // Consultar estado de suscripción si accede al portal de especialista
+      // Consultar estado de suscripción y fecha de ingreso si accede al portal de especialista
       let subscription: { isActive: boolean; status: 'activa' | 'expirada' | 'inactiva'; finDate?: string; daysRemaining: number; meses?: number } | undefined = undefined;
+      let fechaIngreso: string | undefined = undefined;
       if (effectiveRole === 'psicologo') {
         const [psicoRows] = await pool.query<RowDataPacket[]>(
-          `SELECT id, suscripcion_meses, 
-                  DATE_FORMAT(suscripcion_inicio, '%Y-%m-%d') as suscripcion_inicio, 
-                  DATE_FORMAT(suscripcion_fin, '%Y-%m-%d') as suscripcion_fin, 
-                  suscripcion_activa,
-                  DATEDIFF(suscripcion_fin, NOW()) as dias_restantes,
-                  (suscripcion_fin >= NOW() AND suscripcion_activa = 1) as is_valid
-           FROM psicologos WHERE usuario_id = ? LIMIT 1`,
+          `SELECT p.id, p.suscripcion_meses, 
+                  DATE_FORMAT(p.suscripcion_inicio, '%Y-%m-%d') as suscripcion_inicio, 
+                  DATE_FORMAT(p.suscripcion_fin, '%Y-%m-%d') as suscripcion_fin, 
+                  p.suscripcion_activa,
+                  DATEDIFF(p.suscripcion_fin, NOW()) as dias_restantes,
+                  (p.suscripcion_fin >= NOW() AND p.suscripcion_activa = 1) as is_valid,
+                  DATE_FORMAT(COALESCE(u.created_at, p.created_at), '%Y-%m-%d') as fecha_ingreso
+           FROM psicologos p
+           LEFT JOIN usuarios u ON u.id = p.usuario_id
+           WHERE p.usuario_id = ? LIMIT 1`,
           [user.id]
         );
         if (psicoRows.length > 0) {
@@ -763,6 +767,7 @@ authRouter.post('/login', authLimiter, async (req: Request, res: Response): Prom
             daysRemaining: Math.max(0, p.dias_restantes || 0),
             meses: p.suscripcion_meses,
           };
+          fechaIngreso = p.fecha_ingreso;
         }
       }
 
@@ -777,6 +782,7 @@ authRouter.post('/login', authLimiter, async (req: Request, res: Response): Prom
           name,
           token,
           subscription,
+          fechaIngreso,
         },
       });
       return;

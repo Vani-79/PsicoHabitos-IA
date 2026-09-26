@@ -14,7 +14,75 @@ export interface CreateAppointmentPayload {
   observaciones: string;
 }
 
+export interface UpdateAppointmentPayload {
+  fecha: string; // 'YYYY-MM-DD'
+  hora: string;  // 'HH:mm'
+  duracion?: number;
+  modalidad: 'presencial' | 'online';
+  observaciones?: string;
+}
+
 export const appointmentService = {
+  /**
+   * Modifica una sesión programada existente.
+   */
+  async updateAppointment(
+    id: string | number,
+    payload: UpdateAppointmentPayload
+  ): Promise<ApiResponse<any>> {
+    try {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/appointments/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await response.json().catch(() => null);
+
+      if (response.ok && json && json.success) {
+        return json;
+      }
+
+      return {
+        success: false,
+        error: json?.error || 'Error al actualizar la sesión en el servidor.',
+      };
+    } catch (err) {
+      console.warn('[appointmentService] Error de conexión al actualizar cita:', err);
+      return {
+        success: false,
+        error: 'No se pudo conectar con el servidor para actualizar la sesión.',
+      };
+    }
+  },
+
+  /**
+   * Cancela y elimina una sesión programada existente.
+   */
+  async deleteAppointment(id: string | number): Promise<ApiResponse<any>> {
+    try {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/appointments/${id}`, {
+        method: 'DELETE',
+      });
+
+      const json = await response.json().catch(() => null);
+
+      if (response.ok && json && json.success) {
+        return json;
+      }
+
+      return {
+        success: false,
+        error: json?.error || 'Error al cancelar la sesión en el servidor.',
+      };
+    } catch (err) {
+      console.warn('[appointmentService] Error de conexión al cancelar cita:', err);
+      return {
+        success: false,
+        error: 'No se pudo conectar con el servidor para cancelar la sesión.',
+      };
+    }
+  },
   /**
    * Crea una nueva sesión clínica agendada por el especialista.
    */
