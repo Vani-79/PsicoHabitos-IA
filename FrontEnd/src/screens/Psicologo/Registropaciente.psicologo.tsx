@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { DatePickerModal } from '../../components/DatePickerModal';
 import { TimePickerModal } from '../../components/TimePickerModal';
+import { appointmentService } from '../../services/appointmentService';
 import {
   Gender,
   PatientRegistrationForm,
@@ -31,6 +32,20 @@ const SESSION_DURATIONS = [
   { key: '75', label: '75 min' },
   { key: '90', label: '90 min' },
 ];
+
+const rangesOverlap = (
+  start1: number,
+  dur1: number,
+  start2: number,
+  dur2: number
+) => {
+  return start1 < start2 + dur2 && start2 < start1 + dur1;
+};
+
+const timeToMinutes = (timeStr: string) => {
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
+};
 
 
 
@@ -98,6 +113,73 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
   const [showSessionDatePicker, setShowSessionDatePicker] = useState(false);
   const [showSessionTimePicker, setShowSessionTimePicker] = useState(false);
 
+  // Sesiones ocupadas del psicólogo para la fecha de primera sesión
+  const [busySessions, setBusySessions] = useState<{ hora: string; duracion: number }[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadBusy = async () => {
+      if (!form.fechaPrimeraSesion) {
+        if (isMounted) setBusySessions([]);
+        return;
+      }
+      try {
+        const dayAppointments = await appointmentService.getPsychologistCalendar({
+          date: form.fechaPrimeraSesion,
+        });
+        if (isMounted) {
+          const busyForDay = dayAppointments
+            .filter((a) => a.estado !== 'Cancelada')
+            .map((a) => ({ hora: a.hora, duracion: Number(a.duracion) || 60 }));
+          setBusySessions(busyForDay);
+        }
+      } catch (err) {
+        console.warn('[Registropaciente] Error al cargar horarios ocupados:', err);
+        if (isMounted) setBusySessions([]);
+      }
+    };
+
+    loadBusy();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [form.fechaPrimeraSesion]);
+
+  // Si cambia la duración o los horarios ocupados: valida si la hora elegida sigue disponible
+  useEffect(() => {
+    if (!form.horaPrimeraSesion || !form.fechaPrimeraSesion) return;
+
+    const startMinutes = timeToMinutes(form.horaPrimeraSesion);
+    const durMinutes = Number(form.duracionPrimeraSesion) || 60;
+
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const isToday = form.fechaPrimeraSesion === todayStr;
+    const nowMinutes = today.getHours() * 60 + today.getMinutes();
+
+    const isPast = isToday && startMinutes <= nowMinutes + 30;
+    const hasConflict = busySessions.some((b) =>
+      rangesOverlap(startMinutes, durMinutes, timeToMinutes(b.hora), b.duracion)
+    );
+
+    if (isPast || hasConflict) {
+      updateField('horaPrimeraSesion', '');
+      Alert.alert(
+        'Hora no disponible',
+        'La hora seleccionada se cruza con otra sesión o ya no está disponible para esta fecha/duración. Por favor, selecciona una nueva hora.'
+      );
+    }
+  }, [busySessions, form.duracionPrimeraSesion]);
+
+  const handleOpenSessionTimePicker = () => {
+    if (!form.fechaPrimeraSesion) {
+      Alert.alert('Selecciona primero la fecha', 'Elige la fecha de la primera sesión antes de escoger la hora.');
+      return;
+    }
+    setShowSessionTimePicker(true);
+  };
+
   const updateField = (field: keyof PatientRegistrationForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
@@ -139,6 +221,21 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
     if (!validation.isValid) {
       Alert.alert(validation.errorTitle || 'Dato inválido', validation.errorMessage || 'Verifica los datos ingresados.');
       return;
+    }
+
+    if (form.horaPrimeraSesion) {
+      const startMinutes = timeToMinutes(form.horaPrimeraSesion);
+      const durMinutes = Number(form.duracionPrimeraSesion) || 60;
+      const hasConflict = busySessions.some((b) =>
+        rangesOverlap(startMinutes, durMinutes, timeToMinutes(b.hora), b.duracion)
+      );
+      if (hasConflict) {
+        Alert.alert(
+          'Horario ocupado',
+          'Ya existe una sesión que se cruza con este horario y duración. Elige otra hora.'
+        );
+        return;
+      }
     }
 
     // 2. Fecha y hora de registro para la columna created_at en MySQL
@@ -420,12 +517,17 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
               <Text style={styles.inputLabel}>Hora de Inicio de la Primera Sesión</Text>
               <TouchableOpacity
                 style={styles.datePickerTrigger}
-                onPress={() => setShowSessionTimePicker(true)}
+                onPress={handleOpenSessionTimePicker}
                 activeOpacity={0.8}
               >
                 <Ionicons name="time-outline" size={20} color="#0F613B" style={styles.dateIcon} />
-                <Text style={styles.datePickerValueText}>
-                  {form.horaPrimeraSesion || '10:00'} hrs
+                <Text
+                  style={[
+                    styles.datePickerValueText,
+                    !form.horaPrimeraSesion && styles.datePickerPlaceholder,
+                  ]}
+                >
+                  {form.horaPrimeraSesion ? `${form.horaPrimeraSesion} hrs` : 'Tocar para seleccionar hora'}
                 </Text>
                 <Ionicons name="chevron-down" size={18} color="#6B7280" />
               </TouchableOpacity>
@@ -589,6 +691,9 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
             <TimePickerModal
               visible={showSessionTimePicker}
               selectedTime={form.horaPrimeraSesion || '10:00'}
+              selectedDate={form.fechaPrimeraSesion}
+              busySessions={busySessions}
+              duration={Number(form.duracionPrimeraSesion) || 60}
               title="Hora de Inicio de la Primera Sesión"
               onClose={() => setShowSessionTimePicker(false)}
               onSelectTime={(time) => updateField('horaPrimeraSesion', time)}

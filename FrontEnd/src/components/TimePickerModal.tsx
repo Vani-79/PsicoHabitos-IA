@@ -34,6 +34,7 @@ interface TimePickerModalProps {
   title?: string;
   selectedDate?: string; // si es hoy, se filtran las horas ya pasadas
   busySessions?: { hora: string; duracion: number }[];
+  duration?: number; // Duración de la sesión solicitada en minutos (por defecto 60)
 }
 
 export const TimePickerModal: React.FC<TimePickerModalProps> = ({
@@ -44,18 +45,24 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   title = 'Seleccionar hora',
   selectedDate,
   busySessions = [],
+  duration = 60,
 }) => {
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const isToday = selectedDate === todayStr;
   const nowMinutes = today.getHours() * 60 + today.getMinutes();
 
-  const isSlotBusy = (slotMinutes: number) => {
+  // Comprueba si el intervalo candidato [slotMinutes, slotMinutes + sessionDuration)
+  // colisiona con alguna sesión ocupada [busyStart, busyEnd)
+  const isSlotColliding = (slotMinutes: number, sessionDuration: number) => {
+    const slotEnd = slotMinutes + sessionDuration;
     return busySessions.some((b) => {
+      if (!b.hora || !b.hora.includes(':')) return false;
       const [bh, bm] = b.hora.split(':').map(Number);
       const busyStart = bh * 60 + bm;
       const busyEnd = busyStart + (Number(b.duracion) || 60);
-      return slotMinutes >= busyStart && slotMinutes < busyEnd;
+      // Solapamiento exacto de rangos: A_inicio < B_fin && B_inicio < A_fin
+      return slotMinutes < busyEnd && busyStart < slotEnd;
     });
   };
 
@@ -64,7 +71,9 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
     const slotMinutes = h * 60 + m;
 
     if (isToday && slotMinutes <= nowMinutes + 30) return false;
-    if (isSlotBusy(slotMinutes)) return false;
+    if (isSlotColliding(slotMinutes, duration)) return false;
+    // No permitir citas que finalicen después de las 21:00 hrs
+    if (slotMinutes + duration > 21 * 60) return false;
 
     return true;
   });

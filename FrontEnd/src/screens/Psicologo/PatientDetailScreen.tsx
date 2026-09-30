@@ -166,6 +166,40 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
     loadBusySessionsForDate(fecha);
   }, [fecha]);
 
+  // Si cambia la duración o los horarios ocupados: comprueba si la hora elegida sigue disponible
+  useEffect(() => {
+    if (!fecha || !hora || !duracion) return;
+    const startMinutes = timeToMinutes(hora);
+    const newDuration = Number(duracion) || 60;
+    const hasConflict = busySessions.some((b) =>
+      rangesOverlap(startMinutes, newDuration, timeToMinutes(b.hora), b.duracion)
+    );
+    if (hasConflict) {
+      setHora('');
+      Alert.alert(
+        'Hora no disponible',
+        'La hora que habías seleccionado se cruza con otra sesión para la duración elegida. Por favor, selecciona una nueva hora.'
+      );
+    }
+  }, [duracion, busySessions]);
+
+  // Reactividad para modal de edición si cambia duración u horarios
+  useEffect(() => {
+    if (!editFecha || !editHora || !editDuracion) return;
+    const startMinutes = timeToMinutes(editHora);
+    const newDuration = Number(editDuracion) || 60;
+    const hasConflict = busySessionsForEdit.some((b) =>
+      rangesOverlap(startMinutes, newDuration, timeToMinutes(b.hora), b.duracion)
+    );
+    if (hasConflict) {
+      setEditHora('');
+      Alert.alert(
+        'Hora no disponible',
+        'La hora seleccionada se cruza con otra sesión para la duración elegida. Por favor, selecciona una nueva hora.'
+      );
+    }
+  }, [editDuracion, busySessionsForEdit]);
+
   const resetForm = () => {
     setFecha('');
     setHora('');
@@ -734,12 +768,13 @@ const handleCloseModal = () => {
         onSelectDate={(formattedDate: string) => setFecha(formattedDate)}
       />
 
-      {/* TimePickerModal: filtra horas pasadas y horas ya ocupadas ese día */}
+      {/* TimePickerModal: filtra horas pasadas y horas ya ocupadas ese día considerando duración */}
       <TimePickerModal
         visible={showTimePicker}
         selectedTime={hora || '10:00'}
         selectedDate={fecha}
         busySessions={busySessions}
+        duration={Number(duracion) || 60}
         title="Selecciona la hora de la sesión"
         onClose={() => setShowTimePicker(false)}
         onSelectTime={(selected) => setHora(selected)}
@@ -915,6 +950,7 @@ const handleCloseModal = () => {
         selectedTime={editHora || '10:00'}
         selectedDate={editFecha}
         busySessions={busySessionsForEdit}
+        duration={Number(editDuracion) || 60}
         title="Modificar hora de la sesión"
         onClose={() => setShowEditTimePicker(false)}
         onSelectTime={(selected) => setEditHora(selected)}

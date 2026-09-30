@@ -100,6 +100,14 @@ const getGreeting = () => {
   return { text: 'Buenas noches,', icon: 'moon-outline' as const };
 };
 
+// Normaliza texto para búsquedas: quita tildes/acentos y pasa a minúsculas ("Álvaro" -> "alvaro")
+const normalizeText = (text: string) =>
+  text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+
 export const PsychologistDashboardScreen: React.FC<
   PsychologistDashboardScreenProps
 > = ({
@@ -175,13 +183,13 @@ export const PsychologistDashboardScreen: React.FC<
     onSelectPatient(patient);
   };
 
+  const normalizedSearch = normalizeText(searchTerm.trim());
   const filteredPatients = patients.filter((p) => {
-    const fullName = `${p.nombre} ${p.apellido_paterno} ${p.apellido_materno || ''}`.toLowerCase();
-    // Solo por nombre y apellidos (el email ya no se muestra en las tarjetas)
-    return fullName.includes(searchTerm.trim().toLowerCase());
+    const fullName = `${p.nombre ?? ''} ${p.apellido_paterno ?? ''} ${p.apellido_materno ?? ''}`;
+    // Solo por nombre y apellidos, insensible a mayúsculas y tildes
+    return normalizeText(fullName).includes(normalizedSearch);
   });
 
-  const recentPatients = filteredPatients.slice(-5).reverse();
   const greeting = getGreeting();
   const todayEmails = new Set(todayPatients.map((p) => p.email));
   const sortedPatients = [...filteredPatients].sort(comparePatientsByName);
