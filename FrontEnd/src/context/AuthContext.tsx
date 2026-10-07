@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     };
 
-    restoreSession();
+    void restoreSession();
 
     return () => {
       isMounted = false;
@@ -114,7 +114,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = useCallback(async (): Promise<void> => {
     try {
-      await authService.logout();
+      authService.logout();
       await storageService.clearAll();
     } catch (e) {
       console.warn('[AuthContext] Error cerrando sesión:', e);

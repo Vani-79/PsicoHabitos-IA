@@ -55,31 +55,6 @@ const HABIT_CARD_BORDER_COLORS: Record<HabitKey, string> = {
   estres: '#4B83C4',
 };
 
-const MONTH_NAMES = [
-  'enero',
-  'febrero',
-  'marzo',
-  'abril',
-  'mayo',
-  'junio',
-  'julio',
-  'agosto',
-  'septiembre',
-  'octubre',
-  'noviembre',
-  'diciembre',
-];
-
-const WEEKDAY_NAMES = [
-  'domingo',
-  'lunes',
-  'martes',
-  'miércoles',
-  'jueves',
-  'viernes',
-  'sábado',
-];
-
 export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   onBack,
   onSaveRecord,
@@ -102,12 +77,6 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   const [isLockedToday, setIsLockedToday] = useState(false);
   const [serverDate, setServerDate] = useState('');
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
-
-  const displayDate = useMemo(() => {
-    const [year, month, day] = (serverDate || recordDate).split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return `${WEEKDAY_NAMES[date.getDay()]}, ${day} de ${MONTH_NAMES[month - 1]}`;
-  }, [recordDate, serverDate]);
 
   // Estados dedicados para la ingesta de agua (litros)
   const [waterLiters, setWaterLiters] = useState<number>(2.0);
@@ -149,7 +118,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   }, [userEmail, userName]);
 
   useEffect(() => {
-    loadTodayStatus();
+    void loadTodayStatus();
   }, [loadTodayStatus]);
 
   const openHabitModal = (key: HabitKey) => {
@@ -288,7 +257,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
       );
     } else {
       Alert.alert('Aviso', response.error || 'No se pudo registrar.');
-      if ((response as any).isLocked) {
+      if (response.isLocked) {
         setIsLockedToday(true);
         setIsConfirmed(true);
       }

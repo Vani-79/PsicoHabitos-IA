@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 const Stack = createNativeStackNavigator<PsychologistStackParamList>();
 
 export const PsychologistNavigator: React.FC = () => {
-  const { user, patients, logout, registerPatient } = useAuth();
+  const { user, patients, logout, registerPatient, refreshPatients } = useAuth();
 
   return (
     <Stack.Navigator
@@ -36,6 +36,7 @@ export const PsychologistNavigator: React.FC = () => {
           <PatientDetailScreen
             patient={route.params.patient}
             onBack={() => navigation.goBack()}
+            onPatientUpdated={refreshPatients}
             onScheduleSession={() => {
               // Por ahora sin backend: solo un placeholder
               console.log('Agendar sesión para', route.params.patient.email);
@@ -50,6 +51,11 @@ export const PsychologistNavigator: React.FC = () => {
           <RegisterPatientScreen
             onBack={() => navigation.goBack()}
             onRegisterSuccess={async (record) => {
+              if (record.id) {
+                await refreshPatients();
+                navigation.goBack();
+                return { success: true };
+              }
               const res = await registerPatient(record);
               if (res.success) {
                 navigation.goBack();

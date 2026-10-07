@@ -17,7 +17,9 @@ import { MySqlPatientRecord, AppointmentSession } from '../../types/patient';
 import { DatePickerModal } from '../../components/DatePickerModal';
 import { TimePickerModal } from '../../components/TimePickerModal';
 import { appointmentService } from '../../services/appointmentService';
+import { patientService } from '../../services/patientService';
 import { useAuth } from '../../context/AuthContext';
+import { formatToChileanDate } from '../../utils/date';
 
 type Duracion = '30' | '45' | '60' | '75' | '90';
 type Modalidad = 'presencial' | 'online';
@@ -26,6 +28,7 @@ interface PatientDetailScreenProps {
   patient: MySqlPatientRecord;
   onBack: () => void;
   onScheduleSession?: () => void;
+  onPatientUpdated?: () => void;
 }
 
 const DURATIONS: { key: Duracion; label: string }[] = [
@@ -70,16 +73,54 @@ const rangesOverlap = (startA: number, durA: number, startB: number, durB: numbe
 export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
   patient,
   onBack,
+  onPatientUpdated,
 }) => {
   const { user } = useAuth();
   const isSubscriptionActive = user?.subscription ? user.subscription.isActive : true;
 
-  const minBookingDate = useMemo(() => new Date(), []);
+  const [currentPatient, setCurrentPatient] = useState<MySqlPatientRecord>(patient);
+
+  useEffect(() => {
+    setCurrentPatient(patient);
+  }, [patient]);
+
+  // Si el psicólogo es TITULAR y el paciente tiene una suplencia activa,
+  // se bloquean los días cubiertos por la suplencia (minBookingDate = día siguiente al fin de la suplencia).
+  const minBookingDate = useMemo(() => {
+    if (currentPatient.tipo_relacion === 'titular' && currentPatient.suplente_activo?.fecha_fin_suplencia) {
+      const cleanDateStr = String(currentPatient.suplente_activo.fecha_fin_suplencia).split('T')[0];
+      const parts = cleanDateStr.split('-');
+      if (parts.length === 3) {
+        const y = Number(parts[0]);
+        const m = Number(parts[1]) - 1;
+        const d = Number(parts[2]);
+        const dayAfterSuplencia = new Date(y, m, d + 1, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (dayAfterSuplencia > today) {
+          return dayAfterSuplencia;
+        }
+      }
+    }
+    return new Date();
+  }, [currentPatient.tipo_relacion, currentPatient.suplente_activo]);
+
+  // Si el psicólogo es SUPLENTE, no puede agendar más allá de su fecha límite de suplencia.
   const maxBookingDate = useMemo(() => {
+    if (currentPatient.tipo_relacion === 'suplente' && currentPatient.fecha_fin_suplencia) {
+      const cleanDateStr = String(currentPatient.fecha_fin_suplencia).split('T')[0];
+      const parts = cleanDateStr.split('-');
+      if (parts.length === 3) {
+        const y = Number(parts[0]);
+        const m = Number(parts[1]) - 1;
+        const d = Number(parts[2]);
+        return new Date(y, m, d, 23, 59, 59);
+      }
+    }
     const d = new Date();
     d.setMonth(d.getMonth() + 6);
     return d;
-  }, []);
+  }, [currentPatient.tipo_relacion, currentPatient.fecha_fin_suplencia]);
 
   // Historial de sesiones (de este paciente)
   const [sessions, setSessions] = useState<AppointmentSession[]>([]);
@@ -122,9 +163,9 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
   const [busySessionsForEdit, setBusySessionsForEdit] = useState<{ hora: string; duracion: number }[]>([]);
 
   const loadSessions = async () => {
-    if (!patient.id) return;
+    if (!currentPatient.id) return;
     setLoadingSessions(true);
-    const data = await appointmentService.getPatientAppointments(patient.id);
+    const data = await appointmentService.getPatientAppointments(currentPatient.id);
     setSessions(data);
     setCurrentPage(0);
     setLoadingSessions(false);
@@ -132,7 +173,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
 
   useEffect(() => {
     loadSessions();
-  }, [patient.id]);
+  }, [currentPatient.id]);
 
   const loadBusySessionsForDate = async (dateStr: string) => {
     if (!dateStr) {
@@ -277,9 +318,33 @@ const handleCloseModal = () => {
       setHora('');
       return;
     }
-    if (!patient.id) {
+    if (!currentPatient.id) {
       Alert.alert('Error', 'No se encontró el ID del paciente.');
       return;
+    }
+
+    // Si es TITULAR y el paciente tiene suplente activo, verificar que la fecha no caiga en el periodo de suplencia
+    if (currentPatient.tipo_relacion === 'titular' && currentPatient.suplente_activo?.fecha_fin_suplencia) {
+      const suplenteEndStr = String(currentPatient.suplente_activo.fecha_fin_suplencia).split('T')[0];
+      if (fecha <= suplenteEndStr) {
+        Alert.alert(
+          'Día reservado para suplencia',
+          `Este paciente se encuentra bajo cobertura del psicólogo suplente (${currentPatient.suplente_activo.nombre}) hasta el ${formatToChileanDate(suplenteEndStr)}.\n\nSolo puedes agendar citas a partir del día siguiente a esa fecha o finalizando la suplencia.`
+        );
+        return;
+      }
+    }
+
+    // Si es SUPLENTE, verificar que no agende posterior a su fecha límite de suplencia
+    if (currentPatient.tipo_relacion === 'suplente' && currentPatient.fecha_fin_suplencia) {
+      const suplenteEndStr = String(currentPatient.fecha_fin_suplencia).split('T')[0];
+      if (fecha > suplenteEndStr) {
+        Alert.alert(
+          'Fecha excede suplencia',
+          `Tu periodo de suplencia finaliza el ${formatToChileanDate(suplenteEndStr)}. No puedes programar citas posteriores a esa fecha.`
+        );
+        return;
+      }
     }
 
     // Choque de horario: bloquea si se cruza con otra sesión existente
@@ -300,7 +365,7 @@ const handleCloseModal = () => {
 
     setIsSaving(true);
     const res = await appointmentService.createAppointment({
-      paciente_id: patient.id,
+      paciente_id: currentPatient.id,
       fecha,
       hora,
       duracion: newDuration,
@@ -318,6 +383,8 @@ const handleCloseModal = () => {
       Alert.alert('Error al agendar', res.error || 'No se pudo guardar la sesión.');
     }
   };
+
+
 
   // ── Handlers para Modificar / Cancelar Cita Programada ──────────────────
 
@@ -411,6 +478,30 @@ const handleCloseModal = () => {
       return;
     }
 
+    // Si es TITULAR y el paciente tiene suplente activo, verificar que la fecha no caiga en el periodo de suplencia
+    if (currentPatient.tipo_relacion === 'titular' && currentPatient.suplente_activo?.fecha_fin_suplencia) {
+      const suplenteEndStr = String(currentPatient.suplente_activo.fecha_fin_suplencia).split('T')[0];
+      if (editFecha <= suplenteEndStr) {
+        Alert.alert(
+          'Día reservado para suplencia',
+          `No puedes reprogramar la cita para una fecha cubierta por la suplencia activa de ${currentPatient.suplente_activo.nombre || 'el suplente'} (hasta el ${formatToChileanDate(suplenteEndStr)}).`
+        );
+        return;
+      }
+    }
+
+    // Si es SUPLENTE, verificar que no reprograme posterior a su fecha límite de suplencia
+    if (currentPatient.tipo_relacion === 'suplente' && currentPatient.fecha_fin_suplencia) {
+      const suplenteEndStr = String(currentPatient.fecha_fin_suplencia).split('T')[0];
+      if (editFecha > suplenteEndStr) {
+        Alert.alert(
+          'Fecha excede suplencia',
+          `Tu periodo de suplencia finaliza el ${formatToChileanDate(suplenteEndStr)}. No puedes reprogramar citas posteriores a esa fecha.`
+        );
+        return;
+      }
+    }
+
     const startMin = timeToMinutes(editHora);
     const durMin = Number(editDuracion) || 60;
     const hasConflict = busySessionsForEdit.some((b) =>
@@ -461,7 +552,7 @@ const handleCloseModal = () => {
     if (!editingSession) return;
     Alert.alert(
       '¿Cancelar cita programada?',
-      `¿Estás seguro de que deseas cancelar la cita del ${editingSession.fecha} a las ${editingSession.hora} hrs? Esta acción liberará el horario de tu agenda.`,
+      `¿Estás seguro de que deseas cancelar la cita del ${formatToChileanDate(editingSession.fecha)} a las ${editingSession.hora} hrs? Esta acción liberará el horario de tu agenda.`,
       [
         { text: 'No, mantener cita', style: 'cancel' },
         {
@@ -495,16 +586,50 @@ const handleCloseModal = () => {
         <View style={{ marginLeft: 10 }}>
           <Text style={styles.tag}>FICHA DEL PACIENTE</Text>
           <Text style={styles.patientName}>
-            {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno}
+            {currentPatient.nombre} {currentPatient.apellido_paterno} {currentPatient.apellido_materno}
           </Text>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Banner si el psicólogo está atendiendo como SUPLENTE */}
+        {currentPatient.tipo_relacion === 'suplente' && (
+          <View style={styles.suplenteBanner}>
+            <View style={styles.suplenteBannerHeader}>
+              <Ionicons name="shield-checkmark" size={18} color="#1E40AF" />
+              <Text style={styles.suplenteBannerTitle}>Atendiendo como Psicólogo Suplente</Text>
+            </View>
+            <Text style={styles.suplenteBannerText}>
+              Tienes cobertura temporal de atención autorizada por el paciente hasta el{' '}
+              <Text style={{ fontWeight: '700' }}>
+                {currentPatient.fecha_fin_suplencia ? formatToChileanDate(currentPatient.fecha_fin_suplencia) : 'fecha límite'}
+              </Text>.
+              Puedes acceder a su historial clínico completo y registrar nuevas sesiones.
+            </Text>
+          </View>
+        )}
+
+        {/* Banner si el psicólogo es TITULAR y hay una SUPLENCIA ACTIVA */}
+        {currentPatient.tipo_relacion === 'titular' && currentPatient.suplente_activo && (
+          <View style={styles.titularSuplenciaBanner}>
+            <View style={styles.suplenteBannerHeader}>
+              <Ionicons name="information-circle" size={18} color="#92400E" />
+              <Text style={styles.titularBannerTitle}>Cobertura de Suplencia Activa</Text>
+            </View>
+            <Text style={styles.titularBannerText}>
+              El especialista <Text style={{ fontWeight: '700' }}>{currentPatient.suplente_activo.nombre}</Text> tiene cobertura temporal activa sobre este paciente
+              {currentPatient.suplente_activo.fecha_fin_suplencia ? ` hasta el ${formatToChileanDate(currentPatient.suplente_activo.fecha_fin_suplencia)}` : ''}.
+            </Text>
+            <Text style={[styles.titularBannerText, { marginTop: 4, fontStyle: 'italic', color: '#78350F' }]}>
+              Nota: La revocación o término anticipado de la suplencia es una decisión exclusiva del paciente desde su perfil.
+            </Text>
+          </View>
+        )}
+
         <View style={styles.infoCard}>
-          <Text style={styles.infoText}>{patient.edad} años</Text>
-          <Text style={styles.infoText}>Correo: {patient.email}</Text>
-          <Text style={styles.infoText}>Primera sesión: {patient.fecha_primera_sesion}</Text>
+          <Text style={styles.infoText}>{currentPatient.edad} años</Text>
+          <Text style={styles.infoText}>Correo: {currentPatient.email}</Text>
+          <Text style={styles.infoText}>Primera sesión: {formatToChileanDate(currentPatient.fecha_primera_sesion)}</Text>
         </View>
 
         <TouchableOpacity
@@ -543,51 +668,91 @@ const handleCloseModal = () => {
             </Text>
           </View>
         ) : (
-          paginatedSessions.map((session) => (
-            <View key={session.id} style={styles.sessionCard}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.sessionDate}>
-                  {session.fecha} · {session.hora} {session.horaFin ? `- ${session.horaFin}` : ''} · {session.duracion} min ·{' '}
-                  {session.modalidad === 'presencial' ? 'Presencial' : 'Online'}
-                </Text>
-                {session.observaciones ? (
-                  <Text style={styles.sessionMotivo}>{session.observaciones}</Text>
-                ) : (
-                  <Text style={[styles.sessionMotivo, { fontStyle: 'italic', color: '#9CA3AF' }]}>
-                    Sin observaciones registradas
+          paginatedSessions.map((session) => {
+            const isCancelada = session.estado?.toLowerCase() === 'cancelada';
+            const isCompletada = session.estado?.toLowerCase() === 'completada';
+            const isProgramada = !isCancelada && !isCompletada;
+
+            return (
+              <View
+                key={session.id}
+                style={[
+                  styles.sessionCard,
+                  isCancelada && styles.sessionCardCancelled,
+                ]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.sessionDate, isCancelada && styles.sessionDateCancelled]}>
+                    {formatToChileanDate(session.fecha)} · {session.hora} {session.horaFin ? `- ${session.horaFin}` : ''} ·{' '}
+                    {session.modalidad === 'presencial' ? 'Presencial' : 'Online'}
                   </Text>
-                )}
-              </View>
-              <View style={styles.sessionCardRightCol}>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    session.estado === 'Completada' && styles.statusBadgeCompleted,
-                  ]}
-                >
-                  <Text
+
+                  {session.doctorNombre && (
+                    <View style={styles.doctorBadgeRow}>
+                      <Ionicons name="shield-checkmark-outline" size={12} color="#6B7280" style={{ marginRight: 4 }} />
+                      <Text style={styles.doctorBadgeText}>
+                        {session.doctorNombre}
+                        {session.tipoEspecialista === 'suplente'
+                          ? ' (Suplente)'
+                          : session.tipoEspecialista === 'titular_anterior'
+                          ? ' (Titular Anterior)'
+                          : session.esPropia === false
+                          ? ' (Colega)'
+                          : ''}
+                      </Text>
+                    </View>
+                  )}
+
+                  {session.observaciones ? (
+                    <Text style={[styles.sessionMotivo, isCancelada && styles.sessionMotivoCancelled]}>
+                      {session.observaciones}
+                    </Text>
+                  ) : (
+                    <Text style={[styles.sessionMotivo, { fontStyle: 'italic', color: '#9CA3AF' }]}>
+                      Sin observaciones registradas
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.sessionCardRightCol}>
+                  <View
                     style={[
-                      styles.statusBadgeText,
-                      session.estado === 'Completada' && styles.statusBadgeTextCompleted,
+                      styles.statusBadge,
+                      isCompletada && styles.statusBadgeCompleted,
+                      isCancelada && styles.statusBadgeCancelled,
                     ]}
                   >
-                    {session.estado}
-                  </Text>
-                </View>
+                    <Text
+                      style={[
+                        styles.statusBadgeText,
+                        isCompletada && styles.statusBadgeTextCompleted,
+                        isCancelada && styles.statusBadgeTextCancelled,
+                      ]}
+                    >
+                      {isCancelada ? 'Cancelada' : isCompletada ? 'Completada' : 'Programada'}
+                    </Text>
+                  </View>
 
-                {session.estado === 'Programada' && (
-                  <TouchableOpacity
-                    style={styles.manageButton}
-                    onPress={() => handleOpenEditModal(session)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="create-outline" size={13} color="#0F613B" style={{ marginRight: 3 }} />
-                    <Text style={styles.manageButtonText}>Modificar</Text>
-                  </TouchableOpacity>
-                )}
+                  {isProgramada && (
+                    session.esPropia !== false ? (
+                      <TouchableOpacity
+                        style={styles.manageButton}
+                        onPress={() => handleOpenEditModal(session)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="create-outline" size={13} color="#0F613B" style={{ marginRight: 3 }} />
+                        <Text style={styles.manageButtonText}>Modificar</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={styles.readOnlyBadge}>
+                        <Ionicons name="lock-closed" size={11} color="#6B7280" style={{ marginRight: 3 }} />
+                        <Text style={styles.readOnlyBadgeText}>Solo lectura</Text>
+                      </View>
+                    )
+                  )}
+                </View>
               </View>
-            </View>
-          ))
+            );
+          })
         )}
 
         {totalPages > 1 && (
@@ -651,6 +816,19 @@ const handleCloseModal = () => {
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text style={styles.modalTitle}>Agendar nueva sesión</Text>
 
+              {currentPatient.tipo_relacion === 'titular' && currentPatient.suplente_activo && (
+                <View style={styles.substitutionScheduleNotice}>
+                  <Ionicons name="information-circle" size={17} color="#92400E" style={{ marginRight: 6 }} />
+                  <Text style={styles.substitutionScheduleNoticeText}>
+                    Paciente en suplencia activa hasta el{' '}
+                    <Text style={{ fontWeight: '700' }}>
+                      {formatToChileanDate(currentPatient.suplente_activo.fecha_fin_suplencia)}
+                    </Text>
+                    . Los días cubiertos están bloqueados; puedes agendar a partir del día siguiente.
+                  </Text>
+                </View>
+              )}
+
               {/* Fecha */}
               <Text style={styles.fieldLabel}>Fecha</Text>
               <TouchableOpacity
@@ -660,7 +838,7 @@ const handleCloseModal = () => {
               >
                 <Ionicons name="calendar" size={18} color="#0F613B" style={styles.pickerIcon} />
                 <Text style={[styles.pickerValueText, !fecha && styles.pickerPlaceholder]}>
-                  {fecha || 'Seleccionar fecha'}
+                  {fecha ? formatToChileanDate(fecha) : 'Seleccionar fecha'}
                 </Text>
                 <Ionicons name="chevron-down" size={16} color="#6B7280" />
               </TouchableOpacity>
@@ -756,11 +934,11 @@ const handleCloseModal = () => {
         </Pressable>
       </Modal>
 
-      {/* DatePickerModal para la fecha de la cita: solo hoy en adelante, hasta 6 meses */}
+      {/* DatePickerModal para la fecha de la cita: respeta bloqueos de suplencia */}
       <DatePickerModal
         visible={showDatePicker}
         title="Fecha de la Sesión"
-        initialDate={fecha || getTodayStr()}
+        initialDate={fecha || `${minBookingDate.getFullYear()}-${String(minBookingDate.getMonth() + 1).padStart(2, '0')}-${String(minBookingDate.getDate()).padStart(2, '0')}`}
         minDate={minBookingDate}
         maxDate={maxBookingDate}
         yearOrder="asc"
@@ -811,7 +989,7 @@ const handleCloseModal = () => {
                 activeOpacity={0.8}
               >
                 <Ionicons name="calendar-outline" size={18} color="#0F613B" style={styles.pickerIcon} />
-                <Text style={styles.pickerValueText}>{editFecha}</Text>
+                <Text style={styles.pickerValueText}>{formatToChileanDate(editFecha)}</Text>
                 <Ionicons name="chevron-down" size={16} color="#6B7280" />
               </TouchableOpacity>
 
@@ -936,7 +1114,7 @@ const handleCloseModal = () => {
       <DatePickerModal
         visible={showEditDatePicker}
         title="Modificar Fecha de la Sesión"
-        initialDate={editFecha || getTodayStr()}
+        initialDate={editFecha || `${minBookingDate.getFullYear()}-${String(minBookingDate.getMonth() + 1).padStart(2, '0')}-${String(minBookingDate.getDate()).padStart(2, '0')}`}
         minDate={minBookingDate}
         maxDate={maxBookingDate}
         yearOrder="asc"
@@ -1038,6 +1216,18 @@ const styles = StyleSheet.create({
   statusBadgeText: { fontSize: 11, fontWeight: '700', color: '#B45309' },
   statusBadgeCompleted: { backgroundColor: '#E8F5E9' },
   statusBadgeTextCompleted: { color: '#0F613B' },
+  statusBadgeCancelled: { backgroundColor: '#FEE2E2' },
+  statusBadgeTextCancelled: { color: '#DC2626' },
+  sessionCardCancelled: {
+    backgroundColor: '#FAFAFA',
+    borderColor: '#F3F4F6',
+  },
+  sessionDateCancelled: {
+    color: '#6B7280',
+  },
+  sessionMotivoCancelled: {
+    color: '#9CA3AF',
+  },
 
   paginationRow: {
     flexDirection: 'row',
@@ -1174,5 +1364,107 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     fontSize: 14,
     fontWeight: '700',
+  },
+  suplenteBanner: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+  },
+  suplenteBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 6,
+  },
+  suplenteBannerTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#1E40AF',
+  },
+  suplenteBannerText: {
+    fontSize: 12.5,
+    color: '#1E3A8A',
+    lineHeight: 18,
+  },
+  titularSuplenciaBanner: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+  },
+  titularBannerTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#92400E',
+  },
+  titularBannerText: {
+    fontSize: 12.5,
+    color: '#78350F',
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  endSuplenciaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    borderRadius: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+  },
+  endSuplenciaBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#B45309',
+  },
+  doctorBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 3,
+    marginBottom: 2,
+  },
+  doctorBadgeText: {
+    fontSize: 11.5,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  readOnlyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  readOnlyBadgeText: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  substitutionScheduleNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 14,
+  },
+  substitutionScheduleNoticeText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#92400E',
+    lineHeight: 16,
   },
 });

@@ -7,6 +7,7 @@ import { ProfileRoleHeader } from '../../components/ProfileRoleHeader';
 import { patientService } from '../../services/patientService';
 import { PatientProfileData } from '../../types/patient';
 import { useAuth } from '../../context/AuthContext';
+import { formatToChileanDate } from '../../utils/date';
 
 interface PatientProfileScreenProps {
   onNavigateTab: (tab: PatientTab) => void;
@@ -17,13 +18,7 @@ interface PatientProfileScreenProps {
 
 const formatBirthDate = (dateStr?: string): string => {
   if (!dateStr) return 'No registrada';
-  const cleanDate = dateStr.split('T')[0];
-  const parts = cleanDate.split('-');
-  if (parts.length === 3) {
-    const [year, month, day] = parts;
-    return `${day}/${month}/${year}`;
-  }
-  return cleanDate;
+  return formatToChileanDate(dateStr) || 'No registrada';
 };
 
 const formatAge = (edad?: number | string, birthDateStr?: string): string => {
@@ -31,9 +26,9 @@ const formatAge = (edad?: number | string, birthDateStr?: string): string => {
     const raw = birthDateStr.split('T')[0];
     const parts = raw.split('-');
     if (parts.length === 3) {
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const day = parseInt(parts[2], 10);
+      const year = Number.parseInt(parts[0], 10);
+      const month = Number.parseInt(parts[1], 10) - 1;
+      const day = Number.parseInt(parts[2], 10);
       const birthDate = new Date(year, month, day);
       const today = new Date();
       let calculatedAge = today.getFullYear() - birthDate.getFullYear();
@@ -41,7 +36,7 @@ const formatAge = (edad?: number | string, birthDateStr?: string): string => {
       if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
         calculatedAge--;
       }
-      if (!isNaN(calculatedAge) && calculatedAge >= 0) {
+      if (!Number.isNaN(calculatedAge) && calculatedAge >= 0) {
         return `${calculatedAge} años`;
       }
     }
@@ -60,6 +55,7 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
   const { user, switchRole } = useAuth();
   const [profile, setProfile] = useState<PatientProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRevoking, setIsRevoking] = useState(false);
 
   const canSwitchToPsychologist =
     Boolean(user?.hasMultipleRoles) ||
@@ -67,30 +63,51 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
     Boolean(user?.availableRoles?.includes('psicologo')) ||
     Boolean(profile?.availableRoles?.includes('psicologo'));
 
+  const loadProfile = async () => {
+    setLoading(true);
+    try {
+      const data = await patientService.getPatientProfile(userEmail, userName);
+      setProfile(data);
+    } catch (err) {
+      console.warn('Error al cargar perfil del paciente desde MySQL:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let isMounted = true;
-    const fetchProfile = async () => {
-      setLoading(true);
-      try {
-        const data = await patientService.getPatientProfile(userEmail, userName);
-        if (isMounted) {
-          setProfile(data);
-        }
-      } catch (err) {
-        console.warn('Error al cargar perfil del paciente desde MySQL:', err);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchProfile();
-
-    return () => {
-      isMounted = false;
-    };
+    void loadProfile();
   }, [userEmail, userName]);
+
+  const handleRevokeSuplencia = () => {
+    if (!profile?.id) return;
+    const suplenteName = profile.suplente?.nombre || 'el psicólogo suplente';
+    Alert.alert(
+      '¿Revocar suplencia?',
+      `Se revocará inmediatamente el acceso temporal de ${suplenteName} a tu ficha e historial clínico.\n\nCualquier cita futura pendiente con el suplente será cancelada automáticamente para que puedas reagendar con tu psicólogo titular (${profile.especialista || 'titular'}).`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sí, revocar acceso',
+          style: 'destructive',
+          onPress: async () => {
+            setIsRevoking(true);
+            const res = await patientService.endSubstitution(profile.id!);
+            setIsRevoking(false);
+            if (res.success) {
+              Alert.alert(
+                'Suplencia revocada',
+                res.message || 'Se ha revocado el acceso temporal al psicólogo suplente y se cancelaron las citas pendientes.'
+              );
+              void loadProfile();
+            } else {
+              Alert.alert('Error', res.error || 'No se pudo revocar la suplencia.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const fullName = profile
     ? [profile.nombre, profile.apellido_paterno, profile.apellido_materno]
@@ -192,10 +209,42 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
                 <Ionicons name="medkit-outline" size={18} color="#0F613B" />
               </View>
               <View style={styles.infoTextWrapper}>
-                <Text style={styles.infoLabel}>Especialista</Text>
+                <Text style={styles.infoLabel}>Especialista Titular</Text>
                 <Text style={styles.infoValue}>{profile.especialista || 'Sin especialista asignado'}</Text>
               </View>
             </View>
+
+            {/* Suplencia Activa (si aplica) */}
+            {profile.suplente && (
+              <View style={styles.suplenteBox}>
+                <View style={styles.suplenteBoxHeader}>
+                  <Ionicons name="shield-checkmark" size={18} color="#1D4ED8" />
+                  <Text style={styles.suplenteBoxTitle}>Atención en Suplencia Activa</Text>
+                </View>
+                <Text style={styles.suplenteBoxDesc}>
+                  Has autorizado temporalmente a{' '}
+                  <Text style={{ fontWeight: '700' }}>{profile.suplente.nombre}</Text> para atenderte hasta el{' '}
+                  <Text style={{ fontWeight: '700' }}>
+                    {profile.suplente.fecha_fin_suplencia ? formatToChileanDate(profile.suplente.fecha_fin_suplencia) : 'fecha límite'}
+                  </Text>.
+                </Text>
+                <TouchableOpacity
+                  style={styles.revokeSuplenteBtn}
+                  onPress={handleRevokeSuplencia}
+                  disabled={isRevoking}
+                  activeOpacity={0.8}
+                >
+                  {isRevoking ? (
+                    <ActivityIndicator size="small" color="#DC2626" />
+                  ) : (
+                    <>
+                      <Ionicons name="close-circle-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+                      <Text style={styles.revokeSuplenteBtnText}>Revocar acceso de suplencia</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       );
@@ -397,6 +446,48 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '700',
+  },
+  suplenteBox: {
+    marginTop: 14,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 14,
+    padding: 14,
+    width: '100%',
+  },
+  suplenteBoxHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 6,
+  },
+  suplenteBoxTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#1D4ED8',
+  },
+  suplenteBoxDesc: {
+    fontSize: 12.5,
+    color: '#1E3A8A',
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  revokeSuplenteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  revokeSuplenteBtnText: {
+    color: '#DC2626',
+    fontSize: 12.5,
     fontWeight: '700',
   },
 });

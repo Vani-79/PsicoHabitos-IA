@@ -12,6 +12,8 @@ import { UserRole } from '../../../constants/auth';
 import { authService, storageService } from '../../../services';
 import { authStyles } from './authStyles';
 
+type LoginStep = 'email' | 'password' | 'role_selection';
+
 interface LoginFormProps {
   initialEmail?: string;
   onSuccess: (
@@ -25,6 +27,36 @@ interface LoginFormProps {
   onNavigateToForgot: (email: string) => void;
 }
 
+const getBadgeText = (step: LoginStep): string => {
+  if (step === 'email') {
+    return 'ACCESO SEGURO';
+  }
+  if (step === 'password') {
+    return 'INICIAR SESIÓN';
+  }
+  return 'SELECCIÓN DE PORTAL';
+};
+
+const getCardTitle = (step: LoginStep, userName?: string): string => {
+  if (step === 'role_selection') {
+    return 'Elige tu Portal';
+  }
+  if (step === 'email') {
+    return 'Bienvenido a PsicoHábitos';
+  }
+  return `Hola, ${userName || 'Usuario'}`;
+};
+
+const getCardSubtitle = (step: LoginStep): string => {
+  if (step === 'role_selection') {
+    return 'Tu cuenta tiene perfiles activos como Especialista y como Paciente. Selecciona a qué portal deseas ingresar:';
+  }
+  if (step === 'email') {
+    return 'Ingresa tu correo para continuar';
+  }
+  return 'Ingresa tu contraseña para acceder a tu cuenta';
+};
+
 export const LoginForm: React.FC<LoginFormProps> = ({
   initialEmail = '',
   onSuccess,
@@ -33,9 +65,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 }) => {
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
-  const [loginStep, setLoginStep] = useState<'email' | 'password' | 'role_selection'>('email');
+  const [loginStep, setLoginStep] = useState<LoginStep>('email');
   const [userName, setUserName] = useState('');
-  const [availableRoles, setAvailableRoles] = useState<UserRole[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,7 +81,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         }
       }
     };
-    loadRemembered();
+    void loadRemembered();
   }, [initialEmail]);
 
 
@@ -99,9 +130,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
       const displayName = check.name || 'Usuario';
       setUserName(displayName);
-      if (check.availableRoles) {
-        setAvailableRoles(check.availableRoles);
-      }
 
       if (check.requiresPasswordCreation) {
         // Enviar código de confirmación de 6 dígitos automáticamente
@@ -161,7 +189,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
       // Si el usuario tiene ambos roles (Psicólogo y Paciente)
       if (response.requiresRoleSelection) {
-        setAvailableRoles(response.availableRoles || ['psicologo', 'paciente']);
         setLoginStep('role_selection');
         return;
       }
@@ -258,27 +285,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <View style={authStyles.welcomeBadge}>
         <Ionicons name="shield-checkmark" size={16} color="#0F613B" />
         <Text style={authStyles.welcomeBadgeText}>
-          {loginStep === 'email'
-            ? 'ACCESO SEGURO'
-            : loginStep === 'password'
-            ? 'INICIAR SESIÓN'
-            : 'SELECCIÓN DE PORTAL'}
+          {getBadgeText(loginStep)}
         </Text>
       </View>
 
       <Text style={authStyles.cardTitle}>
-        {loginStep === 'role_selection'
-          ? 'Elige tu Portal'
-          : loginStep === 'email'
-          ? 'Bienvenido a PsicoHábitos'
-          : `Hola, ${userName || 'Usuario'}`}
+        {getCardTitle(loginStep, userName)}
       </Text>
       <Text style={authStyles.cardSubtitle}>
-        {loginStep === 'role_selection'
-          ? `Tu cuenta tiene perfiles activos como Especialista y como Paciente. Selecciona a qué portal deseas ingresar:`
-          : loginStep === 'email'
-          ? 'Ingresa tu correo para continuar'
-          : 'Ingresa tu contraseña para acceder a tu cuenta'}
+        {getCardSubtitle(loginStep)}
       </Text>
 
       {/* PASO 1: INGRESO DE CORREO */}

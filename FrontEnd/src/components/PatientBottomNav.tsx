@@ -27,7 +27,6 @@ export const PatientBottomNav: React.FC<PatientBottomNavProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
 
-  const habitsScale = useRef(new Animated.Value(1)).current;
   const exercisesScale = useRef(new Animated.Value(1)).current;
 
   const animateScale = (

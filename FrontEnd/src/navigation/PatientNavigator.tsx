@@ -1,5 +1,5 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PatientStackParamList } from './types';
 import { DailyCheckInScreen } from '../screens/Paciente/Habitos.paciente';
 import { PatientCalendarScreen } from '../screens/Paciente/Sesiones.paciente';
@@ -17,7 +17,7 @@ export const PatientNavigator: React.FC = () => {
   const userName = user?.name || 'Carlos';
   const userEmail = user?.email || '';
 
-  const getTabHandler = (navigation: any) => (tab: PatientTab) => {
+  const getTabHandler = (navigation: NativeStackNavigationProp<PatientStackParamList>) => (tab: PatientTab) => {
     switch (tab) {
       case 'habits':
         navigation.navigate('Habits');

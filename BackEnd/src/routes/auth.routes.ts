@@ -39,56 +39,53 @@ export function validatePasswordComplexity(password: string): { isValid: boolean
 }
 
 /**
+ * Roles de usuario válidos en la plataforma.
+ */
+export type UserRole = 'psicologo' | 'paciente' | 'admin';
+
+/**
  * Obtiene la lista de roles clínicos y administrativos disponibles para un usuario.
  */
-export async function getUserAvailableRoles(usuarioId: number): Promise<Array<'psicologo' | 'paciente' | 'admin'>> {
-  const roles: Array<'psicologo' | 'paciente' | 'admin'> = [];
+export async function getUserAvailableRoles(usuarioId: number): Promise<UserRole[]> {
+  const roles = new Set<UserRole>();
   try {
-    const [adminRows] = await pool.query<RowDataPacket[]>(
-      "SELECT rol FROM usuarios WHERE id = ? AND rol = 'admin' LIMIT 1",
-      [usuarioId]
-    );
-    if (adminRows.length > 0) {
-      roles.push('admin');
-      return roles;
-    }
-
-    const [psicoRows] = await pool.query<RowDataPacket[]>(
-      'SELECT id FROM psicologos WHERE usuario_id = ? LIMIT 1',
-      [usuarioId]
-    );
-    if (psicoRows.length > 0) {
-      roles.push('psicologo');
-    }
-
-    const [pacRows] = await pool.query<RowDataPacket[]>(
-      'SELECT id FROM pacientes WHERE usuario_id = ? LIMIT 1',
-      [usuarioId]
-    );
-    if (pacRows.length > 0) {
-      roles.push('paciente');
-    }
-
-    // Asegurar compatibilidad con usuarios que tengan rol = 'ambos' o rol directo
     const [uRows] = await pool.query<RowDataPacket[]>(
       'SELECT rol FROM usuarios WHERE id = ? LIMIT 1',
       [usuarioId]
     );
-    if (uRows.length > 0) {
-      if (uRows[0].rol === 'ambos') {
-        if (!roles.includes('psicologo')) roles.push('psicologo');
-        if (!roles.includes('paciente')) roles.push('paciente');
-      } else if (uRows[0].rol === 'psicologo' && !roles.includes('psicologo')) {
-        roles.push('psicologo');
-      } else if (uRows[0].rol === 'paciente' && !roles.includes('paciente')) {
-        roles.push('paciente');
-      }
+
+    if (uRows.length === 0) {
+      return [];
+    }
+
+    const rol = uRows[0].rol;
+    if (rol === 'admin') {
+      return ['admin'];
+    }
+
+    if (rol === 'psicologo' || rol === 'ambos') {
+      roles.add('psicologo');
+    }
+    if (rol === 'paciente' || rol === 'ambos') {
+      roles.add('paciente');
+    }
+
+    const [[psicoRows], [pacRows]] = await Promise.all([
+      pool.query<RowDataPacket[]>('SELECT id FROM psicologos WHERE usuario_id = ? LIMIT 1', [usuarioId]),
+      pool.query<RowDataPacket[]>('SELECT id FROM pacientes WHERE usuario_id = ? LIMIT 1', [usuarioId]),
+    ]);
+
+    if (psicoRows.length > 0) {
+      roles.add('psicologo');
+    }
+    if (pacRows.length > 0) {
+      roles.add('paciente');
     }
   } catch (err) {
     console.warn('[getUserAvailableRoles] Error consultando roles:', err);
   }
 
-  return roles;
+  return Array.from(roles);
 }
 
 /**
@@ -235,7 +232,7 @@ authRouter.post('/create-initial-password', authLimiter, async (req: Request, re
     );
 
     let usuarioId: number;
-    let rol: 'psicologo' | 'paciente' | 'admin';
+    let rol: UserRole;
 
     if (userRows.length === 0) {
       // Si existe en pacientes pero aún no en usuarios, crearlo
@@ -637,6 +634,191 @@ authRouter.post('/register-psychologist', async (req: Request, res: Response): P
 });
 
 /**
+ * Estado de la suscripción de un especialista.
+ */
+export type SubscriptionStatus = 'activa' | 'expirada' | 'inactiva';
+
+export interface SubscriptionDetails {
+  isActive: boolean;
+  status: SubscriptionStatus;
+  finDate?: string;
+  daysRemaining: number;
+  meses?: number;
+}
+
+export interface PsychologistSubscriptionInfo {
+  subscription?: SubscriptionDetails;
+  fechaIngreso?: string;
+}
+
+/**
+ * Consulta el estado de suscripción y fecha de ingreso de un especialista.
+ */
+async function getPsychologistSubscription(usuarioId: number): Promise<PsychologistSubscriptionInfo> {
+  const [psicoRows] = await pool.query<RowDataPacket[]>(
+    `SELECT p.id, p.suscripcion_meses, 
+            DATE_FORMAT(p.suscripcion_inicio, '%Y-%m-%d') as suscripcion_inicio, 
+            DATE_FORMAT(p.suscripcion_fin, '%Y-%m-%d') as suscripcion_fin, 
+            p.suscripcion_activa,
+            DATEDIFF(p.suscripcion_fin, NOW()) as dias_restantes,
+            (p.suscripcion_fin >= NOW() AND p.suscripcion_activa = 1) as is_valid,
+            DATE_FORMAT(COALESCE(u.created_at, p.created_at), '%Y-%m-%d') as fecha_ingreso
+     FROM psicologos p
+     LEFT JOIN usuarios u ON u.id = p.usuario_id
+     WHERE p.usuario_id = ? LIMIT 1`,
+    [usuarioId]
+  );
+
+  if (psicoRows.length === 0) {
+    return {};
+  }
+
+  const p = psicoRows[0];
+  const isSubValid = Boolean(p.is_valid);
+
+  let status: SubscriptionStatus = 'activa';
+  if (!p.suscripcion_activa) {
+    status = 'inactiva';
+  } else if (p.dias_restantes < 0) {
+    status = 'expirada';
+  }
+
+  return {
+    subscription: {
+      isActive: isSubValid,
+      status,
+      finDate: isSubValid ? p.suscripcion_fin : 'Vencida',
+      daysRemaining: Math.max(0, p.dias_restantes || 0),
+      meses: p.suscripcion_meses,
+    },
+    fechaIngreso: p.fecha_ingreso,
+  };
+}
+
+/**
+ * Gestiona el caso de un usuario no registrado en `usuarios`:
+ * Si existe en la tabla `pacientes`, crea el usuario pendiente de contraseña.
+ * De lo contrario, responde 404.
+ */
+async function handleUnregisteredUser(targetEmail: string, res: Response): Promise<void> {
+  const [pacienteDirecto] = await pool.query<RowDataPacket[]>(
+    'SELECT id, nombre, apellido_paterno FROM pacientes WHERE email = ? LIMIT 1',
+    [targetEmail]
+  );
+
+  if (pacienteDirecto.length > 0) {
+    const pac = pacienteDirecto[0];
+    const [uResult] = await pool.query<ResultSetHeader>(
+      "INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) VALUES (?, NULL, 'paciente', TRUE, TRUE)",
+      [targetEmail]
+    );
+    await pool.query('UPDATE pacientes SET usuario_id = ? WHERE id = ?', [uResult.insertId, pac.id]);
+
+    res.json({
+      success: false,
+      requiresPasswordCreation: true,
+      email: targetEmail,
+      role: 'paciente',
+      name: `${pac.nombre} ${pac.apellido_paterno}`,
+      message: 'Tu especialista ha creado tu ficha. Por favor define tu contraseña de acceso.',
+    });
+    return;
+  }
+
+  res.status(404).json({
+    success: false,
+    error: 'No existe una cuenta registrada con este correo electrónico. Contacta a tu especialista.',
+  });
+}
+
+/**
+ * Responde solicitando al usuario que seleccione el portal al tener múltiples roles disponibles.
+ */
+async function sendRoleSelectionResponse(
+  user: RowDataPacket,
+  availableRoles: UserRole[],
+  res: Response
+): Promise<void> {
+  const [psicoName, pacName] = await Promise.all([
+    getUserDisplayName(user.id, 'psicologo', user.email),
+    getUserDisplayName(user.id, 'paciente', user.email),
+  ]);
+
+  res.json({
+    success: true,
+    requiresRoleSelection: true,
+    email: user.email,
+    availableRoles,
+    rolesInfo: [
+      {
+        role: 'psicologo',
+        title: 'Portal Especialista',
+        subtitle: 'Atención clínica, gestión de pacientes y agenda',
+        name: psicoName,
+      },
+      {
+        role: 'paciente',
+        title: 'Portal Paciente',
+        subtitle: 'Registro de hábitos diarios, recursos y sesiones con Hope',
+        name: pacName,
+      },
+    ],
+    message: 'Múltiples perfiles clínicos detectados. Por favor selecciona el portal.',
+  });
+}
+
+/**
+ * Valida la contraseña ingresada comprobando presencia, complejidad y hash bcrypt.
+ */
+async function verifyUserCredentials(
+  inputPassword: string,
+  passwordHash: string
+): Promise<{ isValid: boolean; error?: string; status: number }> {
+  if (!inputPassword) {
+    return { isValid: false, error: 'Por favor ingresa tu contraseña.', status: 400 };
+  }
+
+  const complexity = validatePasswordComplexity(inputPassword);
+  if (!complexity.isValid) {
+    return { isValid: false, error: complexity.error, status: 400 };
+  }
+
+  const isPasswordValid = await bcrypt.compare(inputPassword, passwordHash);
+  if (!isPasswordValid) {
+    return { isValid: false, error: 'Contraseña incorrecta. Por favor inténtalo de nuevo.', status: 401 };
+  }
+
+  return { isValid: true, status: 200 };
+}
+
+/**
+ * Determina el rol por defecto según los roles disponibles o el rol de base de datos.
+ */
+function resolveDefaultRole(userRol: string, availableRoles: UserRole[]): UserRole {
+  if (availableRoles.length > 0) {
+    return availableRoles[0];
+  }
+  return userRol === 'ambos' ? 'psicologo' : (userRol as UserRole);
+}
+
+/**
+ * Determina el rol efectivo a partir del rol seleccionado por el usuario y los roles disponibles.
+ */
+function resolveEffectiveRole(
+  defaultRole: UserRole,
+  availableRoles: UserRole[],
+  userRol: string,
+  selectedRole?: unknown
+): UserRole {
+  if (typeof selectedRole === 'string') {
+    if (availableRoles.includes(selectedRole as UserRole) || selectedRole === userRol) {
+      return selectedRole as UserRole;
+    }
+  }
+  return defaultRole;
+}
+
+/**
  * POST /api/auth/login
  * Inicia sesión verificando credenciales o indicando si debe crear contraseña por primera vez.
  */
@@ -650,7 +832,7 @@ authRouter.post('/login', authLimiter, async (req: Request, res: Response): Prom
     }
 
     const targetEmail = String(email).trim().toLowerCase();
-    const inputPassword = password ? String(password).trim() : '';
+    const inputPassword = typeof password === 'string' ? password.trim() : '';
 
     // 1. Buscar usuario en MySQL
     const [userRows] = await pool.query<RowDataPacket[]>(
@@ -658,166 +840,72 @@ authRouter.post('/login', authLimiter, async (req: Request, res: Response): Prom
       [targetEmail]
     );
 
-    if (userRows.length > 0) {
-      const user = userRows[0];
-      const availableRoles = await getUserAvailableRoles(user.id);
-      const defaultRole = (availableRoles[0] as any) || (user.rol === 'ambos' ? 'psicologo' : user.rol);
-
-      // Verificar si tiene contraseña pendiente de creación
-      if (user.debe_crear_password || !user.password_hash) {
-        const name = await getUserDisplayName(user.id, defaultRole, user.email);
-        res.json({
-          success: false,
-          requiresPasswordCreation: true,
-          email: user.email,
-          role: defaultRole,
-          availableRoles,
-          hasMultipleRoles: availableRoles.length > 1,
-          name,
-          message: 'Tu cuenta está registrada pero aún no has creado una contraseña. Por favor crea tu contraseña para continuar.',
-        });
-        return;
-      }
-
-      if (!inputPassword) {
-        res.status(400).json({ success: false, error: 'Por favor ingresa tu contraseña.' });
-        return;
-      }
-
-      // Validar requisitos de complejidad de la contraseña ingresada
-      const complexity = validatePasswordComplexity(inputPassword);
-      if (!complexity.isValid) {
-        res.status(400).json({ success: false, error: complexity.error });
-        return;
-      }
-
-      // Verificación de contraseña exclusivamente con hash bcrypt asíncrono seguro
-      const isPasswordValid = await bcrypt.compare(inputPassword, user.password_hash);
-
-      if (!isPasswordValid) {
-        res.status(401).json({ success: false, error: 'Contraseña incorrecta. Por favor inténtalo de nuevo.' });
-        return;
-      }
-
-      // Si el usuario tiene ambos roles (o más) y aún NO indicó a qué portal acceder
-      if (availableRoles.length > 1 && !selectedRole) {
-        const psicoName = await getUserDisplayName(user.id, 'psicologo', user.email);
-        const pacName = await getUserDisplayName(user.id, 'paciente', user.email);
-
-        res.json({
-          success: true,
-          requiresRoleSelection: true,
-          email: user.email,
-          availableRoles,
-          rolesInfo: [
-            {
-              role: 'psicologo',
-              title: 'Portal Especialista',
-              subtitle: 'Atención clínica, gestión de pacientes y agenda',
-              name: psicoName,
-            },
-            {
-              role: 'paciente',
-              title: 'Portal Paciente',
-              subtitle: 'Registro de hábitos diarios, recursos y sesiones con Hope',
-              name: pacName,
-            },
-          ],
-          message: 'Múltiples perfiles clínicos detectados. Por favor selecciona el portal.',
-        });
-        return;
-      }
-
-      let effectiveRole: 'psicologo' | 'paciente' | 'admin' = defaultRole;
-      if (selectedRole && (availableRoles.includes(selectedRole as any) || selectedRole === user.rol)) {
-        effectiveRole = selectedRole as any;
-      }
-
-      const name = await getUserDisplayName(user.id, effectiveRole, user.email);
-      const token = generateToken({
-        userId: user.id,
-        email: user.email,
-        role: effectiveRole,
-      });
-
-      // Consultar estado de suscripción y fecha de ingreso si accede al portal de especialista
-      let subscription: { isActive: boolean; status: 'activa' | 'expirada' | 'inactiva'; finDate?: string; daysRemaining: number; meses?: number } | undefined = undefined;
-      let fechaIngreso: string | undefined = undefined;
-      if (effectiveRole === 'psicologo') {
-        const [psicoRows] = await pool.query<RowDataPacket[]>(
-          `SELECT p.id, p.suscripcion_meses, 
-                  DATE_FORMAT(p.suscripcion_inicio, '%Y-%m-%d') as suscripcion_inicio, 
-                  DATE_FORMAT(p.suscripcion_fin, '%Y-%m-%d') as suscripcion_fin, 
-                  p.suscripcion_activa,
-                  DATEDIFF(p.suscripcion_fin, NOW()) as dias_restantes,
-                  (p.suscripcion_fin >= NOW() AND p.suscripcion_activa = 1) as is_valid,
-                  DATE_FORMAT(COALESCE(u.created_at, p.created_at), '%Y-%m-%d') as fecha_ingreso
-           FROM psicologos p
-           LEFT JOIN usuarios u ON u.id = p.usuario_id
-           WHERE p.usuario_id = ? LIMIT 1`,
-          [user.id]
-        );
-        if (psicoRows.length > 0) {
-          const p = psicoRows[0];
-          const isSubValid = Boolean(p.is_valid);
-          subscription = {
-            isActive: isSubValid,
-            status: !p.suscripcion_activa ? 'inactiva' : (p.dias_restantes < 0 ? 'expirada' : 'activa'),
-            finDate: !isSubValid ? 'Vencida' : p.suscripcion_fin,
-            daysRemaining: Math.max(0, p.dias_restantes || 0),
-            meses: p.suscripcion_meses,
-          };
-          fechaIngreso = p.fecha_ingreso;
-        }
-      }
-
-      res.json({
-        success: true,
-        data: {
-          id: user.id,
-          email: user.email,
-          role: effectiveRole,
-          availableRoles,
-          hasMultipleRoles: availableRoles.length > 1,
-          name,
-          token,
-          subscription,
-          fechaIngreso,
-        },
-      });
+    if (userRows.length === 0) {
+      await handleUnregisteredUser(targetEmail, res);
       return;
     }
 
-    // 2. Verificar si está registrado en la tabla pacientes sin usuario creado
-    const [pacienteDirecto] = await pool.query<RowDataPacket[]>(
-      'SELECT id, nombre, apellido_paterno FROM pacientes WHERE email = ? LIMIT 1',
-      [targetEmail]
-    );
+    const user = userRows[0];
+    const availableRoles = await getUserAvailableRoles(user.id);
+    const defaultRole = resolveDefaultRole(user.rol, availableRoles);
 
-    if (pacienteDirecto.length > 0) {
-      const pac = pacienteDirecto[0];
-      // Crear usuario pendiente
-      const [uResult] = await pool.query<ResultSetHeader>(
-        "INSERT INTO usuarios (email, password_hash, rol, activo, debe_crear_password) VALUES (?, NULL, 'paciente', TRUE, TRUE)",
-        [targetEmail]
-      );
-      await pool.query('UPDATE pacientes SET usuario_id = ? WHERE id = ?', [uResult.insertId, pac.id]);
-
+    // Verificar si tiene contraseña pendiente de creación
+    if (user.debe_crear_password || !user.password_hash) {
+      const name = await getUserDisplayName(user.id, defaultRole, user.email);
       res.json({
         success: false,
         requiresPasswordCreation: true,
-        email: targetEmail,
-        role: 'paciente',
-        name: `${pac.nombre} ${pac.apellido_paterno}`,
-        message: 'Tu especialista ha creado tu ficha. Por favor define tu contraseña de acceso.',
+        email: user.email,
+        role: defaultRole,
+        availableRoles,
+        hasMultipleRoles: availableRoles.length > 1,
+        name,
+        message: 'Tu cuenta está registrada pero aún no has creado una contraseña. Por favor crea tu contraseña para continuar.',
       });
       return;
     }
 
-    // 3. Si el correo no existe en absoluto
-    res.status(404).json({
-      success: false,
-      error: 'No existe una cuenta registrada con este correo electrónico. Contacta a tu especialista.',
+    const credCheck = await verifyUserCredentials(inputPassword, user.password_hash);
+    if (!credCheck.isValid) {
+      res.status(credCheck.status).json({ success: false, error: credCheck.error });
+      return;
+    }
+
+    // Si el usuario tiene ambos roles (o más) y aún NO indicó a qué portal acceder
+    if (availableRoles.length > 1 && !selectedRole) {
+      await sendRoleSelectionResponse(user, availableRoles, res);
+      return;
+    }
+
+    const effectiveRole = resolveEffectiveRole(defaultRole, availableRoles, user.rol, selectedRole);
+    const name = await getUserDisplayName(user.id, effectiveRole, user.email);
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      role: effectiveRole,
+    });
+
+    let subscription: PsychologistSubscriptionInfo['subscription'];
+    let fechaIngreso: string | undefined;
+    if (effectiveRole === 'psicologo') {
+      const subInfo = await getPsychologistSubscription(user.id);
+      subscription = subInfo.subscription;
+      fechaIngreso = subInfo.fechaIngreso;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        role: effectiveRole,
+        availableRoles,
+        hasMultipleRoles: availableRoles.length > 1,
+        name,
+        token,
+        subscription,
+        fechaIngreso,
+      },
     });
   } catch (error) {
     console.error('Error en /api/auth/login:', error);
@@ -857,29 +945,10 @@ authRouter.post('/switch-role', authMiddleware, async (req: Request, res: Respon
       role: targetRole,
     });
 
-    let subscription: { isActive: boolean; status: 'activa' | 'expirada' | 'inactiva'; finDate?: string; daysRemaining: number; meses?: number } | undefined = undefined;
+    let subscription: SubscriptionDetails | undefined = undefined;
     if (targetRole === 'psicologo') {
-      const [psicoRows] = await pool.query<RowDataPacket[]>(
-        `SELECT id, suscripcion_meses, 
-                DATE_FORMAT(suscripcion_inicio, '%Y-%m-%d') as suscripcion_inicio, 
-                DATE_FORMAT(suscripcion_fin, '%Y-%m-%d') as suscripcion_fin, 
-                suscripcion_activa,
-                DATEDIFF(suscripcion_fin, NOW()) as dias_restantes,
-                (suscripcion_fin >= NOW() AND suscripcion_activa = 1) as is_valid
-         FROM psicologos WHERE usuario_id = ? LIMIT 1`,
-        [userId]
-      );
-      if (psicoRows.length > 0) {
-        const p = psicoRows[0];
-        const isSubValid = Boolean(p.is_valid);
-        subscription = {
-          isActive: isSubValid,
-          status: !p.suscripcion_activa ? 'inactiva' : (p.dias_restantes < 0 ? 'expirada' : 'activa'),
-          finDate: !isSubValid ? 'Vencida' : p.suscripcion_fin,
-          daysRemaining: Math.max(0, p.dias_restantes || 0),
-          meses: p.suscripcion_meses,
-        };
-      }
+      const subInfo = await getPsychologistSubscription(userId);
+      subscription = subInfo.subscription;
     }
 
     res.json({
@@ -941,7 +1010,7 @@ authRouter.get('/psychologist-profile', authMiddleware, async (req: Request, res
     let nombre = '';
     let email = userEmail;
     let fechaIngreso = '';
-    let fechaVencimiento = 'No registrada';
+    let fechaVencimiento: string;
     let isActive = true;
 
     if (rows.length > 0) {
@@ -1154,7 +1223,7 @@ authRouter.post('/forgot-password/reset-password', authLimiter, async (req: Requ
     );
 
     let usuarioId: number;
-    let rol: 'psicologo' | 'paciente' | 'admin';
+    let rol: UserRole;
 
     const passwordHash = await bcrypt.hash(cleanNewPassword, 10);
 

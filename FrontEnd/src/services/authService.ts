@@ -188,7 +188,7 @@ export const authService = {
 
       const json = await response.json().catch(() => null);
 
-      if (response.ok && json && json.success) {
+      if (response.ok && json?.success) {
         if (json.data?.token) {
           authSession.setToken(json.data.token);
         }
@@ -466,7 +466,7 @@ export const authService = {
   /**
    * Cierra la sesión activa del usuario.
    */
-  async logout(): Promise<void> {
+  logout(): void {
     authSession.clearToken();
   },
 };

@@ -17,7 +17,8 @@ Uso del comando:
 Ejemplo (Plan Mensual por defecto):
   node scripts/register-psychologist.js "Claudia" "Rojas Mery" "claudia.rojas@gmail.com" 1
     `);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   const targetEmail = String(email).trim().toLowerCase();
@@ -28,7 +29,7 @@ Ejemplo (Plan Mensual por defecto):
     host: process.env.DB_HOST || '127.0.0.1',
     port: Number(process.env.DB_PORT) || 3306,
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'Admin123@',
+    password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'psicohabitos_db',
   });
 
@@ -41,7 +42,8 @@ Ejemplo (Plan Mensual por defecto):
 
     if (existingPsicos.length > 0) {
       console.error(`❌ Error: El correo "${targetEmail}" ya se encuentra registrado como especialista en el sistema.`);
-      process.exit(1);
+      process.exitCode = 1;
+      return;
     }
 
     const [existingUsers] = await conn.query(
@@ -74,7 +76,7 @@ Ejemplo (Plan Mensual por defecto):
 
     console.log(`✅ [Base de Datos] Especialista guardado con éxito con ${meses} mes(es) de suscripción (Usuario ID: ${usuarioId}).`);
 
-    // 3. Enviar correo de bienvenida al especialista
+    // 4. Enviar correo de bienvenida al especialista
     console.log(`📧 Enviando correo de bienvenida a ${targetEmail}...`);
     await emailService.sendPsychologistWelcomeEmail({
       to: targetEmail,
@@ -88,9 +90,13 @@ Cuando ingrese a la app con "${targetEmail}", se le solicitará crear su contras
     `);
   } catch (err) {
     console.error('❌ Error registrando especialista:', err);
+    process.exitCode = 1;
   } finally {
     await conn.end();
   }
 }
 
-main();
+main().catch((err) => {
+  console.error('❌ Error no controlado en ejecución:', err);
+  process.exitCode = 1;
+});

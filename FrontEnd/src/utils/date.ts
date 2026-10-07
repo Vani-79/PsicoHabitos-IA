@@ -63,3 +63,31 @@ export function isDateBefore(dateAInput: Date | string, dateBInput: Date | strin
   const dateB = parseLocalDate(dateBInput);
   return dateA.getTime() < dateB.getTime();
 }
+
+/**
+ * Formatea una fecha al formato chileno estándar 'DD/MM/YYYY' (día-mes-año).
+ * Acepta string 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS', ISO string o Date.
+ * Retorna la fecha en formato chileno (ej: '24/09/2026').
+ */
+export function formatToChileanDate(dateInput?: string | Date | null): string {
+  if (!dateInput) return '';
+  if (typeof dateInput === 'string') {
+    const clean = dateInput.split('T')[0].split(' ')[0].trim();
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+      const [year, month, day] = parts;
+      if (year.length === 4) {
+        return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+      }
+    }
+    if (clean.includes('/')) {
+      return clean;
+    }
+  }
+  const date = parseLocalDate(dateInput);
+  if (Number.isNaN(date.getTime())) return String(dateInput);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}

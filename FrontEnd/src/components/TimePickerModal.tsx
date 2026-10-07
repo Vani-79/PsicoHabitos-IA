@@ -14,11 +14,10 @@ const generateTimeSlots = (): string[] => {
   const slots: string[] = [];
   for (let hour = 8; hour <= 20; hour++) {
     const hStr = String(hour).padStart(2, '0');
-    slots.push(`${hStr}:00`);
     if (hour < 20) {
-      slots.push(`${hStr}:15`);
-      slots.push(`${hStr}:30`);
-      slots.push(`${hStr}:45`);
+      slots.push(`${hStr}:00`, `${hStr}:15`, `${hStr}:30`, `${hStr}:45`);
+    } else {
+      slots.push(`${hStr}:00`);
     }
   }
   return slots;
@@ -57,7 +56,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   const isSlotColliding = (slotMinutes: number, sessionDuration: number) => {
     const slotEnd = slotMinutes + sessionDuration;
     return busySessions.some((b) => {
-      if (!b.hora || !b.hora.includes(':')) return false;
+      if (!b.hora?.includes(':')) return false;
       const [bh, bm] = b.hora.split(':').map(Number);
       const busyStart = bh * 60 + bm;
       const busyEnd = busyStart + (Number(b.duracion) || 60);
@@ -72,8 +71,8 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
     if (isToday && slotMinutes <= nowMinutes + 30) return false;
     if (isSlotColliding(slotMinutes, duration)) return false;
-    // No permitir citas que finalicen después de las 21:00 hrs
-    if (slotMinutes + duration > 21 * 60) return false;
+    // Solo evitar que una sesión cruce al día siguiente (después de las 23:59)
+    if (slotMinutes + duration > 24 * 60) return false;
 
     return true;
   });

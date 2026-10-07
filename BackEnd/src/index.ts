@@ -91,13 +91,18 @@ app.use('/api/appointments', appointmentRouter);
 app.use('/api/habits', habitRouter);
 app.use('/', adminRouter);
 
-// Manejador de errores (captura bloqueos de CORS)
-app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+// Manejador global de errores (captura bloqueos de CORS y errores internos)
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (err instanceof Error && err.message.includes('CORS')) {
     res.status(403).json({ success: false, error: err.message });
     return;
   }
-  next(err);
+  console.error('Unhandled internal error:', err);
+  let errorMessage = 'Error interno del servidor';
+  if (process.env.NODE_ENV !== 'production' && err instanceof Error) {
+    errorMessage = err.message;
+  }
+  res.status(500).json({ success: false, error: errorMessage });
 });
 
 // Iniciar servidor

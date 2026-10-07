@@ -22,6 +22,34 @@ export interface UpdateAppointmentPayload {
   observaciones?: string;
 }
 
+interface RawCalendarItem {
+  id: string | number;
+  paciente_id?: number;
+  paciente_nombre?: string;
+  paciente_email?: string;
+  fecha: string;
+  hora?: string;
+  hora_inicio?: string;
+  hora_fin?: string;
+  duracion?: string | number;
+  modalidad: 'presencial' | 'online';
+  estado: string;
+  observaciones: string;
+  rol_psicologo?: 'titular' | 'suplente';
+}
+
+const normalizeAppointmentStatus = (
+  estado?: string
+): AppointmentSession['estado'] => {
+  if (estado === 'completada') {
+    return 'Completada';
+  }
+  if (estado === 'cancelada' || estado === 'Cancelada') {
+    return 'Cancelada';
+  }
+  return 'Programada';
+};
+
 export const appointmentService = {
   /**
    * Modifica una sesión programada existente.
@@ -29,7 +57,7 @@ export const appointmentService = {
   async updateAppointment(
     id: string | number,
     payload: UpdateAppointmentPayload
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<AppointmentSession | { id: number | string }>> {
     try {
       const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/appointments/${id}`, {
         method: 'PUT',
@@ -39,7 +67,7 @@ export const appointmentService = {
 
       const json = await response.json().catch(() => null);
 
-      if (response.ok && json && json.success) {
+      if (response.ok && json?.success) {
         return json;
       }
 
@@ -59,7 +87,7 @@ export const appointmentService = {
   /**
    * Cancela y elimina una sesión programada existente.
    */
-  async deleteAppointment(id: string | number): Promise<ApiResponse<any>> {
+  async deleteAppointment(id: string | number): Promise<ApiResponse<{ message?: string }>> {
     try {
       const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/appointments/${id}`, {
         method: 'DELETE',
@@ -67,7 +95,7 @@ export const appointmentService = {
 
       const json = await response.json().catch(() => null);
 
-      if (response.ok && json && json.success) {
+      if (response.ok && json?.success) {
         return json;
       }
 
@@ -88,7 +116,7 @@ export const appointmentService = {
    */
   async createAppointment(
     payload: CreateAppointmentPayload
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<AppointmentSession | { id: number }>> {
     try {
       const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/appointments`, {
         method: 'POST',
@@ -98,7 +126,7 @@ export const appointmentService = {
 
       const json = await response.json().catch(() => null);
 
-      if (response.ok && json && json.success) {
+      if (response.ok && json?.success) {
         return json;
       }
 
@@ -155,7 +183,7 @@ export const appointmentService = {
       if (response.ok) {
         const json = await response.json();
         if (json.success && Array.isArray(json.data)) {
-          return json.data.map((item: any) => ({
+          return json.data.map((item: RawCalendarItem) => ({
             id: String(item.id),
             paciente_id: item.paciente_id,
             paciente_nombre: item.paciente_nombre,
@@ -165,8 +193,9 @@ export const appointmentService = {
             horaFin: item.hora_fin,
             duracion: String(item.duracion || 60),
             modalidad: item.modalidad,
-            estado: item.estado === 'completada' ? 'Completada' : 'Programada',
+            estado: normalizeAppointmentStatus(item.estado),
             observaciones: item.observaciones,
+            rol_psicologo: item.rol_psicologo || 'titular',
           }));
         }
       }
@@ -188,9 +217,14 @@ export const appointmentService = {
       if (response.ok) {
         const json = await response.json();
         if (json.success && json.data) {
+          const normalizeSession = (s: AppointmentSession): AppointmentSession => ({
+            ...s,
+            modalidad: String(s.modalidad || '').toLowerCase() === 'online' ? 'online' : 'presencial',
+          });
+
           return {
-            proximas: json.data.proximas || [],
-            historial: json.data.historial || [],
+            proximas: (json.data.proximas || []).map(normalizeSession),
+            historial: (json.data.historial || []).map(normalizeSession),
           };
         }
       }

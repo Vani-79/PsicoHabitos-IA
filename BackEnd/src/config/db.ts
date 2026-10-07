@@ -1,4 +1,5 @@
 import mysql from 'mysql2/promise';
+import { RowDataPacket } from 'mysql2';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -25,8 +26,9 @@ export const pool = mysql.createPool({
  * Prueba la conectividad con la base de datos al iniciar el servidor
  */
 export async function testDbConnection(): Promise<void> {
+  let connection;
   try {
-    const connection = await pool.getConnection();
+    connection = await pool.getConnection();
     console.log('✅ [MySQL] Conexión establecida exitosamente con la base de datos psicohabitos_db');
     
     // Configurar zona horaria en MySQL a UTC-3 (Chile) para sincronizar NOW() y CURDATE()
@@ -81,8 +83,56 @@ export async function testDbConnection(): Promise<void> {
         WHERE cs.paciente_id = r.paciente_id AND cs.psicologo_id = r.psicologo_id
       )
     `);
-    connection.release();
+
+    // Migración idempotente: Soporte para suplencia y traspaso en relacion_psicologo_paciente
+    const [tipoRelCol] = await connection.query<RowDataPacket[]>(
+      "SHOW COLUMNS FROM relacion_psicologo_paciente LIKE 'tipo_relacion'"
+    );
+    if (tipoRelCol.length === 0) {
+      await connection.query(
+        "ALTER TABLE relacion_psicologo_paciente ADD COLUMN tipo_relacion ENUM('titular', 'suplente') NOT NULL DEFAULT 'titular'"
+      );
+    }
+
+    const [fechaFinCol] = await connection.query<RowDataPacket[]>(
+      "SHOW COLUMNS FROM relacion_psicologo_paciente LIKE 'fecha_fin_suplencia'"
+    );
+    if (fechaFinCol.length === 0) {
+      await connection.query(
+        "ALTER TABLE relacion_psicologo_paciente ADD COLUMN fecha_fin_suplencia DATE NULL"
+      );
+    }
+
+    // Migración idempotente: Soporte para rol_psicologo en citas_sesiones (titular vs suplente)
+    const [rolPsicologoCol] = await connection.query<RowDataPacket[]>(
+      "SHOW COLUMNS FROM citas_sesiones LIKE 'rol_psicologo'"
+    );
+    if (rolPsicologoCol.length === 0) {
+      await connection.query(
+        "ALTER TABLE citas_sesiones ADD COLUMN rol_psicologo ENUM('titular', 'suplente') NOT NULL DEFAULT 'titular'"
+      );
+    }
+
+    // Migración idempotente: Tabla para códigos OTP de traspaso de titularidad y suplencia
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS codigos_traspaso_titularidad (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        paciente_id INT NOT NULL,
+        nuevo_psicologo_id INT NOT NULL,
+        codigo VARCHAR(6) NOT NULL,
+        expira_en DATETIME NOT NULL,
+        usado BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_traspaso_lookup (paciente_id, nuevo_psicologo_id, codigo, usado, expira_en),
+        CONSTRAINT fk_traspaso_paciente FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE,
+        CONSTRAINT fk_traspaso_psicologo FOREIGN KEY (nuevo_psicologo_id) REFERENCES psicologos(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `);
   } catch (error) {
     console.error('❌ [MySQL] Error al conectar con la base de datos:', error);
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 }

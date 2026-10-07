@@ -32,7 +32,7 @@ adminRouter.get('/api/admin/psychologists', async (_req: Request, res: Response)
     const data = rows.map((r) => {
       const activa = Boolean(r.suscripcion_activa);
       const dias = r.dias_restantes !== null ? Number(r.dias_restantes) : 0;
-      let estado: 'activa' | 'expirada' | 'pausada' = 'activa';
+      let estado: 'activa' | 'expirada' | 'pausada';
 
       if (!activa) {
         estado = 'pausada';

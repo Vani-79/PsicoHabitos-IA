@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { pool } from '../config/db';
 import { RowDataPacket } from 'mysql2';
 import { authMiddleware, requireRole, requireActiveSubscription } from '../middlewares/authMiddleware';
+import { TokenPayload } from '../config/jwt';
 
 export const habitRouter = Router();
 
@@ -59,6 +60,103 @@ async function isPatientAssignedToPsychologist(psychologistUserId: number, pacie
   return rows.length > 0;
 }
 
+interface AuthorizedPacienteResult {
+  pacienteId?: number | null;
+  status?: number;
+  error?: string;
+}
+
+/**
+ * Resuelve y valida el paciente_id para consultar hábitos hoy según el rol del usuario autenticado (Anti-BOLA).
+ */
+async function resolveTodayStatusPacienteId(
+  user: TokenPayload,
+  queryUserIdRaw: unknown
+): Promise<AuthorizedPacienteResult> {
+  if (user.role === 'paciente') {
+    const pacienteId = await getPacienteIdFromUser(user.userId, user.email);
+    return { pacienteId };
+  }
+
+  const queryUserId = typeof queryUserIdRaw === 'string' ? queryUserIdRaw.trim() : '';
+  if (!queryUserId) {
+    return {
+      status: 400,
+      error: 'Parámetro userId requerido para consultar hábitos del paciente',
+    };
+  }
+
+  const targetPacienteId = await resolvePacienteId(queryUserId);
+  if (user.role === 'psicologo' && targetPacienteId) {
+    const isAssigned = await isPatientAssignedToPsychologist(user.userId, targetPacienteId);
+    if (!isAssigned) {
+      return {
+        status: 403,
+        error: 'Acceso denegado: El paciente no se encuentra asignado a tu supervisión clínica.',
+      };
+    }
+  }
+
+  return { pacienteId: targetPacienteId };
+}
+
+/**
+ * Obtiene el registro de hábitos del paciente evaluado hoy según la fecha del servidor (CURDATE()).
+ */
+async function getTodayHabitRecord(pacienteId: number): Promise<RowDataPacket | null> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT 
+      h.id,
+      h.paciente_id,
+      DATE_FORMAT(h.evaluation_date, '%Y-%m-%d') as evaluation_date,
+      h.comida,
+      h.ejercicio,
+      h.hidratacion,
+      h.ansiedad,
+      h.sueno,
+      h.sueno_horas,
+      h.estres,
+      DATE_FORMAT(h.confirmed_at, '%Y-%m-%d %H:%i:%s') as confirmed_at,
+      DATE_FORMAT(CURDATE(), '%Y-%m-%d') as server_date,
+      DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 1 DAY), '%Y-%m-%d') as next_date
+    FROM habitos_diarios h
+    WHERE h.paciente_id = ? AND h.evaluation_date = CURDATE()
+    LIMIT 1`,
+    [pacienteId]
+  );
+  return rows.length > 0 ? rows[0] : null;
+}
+
+/**
+ * Mapea la fila de base de datos al formato de respuesta de hábitos clínicos.
+ */
+function formatHabitRecord(row: RowDataPacket) {
+  return {
+    comida: row.comida,
+    ejercicio: row.ejercicio,
+    hidratacion: Number(row.hidratacion),
+    ansiedad: row.ansiedad,
+    sueno: row.sueno,
+    sueno_horas: row.sueno_horas ? Number(row.sueno_horas) : null,
+    estres: row.estres,
+    confirmed_at: row.confirmed_at,
+    evaluation_date: row.evaluation_date,
+  };
+}
+
+/**
+ * Obtiene la fecha actual y la fecha de mañana desde MySQL.
+ */
+async function getServerDateInfo(): Promise<{ serverDate: string; nextDate?: string }> {
+  const [dateRows] = await pool.query<RowDataPacket[]>(
+    "SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') as server_date, DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 1 DAY), '%Y-%m-%d') as next_date"
+  );
+  return {
+    serverDate: dateRows[0]?.server_date || new Date().toISOString().split('T')[0],
+    nextDate: dateRows[0]?.next_date,
+  };
+}
+
 /**
  * GET /api/habits/today-status?userId=...
  * Consulta robusta en la base de datos (usando CURDATE() del servidor MySQL)
@@ -66,33 +164,13 @@ async function isPatientAssignedToPsychologist(psychologistUserId: number, pacie
  */
 habitRouter.get('/today-status', async (req: Request, res: Response): Promise<void> => {
   try {
-    const user = req.user!;
-    let targetPacienteId: number | null = null;
-
-    if (user.role === 'paciente') {
-      targetPacienteId = await getPacienteIdFromUser(user.userId, user.email);
-    } else {
-      // Si es especialista o admin, requiere el parámetro userId
-      const queryUserId = typeof req.query.userId === 'string' ? req.query.userId.trim() : '';
-      if (!queryUserId) {
-        res.status(400).json({ success: false, error: 'Parámetro userId requerido para consultar hábitos del paciente' });
-        return;
-      }
-      targetPacienteId = await resolvePacienteId(queryUserId);
-
-      // Verificación Anti-BOLA para psicólogos
-      if (user.role === 'psicologo' && targetPacienteId) {
-        const isAssigned = await isPatientAssignedToPsychologist(user.userId, targetPacienteId);
-        if (!isAssigned) {
-          res.status(403).json({
-            success: false,
-            error: 'Acceso denegado: El paciente no se encuentra asignado a tu supervisión clínica.',
-          });
-          return;
-        }
-      }
+    const authResult = await resolveTodayStatusPacienteId(req.user!, req.query.userId);
+    if (authResult.error) {
+      res.status(authResult.status || 400).json({ success: false, error: authResult.error });
+      return;
     }
 
+    const targetPacienteId = authResult.pacienteId;
     if (!targetPacienteId) {
       res.json({
         success: true,
@@ -104,62 +182,27 @@ habitRouter.get('/today-status', async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    // Consulta con fecha del servidor MySQL (CURDATE())
-    const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT 
-        h.id,
-        h.paciente_id,
-        DATE_FORMAT(h.evaluation_date, '%Y-%m-%d') as evaluation_date,
-        h.comida,
-        h.ejercicio,
-        h.hidratacion,
-        h.ansiedad,
-        h.sueno,
-        h.sueno_horas,
-        h.estres,
-        DATE_FORMAT(h.confirmed_at, '%Y-%m-%d %H:%i:%s') as confirmed_at,
-        DATE_FORMAT(CURDATE(), '%Y-%m-%d') as server_date,
-        DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 1 DAY), '%Y-%m-%d') as next_date
-      FROM habitos_diarios h
-      WHERE h.paciente_id = ? AND h.evaluation_date = CURDATE()
-      LIMIT 1`,
-      [targetPacienteId]
-    );
-
-    if (rows.length > 0) {
-      const row = rows[0];
+    const todayHabit = await getTodayHabitRecord(targetPacienteId);
+    if (todayHabit) {
       res.json({
         success: true,
         completedToday: true,
         isLocked: true,
-        serverDate: row.server_date,
-        nextDate: row.next_date,
+        serverDate: todayHabit.server_date,
+        nextDate: todayHabit.next_date,
         message: 'Registro de hábitos ya completado para hoy.',
-        record: {
-          comida: row.comida,
-          ejercicio: row.ejercicio,
-          hidratacion: Number(row.hidratacion),
-          ansiedad: row.ansiedad,
-          sueno: row.sueno,
-          sueno_horas: row.sueno_horas ? Number(row.sueno_horas) : null,
-          estres: row.estres,
-          confirmed_at: row.confirmed_at,
-          evaluation_date: row.evaluation_date,
-        },
+        record: formatHabitRecord(todayHabit),
       });
       return;
     }
 
-    const [dateRows] = await pool.query<RowDataPacket[]>(
-      "SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') as server_date, DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 1 DAY), '%Y-%m-%d') as next_date"
-    );
-
+    const dateInfo = await getServerDateInfo();
     res.json({
       success: true,
       completedToday: false,
       isLocked: false,
-      serverDate: dateRows[0]?.server_date || new Date().toISOString().split('T')[0],
-      nextDate: dateRows[0]?.next_date,
+      serverDate: dateInfo.serverDate,
+      nextDate: dateInfo.nextDate,
       record: null,
     });
   } catch (error) {

@@ -86,7 +86,8 @@ CREATE TABLE IF NOT EXISTS relacion_psicologo_paciente (
   fecha_primera_sesion DATE NOT NULL,
   estado ENUM('activo', 'inactivo', 'alta_terapeutica') NOT NULL DEFAULT 'activo',
   notas_clinicas TEXT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  tipo_relacion ENUM('titular', 'suplente') NOT NULL DEFAULT 'titular',
+  fecha_fin_suplencia DATE NULL,
   CONSTRAINT fk_relacion_psicologo
     FOREIGN KEY (psicologo_id) REFERENCES psicologos(id)
     ON DELETE CASCADE
@@ -99,6 +100,23 @@ CREATE TABLE IF NOT EXISTS relacion_psicologo_paciente (
 ) ENGINE=InnoDB;
 
 -- ------------------------------------------------------------------------------
+-- 4.1 TABLA: codigos_traspaso_titularidad (Autorización OTP de paciente para traspaso/suplencia)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS codigos_traspaso_titularidad (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  paciente_id INT NOT NULL,
+  nuevo_psicologo_id INT NOT NULL,
+  codigo VARCHAR(6) NOT NULL,
+  expira_en DATETIME NOT NULL,
+  usado BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_traspaso_lookup (paciente_id, nuevo_psicologo_id, codigo, usado, expira_en),
+  CONSTRAINT fk_traspaso_paciente FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE,
+  CONSTRAINT fk_traspaso_psicologo FOREIGN KEY (nuevo_psicologo_id) REFERENCES psicologos(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+
+-- ------------------------------------------------------------------------------
 -- 5. TABLA: citas_sesiones (Agenda de citas pasadas y programadas)
 -- ------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS citas_sesiones (
@@ -109,6 +127,7 @@ CREATE TABLE IF NOT EXISTS citas_sesiones (
   fecha_hora_fin DATETIME NOT NULL,
   modalidad ENUM('presencial', 'online') NOT NULL DEFAULT 'presencial',
   estado ENUM('programada', 'completada', 'cancelada', 'no_asistio') NOT NULL DEFAULT 'programada',
+  rol_psicologo ENUM('titular', 'suplente') NOT NULL DEFAULT 'titular',
   observaciones TEXT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_citas_psicologo

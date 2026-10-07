@@ -209,7 +209,7 @@ const handleSelectYear = (year: number) => {
       targetDay = 1;
 
       // Si ese 1 de enero cae antes del mínimo permitido, usar el mínimo
-      if (minDate && year === minDate.getFullYear()) {
+      if (year === minDate?.getFullYear()) {
         targetMonth = minDate.getMonth();
         targetDay = minDate.getDate();
       }
@@ -249,10 +249,10 @@ const handleSelectYear = (year: number) => {
   };
 
   const isMonthDisabled = (monthIndex: number) => {
-    if (maxDate && displayedYear === maxDate.getFullYear() && monthIndex > maxDate.getMonth()) {
+    if (displayedYear === maxDate?.getFullYear() && monthIndex > maxDate.getMonth()) {
       return true;
     }
-    if (minDate && displayedYear === minDate.getFullYear() && monthIndex < minDate.getMonth()) {
+    if (displayedYear === minDate?.getFullYear() && monthIndex < minDate.getMonth()) {
       return true;
     }
     return false;
@@ -265,17 +265,6 @@ const handleSelectYear = (year: number) => {
     const formatted = `${y}-${m}-${d}`;
     onSelectDate(formatted, selectedDate);
     onClose();
-  };
-
-  const handleSelectToday = () => {
-    let target = new Date();
-    if (maxDate && target > maxDate) {
-      target = new Date(maxDate);
-    }
-    setSelectedDate(target);
-    setDisplayedYear(target.getFullYear());
-    setDisplayedMonth(target.getMonth());
-    setViewMode('calendar');
   };
 
   // Formato para mostrar arriba: ej. "14 de Mayo, 1998"
@@ -781,15 +770,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
-  },
-  todayButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  todayButtonText: {
-    fontSize: 14,
-    color: '#0F613B',
-    fontWeight: '700',
   },
   actionButtonsRow: {
     flexDirection: 'row',

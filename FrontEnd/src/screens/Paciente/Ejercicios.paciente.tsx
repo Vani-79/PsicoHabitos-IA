@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import {
   Animated,
   Image,
+  ImageSourcePropType,
   StyleSheet,
   Text,
   View,
@@ -37,7 +38,7 @@ interface HabitCardItem {
   description: string;
   color: string;
   borderColor: string;
-  image: any;
+  image: ImageSourcePropType;
 }
 
 const habitCards: HabitCardItem[] = [

@@ -6,7 +6,6 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity,
 } from 'react-native';
 import {
   SafeAreaView,
@@ -20,10 +19,47 @@ import {
 import { appointmentService } from '../../services/appointmentService';
 import { AppointmentSession } from '../../types/patient';
 
+import { formatToChileanDate } from '../../utils/date';
+
 interface PatientCalendarScreenProps {
   onNavigateTab: (tab: PatientTab) => void;
   userName?: string;
 }
+
+const renderSpecialistBadge = (tipo?: string) => {
+  if (tipo === 'suplente') {
+    return (
+      <View style={styles.badgeSuplente}>
+        <Ionicons name="repeat" size={11} color="#1D4ED8" style={{ marginRight: 3 }} />
+        <Text style={styles.badgeSuplenteText}>Ps. Suplente</Text>
+      </View>
+    );
+  }
+  if (tipo === 'titular_anterior') {
+    return (
+      <View style={styles.badgeAnterior}>
+        <Ionicons name="time-outline" size={11} color="#475569" style={{ marginRight: 3 }} />
+        <Text style={styles.badgeAnteriorText}>Ps. Titular Anterior</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.badgeTitular}>
+      <Ionicons name="shield-checkmark" size={11} color="#0F613B" style={{ marginRight: 3 }} />
+      <Text style={styles.badgeTitularText}>Ps. Titular Actual</Text>
+    </View>
+  );
+};
+
+const getCardAccentStyle = (tipo?: string) => {
+  if (tipo === 'suplente') {
+    return styles.cardAccentSuplente;
+  }
+  if (tipo === 'titular_anterior') {
+    return styles.cardAccentAnterior;
+  }
+  return styles.cardAccentTitular;
+};
 
 export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
   onNavigateTab,
@@ -36,23 +72,33 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
   const [refreshing, setRefreshing] = useState(false);
 
   const loadSessions = async () => {
-    setLoading(true);
-    const data = await appointmentService.getMySessions();
-    setProximas(data.proximas);
-    setHistorial(data.historial);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const data = await appointmentService.getMySessions();
+      setProximas(data.proximas);
+      setHistorial(data.historial);
+    } catch (error) {
+      console.error('Error al cargar sesiones:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    loadSessions();
+    void loadSessions();
   }, []);
 
   const onRefresh = async () => {
-    setRefreshing(true);
-    const data = await appointmentService.getMySessions();
-    setProximas(data.proximas);
-    setHistorial(data.historial);
-    setRefreshing(false);
+    try {
+      setRefreshing(true);
+      const data = await appointmentService.getMySessions();
+      setProximas(data.proximas);
+      setHistorial(data.historial);
+    } catch (error) {
+      console.error('Error al refrescar sesiones:', error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   return (
@@ -109,44 +155,27 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
                 </View>
               ) : (
                 proximas.map((item) => (
-                  <View key={item.id} style={styles.upcomingCard}>
+                  <View key={item.id} style={[styles.upcomingCard, getCardAccentStyle(item.tipoEspecialista)]}>
                     <View style={styles.cardHeaderRow}>
                       <View style={styles.dateBadge}>
                         <Ionicons name="calendar" size={14} color="#0F613B" style={{ marginRight: 5 }} />
-                        <Text style={styles.dateBadgeText}>{item.fecha}</Text>
+                        <Text style={styles.dateBadgeText}>{formatToChileanDate(item.fecha)}</Text>
                       </View>
 
-                      <View
-                        style={[
-                          styles.modalityPill,
-                          item.modalidad === 'online' ? styles.modalityPillOnline : styles.modalityPillPresencial,
-                        ]}
-                      >
-                        <Ionicons
-                          name={item.modalidad === 'online' ? 'videocam' : 'business'}
-                          size={12}
-                          color={item.modalidad === 'online' ? '#2563EB' : '#0F613B'}
-                          style={{ marginRight: 4 }}
-                        />
-                        <Text
-                          style={[
-                            styles.modalityPillText,
-                            item.modalidad === 'online' ? styles.modalityPillTextOnline : styles.modalityPillTextPresencial,
-                          ]}
-                        >
-                          {item.modalidad === 'online' ? 'Online' : 'Presencial'}
-                        </Text>
-                      </View>
+                      {renderSpecialistBadge(item.tipoEspecialista)}
                     </View>
 
                     <Text style={styles.cardTimeText}>
-                      Hora: {item.hora} {item.horaFin ? `- ${item.horaFin}` : ''} ({item.duracion})
+                      Hora: {item.hora}{item.horaFin ? ` - ${item.horaFin}` : ''}
                     </Text>
 
                     {item.doctorNombre ? (
                       <View style={styles.doctorRow}>
                         <Ionicons name="person-outline" size={14} color="#4B5563" style={{ marginRight: 4 }} />
-                        <Text style={styles.doctorText}>Especialista: {item.doctorNombre}</Text>
+                        <Text style={styles.doctorText}>
+                          Especialista:{' '}
+                          <Text style={{ fontWeight: '700', color: '#1F2937' }}>{item.doctorNombre}</Text>
+                        </Text>
                       </View>
                     ) : null}
 
@@ -160,6 +189,28 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
                     ) : null}
 
                     <View style={styles.cardFooter}>
+                      <View
+                        style={[
+                          styles.modalityPill,
+                          item.modalidad?.toLowerCase() === 'online' ? styles.modalityPillOnline : styles.modalityPillPresencial,
+                        ]}
+                      >
+                        <Ionicons
+                          name={item.modalidad?.toLowerCase() === 'online' ? 'videocam' : 'business'}
+                          size={12}
+                          color={item.modalidad?.toLowerCase() === 'online' ? '#2563EB' : '#0F613B'}
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text
+                          style={[
+                            styles.modalityPillText,
+                            item.modalidad?.toLowerCase() === 'online' ? styles.modalityPillTextOnline : styles.modalityPillTextPresencial,
+                          ]}
+                        >
+                          {item.modalidad?.toLowerCase() === 'online' ? 'Online' : 'Presencial'}
+                        </Text>
+                      </View>
+
                       <View style={styles.statusBadgeUpcoming}>
                         <Text style={styles.statusBadgeTextUpcoming}>Programada</Text>
                       </View>
@@ -192,34 +243,72 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
                 </View>
               ) : (
                 historial.map((item) => (
-                  <View key={item.id} style={styles.historyCard}>
+                  <View key={item.id} style={[styles.historyCard, getCardAccentStyle(item.tipoEspecialista)]}>
                     <View style={styles.cardHeaderRow}>
-                      <Text style={styles.historyDate}>
-                        {item.fecha} · {item.hora} {item.horaFin ? `- ${item.horaFin}` : ''} · {item.duracion}
-                      </Text>
-
-                      <View style={styles.statusBadgeCompleted}>
-                        <Text style={styles.statusBadgeTextCompleted}>Completada</Text>
+                      <View style={styles.dateBadge}>
+                        <Ionicons name="calendar" size={14} color="#0F613B" style={{ marginRight: 5 }} />
+                        <Text style={styles.dateBadgeText}>{formatToChileanDate(item.fecha)}</Text>
                       </View>
+
+                      {renderSpecialistBadge(item.tipoEspecialista)}
                     </View>
 
-                    <View style={styles.historyMetaRow}>
-                      <Ionicons
-                        name={item.modalidad === 'online' ? 'videocam-outline' : 'business-outline'}
-                        size={13}
-                        color="#6B7280"
-                        style={{ marginRight: 4 }}
-                      />
-                      <Text style={styles.historyModalityText}>
-                        Modalidad: {item.modalidad === 'online' ? 'Online' : 'Presencial'}
-                      </Text>
-                    </View>
+                    <Text style={styles.cardTimeText}>
+                      Hora: {item.hora}{item.horaFin ? ` - ${item.horaFin}` : ''}
+                    </Text>
+
+                    {item.doctorNombre ? (
+                      <View style={styles.doctorRow}>
+                        <Ionicons name="person-outline" size={14} color="#4B5563" style={{ marginRight: 4 }} />
+                        <Text style={styles.doctorText}>
+                          Atendió:{' '}
+                          <Text style={{ fontWeight: '700', color: '#1F2937' }}>{item.doctorNombre}</Text>
+                        </Text>
+                      </View>
+                    ) : null}
 
                     {item.observaciones ? (
-                      <Text style={styles.historyNotesText}>
-                        {item.observaciones}
-                      </Text>
+                      <View style={styles.observationsBox}>
+                        <Ionicons name="document-text-outline" size={13} color="#4B5563" style={{ marginRight: 4, marginTop: 1 }} />
+                        <Text style={styles.observationsText}>
+                          {item.observaciones}
+                        </Text>
+                      </View>
                     ) : null}
+
+                    <View style={styles.historyFooterRow}>
+                      <View
+                        style={[
+                          styles.modalityPill,
+                          item.modalidad?.toLowerCase() === 'online' ? styles.modalityPillOnline : styles.modalityPillPresencial,
+                        ]}
+                      >
+                        <Ionicons
+                          name={item.modalidad?.toLowerCase() === 'online' ? 'videocam' : 'business'}
+                          size={12}
+                          color={item.modalidad?.toLowerCase() === 'online' ? '#2563EB' : '#0F613B'}
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text
+                          style={[
+                            styles.modalityPillText,
+                            item.modalidad?.toLowerCase() === 'online' ? styles.modalityPillTextOnline : styles.modalityPillTextPresencial,
+                          ]}
+                        >
+                          {item.modalidad?.toLowerCase() === 'online' ? 'Online' : 'Presencial'}
+                        </Text>
+                      </View>
+
+                      {item.estado === 'Cancelada' ? (
+                        <View style={styles.statusBadgeCancelled}>
+                          <Text style={styles.statusBadgeTextCancelled}>Cancelada</Text>
+                        </View>
+                      ) : (
+                        <View style={styles.statusBadgeCompleted}>
+                          <Text style={styles.statusBadgeTextCompleted}>Completada</Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
                 ))
               )}
@@ -367,8 +456,69 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderLeftWidth: 4,
+  },
+  badgesCluster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  cardAccentTitular: {
+    borderLeftWidth: 4.5,
     borderLeftColor: '#0F613B',
+  },
+  cardAccentSuplente: {
+    borderLeftWidth: 4.5,
+    borderLeftColor: '#2563EB',
+  },
+  cardAccentAnterior: {
+    borderLeftWidth: 4.5,
+    borderLeftColor: '#94A3B8',
+  },
+  badgeTitular: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EAF5EE',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  badgeTitularText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#0F613B',
+  },
+  badgeSuplente: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  badgeSuplenteText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#1D4ED8',
+  },
+  badgeAnterior: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  badgeAnteriorText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#475569',
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -445,13 +595,14 @@ const styles = StyleSheet.create({
   },
   cardFooter: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 4,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
   },
   statusBadgeUpcoming: {
     backgroundColor: '#FEF3C7',
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 2.5,
     borderRadius: 6,
   },
   statusBadgeTextUpcoming: {
@@ -460,23 +611,23 @@ const styles = StyleSheet.create({
     color: '#92400E',
   },
   historyCard: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
-    padding: 13,
+    padding: 14,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  historyDate: {
-    fontSize: 13.5,
-    fontWeight: '600',
-    color: '#111827',
-    flex: 1,
+  historyFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
   },
   statusBadgeCompleted: {
     backgroundColor: '#EAF5EE',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
     borderRadius: 6,
   },
   statusBadgeTextCompleted: {
@@ -484,15 +635,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0F613B',
   },
-  historyMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 4,
+  statusBadgeCancelled: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 6,
   },
-  historyModalityText: {
-    fontSize: 12,
-    color: '#6B7280',
+  statusBadgeTextCancelled: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#DC2626',
   },
   historyNotesText: {
     fontSize: 12,

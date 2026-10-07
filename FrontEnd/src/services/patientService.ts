@@ -4,7 +4,12 @@
  */
 
 import { API_CONFIG, ApiResponse, fetchWithAuth } from './api';
-import { MySqlPatientRecord, PatientProfileData } from '../types/patient';
+import {
+  MySqlPatientRecord,
+  PatientProfileData,
+  PatientLookupResult,
+  LinkExistingPatientPayload,
+} from '../types/patient';
 
 let localMemoryFallback: MySqlPatientRecord[] = [];
 
@@ -26,7 +31,7 @@ export const patientService = {
 
       const json = await response.json().catch(() => null);
 
-      if (response.ok && json && json.success) {
+      if (response.ok && json?.success) {
         return json;
       }
 
@@ -132,5 +137,123 @@ export const patientService = {
       console.warn('[patientService] Error al consultar perfil del paciente:', err);
     }
     return null;
+  },
+
+  /**
+   * Busca si un paciente ya está registrado en PsicoHábitos por su correo.
+   */
+  async lookupPatient(email: string): Promise<PatientLookupResult> {
+    try {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/patients/lookup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+
+      const json = await response.json().catch(() => null);
+      if (response.ok && json) {
+        return json;
+      }
+      return {
+        success: false,
+        exists: false,
+        message: json?.error || 'Error al buscar el paciente.',
+      };
+    } catch (err) {
+      console.warn('[patientService] Error en lookup:', err);
+      return {
+        success: false,
+        exists: false,
+        message: 'No se pudo conectar con el servidor para buscar al paciente.',
+      };
+    }
+  },
+
+  /**
+   * Solicita el envío del código OTP de 6 dígitos al correo del paciente para autorizar traspaso o suplencia.
+   */
+  async sendTitularOtp(payload: {
+    paciente_id: number;
+    tipo_relacion: 'titular' | 'suplente';
+    fecha_fin_suplencia?: string | null;
+  }): Promise<ApiResponse<{ patientEmail: string }>> {
+    try {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/patients/send-titular-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await response.json().catch(() => null);
+      if (response.ok && json?.success) {
+        return json;
+      }
+      return {
+        success: false,
+        error: json?.error || 'Error al enviar código de autorización.',
+      };
+    } catch (err) {
+      console.warn('[patientService] Error enviando OTP:', err);
+      return {
+        success: false,
+        error: 'No se pudo conectar con el servidor para enviar el código.',
+      };
+    }
+  },
+
+  /**
+   * Valida el código OTP y vincula al paciente existente bajo la modalidad indicada.
+   */
+  async linkExistingPatient(payload: LinkExistingPatientPayload): Promise<ApiResponse<MySqlPatientRecord>> {
+    try {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/patients/link-existing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await response.json().catch(() => null);
+      if (response.ok && json?.success) {
+        return json;
+      }
+      return {
+        success: false,
+        error: json?.error || 'Error al vincular paciente existente.',
+      };
+    } catch (err) {
+      console.warn('[patientService] Error al vincular paciente existente:', err);
+      return {
+        success: false,
+        error: 'No se pudo conectar con el servidor para completar la vinculación.',
+      };
+    }
+  },
+
+  /**
+   * Finaliza de forma anticipada la suplencia activa de un paciente.
+   */
+  async endSubstitution(paciente_id: number): Promise<ApiResponse<void>> {
+    try {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/patients/end-substitution`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paciente_id }),
+      });
+
+      const json = await response.json().catch(() => null);
+      if (response.ok && json?.success) {
+        return json;
+      }
+      return {
+        success: false,
+        error: json?.error || 'Error al finalizar la suplencia.',
+      };
+    } catch (err) {
+      console.warn('[patientService] Error al finalizar suplencia:', err);
+      return {
+        success: false,
+        error: 'No se pudo conectar con el servidor para finalizar la suplencia.',
+      };
+    }
   },
 };

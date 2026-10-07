@@ -43,6 +43,18 @@ export interface MySqlPatientRecord {
   email: string;                // VARCHAR(150) UNIQUE NOT NULL
   password_hash?: string;       // VARCHAR(255) NOT NULL
   created_at: string;           // DATETIME / TIMESTAMP ('YYYY-MM-DD HH:MM:SS')
+  tipo_relacion?: 'titular' | 'suplente';
+  fecha_fin_suplencia?: string | null;
+  suplente_activo?: {
+    psicologo_id?: number;
+    id?: number;
+    nombre: string;
+    email: string;
+    fecha_fin_suplencia: string;
+  } | null;
+  hora_cita?: string;
+  estado_cita?: string;
+  rol_cita?: string;
 }
 
 export interface PatientProfileData {
@@ -56,6 +68,12 @@ export interface PatientProfileData {
   email: string;
   fecha_primera_sesion?: string;
   especialista?: string;
+  suplente?: {
+    id: number;
+    nombre: string;
+    email: string;
+    fecha_fin_suplencia: string;
+  } | null;
   availableRoles?: ('paciente' | 'psicologo')[];
   hasMultipleRoles?: boolean;
 }
@@ -74,4 +92,46 @@ export interface AppointmentSession {
   observaciones: string;
   motivo?: string;
   doctorNombre?: string;
+  esPropia?: boolean;
+  tipoEspecialista?: 'titular_actual' | 'suplente' | 'titular_anterior';
+  rol_psicologo?: 'titular' | 'suplente';
 }
+
+export interface PatientLookupResult {
+  success: boolean;
+  exists: boolean;
+  alreadyAssigned?: boolean;
+  message?: string;
+  patient?: {
+    id: number;
+    nombre: string;
+    apellido_paterno: string;
+    apellido_materno: string;
+    edad: number;
+    fecha_nacimiento: string;
+    genero: Gender;
+    email: string;
+  };
+  hasTitular?: boolean;
+  currentSpecialist?: string | null;
+  currentSuplente?: string | null;
+  suplenteInfo?: {
+    id: number;
+    suplente_nombre: string;
+    email: string;
+    fecha_fin_suplencia?: string;
+  } | null;
+}
+
+export interface LinkExistingPatientPayload {
+  paciente_id: number;
+  tipo_relacion: 'titular' | 'suplente';
+  fecha_fin_suplencia?: string | null;
+  fecha_primera_sesion: string;
+  hora_primera_sesion: string;
+  duracion_primera_sesion: number;
+  modalidad_primera_sesion: 'presencial' | 'online';
+  observaciones_primera_sesion?: string;
+  codigo_otp: string;
+}
+

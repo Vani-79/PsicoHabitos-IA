@@ -36,7 +36,7 @@ export const AuthNavigator: React.FC = () => {
               token?: string,
               rememberMe?: boolean
             ) => {
-              login({ email, role, name, token }, rememberMe);
+              void login({ email, role, name, token }, rememberMe);
             }}
           />
         )}

@@ -115,7 +115,7 @@ const parseEntryDate = (dateStr?: string): Date | null => {
   }
   if (y > 1900 && m >= 0 && m <= 11 && d >= 1 && d <= 31) {
     const parsed = new Date(y, m, d);
-    if (!isNaN(parsed.getTime())) return parsed;
+    if (!Number.isNaN(parsed.getTime())) return parsed;
   }
   return null;
 };
@@ -235,19 +235,21 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
     setShowMonthPickerModal(false);
   };
 
-  // Fechas que tienen citas
+  // Fechas que tienen citas (para los puntos en el calendario mensual)
   const datesWithAppointments = useMemo(() => {
     const set = new Set<string>();
     appointments.forEach((a) => {
-      if (a.fecha) set.add(a.fecha);
+      if (a.fecha && a.estado !== 'Cancelada') {
+        set.add(a.fecha);
+      }
     });
     return set;
   }, [appointments]);
 
-  // Citas del día actualmente seleccionado
+  // Citas del día actualmente seleccionado (solo citas activas / no canceladas)
   const dayAppointments = useMemo(() => {
     return appointments
-      .filter((a) => a.fecha === selectedDateStr)
+      .filter((a) => a.fecha === selectedDateStr && a.estado !== 'Cancelada')
       .sort((a, b) => a.hora.localeCompare(b.hora));
   }, [appointments, selectedDateStr]);
 
@@ -464,10 +466,23 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
                           </View>
                         </View>
 
-                        {/* Nombre del Paciente */}
-                        <Text style={styles.patientNameText}>
-                          {apt.paciente_nombre || 'Paciente'}
-                        </Text>
+                        {/* Nombre del Paciente con recordatorio de Suplencia si aplica */}
+                        <View style={styles.patientRowWithBadge}>
+                          <Text
+                            style={[
+                              styles.patientNameText,
+                              apt.estado === 'Cancelada' && styles.patientNameCancelled,
+                            ]}
+                          >
+                            {apt.paciente_nombre || 'Paciente'}
+                          </Text>
+                          {apt.rol_psicologo === 'suplente' && (
+                            <View style={styles.suplenteRoleBadge}>
+                              <Ionicons name="repeat" size={11} color="#1D4ED8" style={{ marginRight: 3 }} />
+                              <Text style={styles.suplenteRoleBadgeText}>Suplencia</Text>
+                            </View>
+                          )}
+                        </View>
 
                         {/* Observaciones */}
                         {apt.observaciones ? (
@@ -489,13 +504,21 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
                           <View
                             style={[
                               styles.statusPill,
-                              apt.estado === 'Completada' ? styles.statusPillCompleted : styles.statusPillScheduled,
+                              apt.estado === 'Completada'
+                                ? styles.statusPillCompleted
+                                : apt.estado === 'Cancelada'
+                                ? styles.statusPillCancelled
+                                : styles.statusPillScheduled,
                             ]}
                           >
                             <Text
                               style={[
                                 styles.statusPillText,
-                                apt.estado === 'Completada' ? styles.statusPillTextCompleted : styles.statusPillTextScheduled,
+                                apt.estado === 'Completada'
+                                  ? styles.statusPillTextCompleted
+                                  : apt.estado === 'Cancelada'
+                                  ? styles.statusPillTextCancelled
+                                  : styles.statusPillTextScheduled,
                               ]}
                             >
                               {apt.estado}
@@ -865,11 +888,37 @@ const styles = StyleSheet.create({
   modalityBadgeTextOnline: {
     color: '#2563EB',
   },
+  patientRowWithBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 4,
+  },
   patientNameText: {
     fontSize: 15,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 4,
+    flex: 1,
+  },
+  patientNameCancelled: {
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+  },
+  suplenteRoleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  suplenteRoleBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#1D4ED8',
   },
   notesRow: {
     flexDirection: 'row',
@@ -902,6 +951,9 @@ const styles = StyleSheet.create({
   statusPillCompleted: {
     backgroundColor: '#EAF5EE',
   },
+  statusPillCancelled: {
+    backgroundColor: '#FEE2E2',
+  },
   statusPillText: {
     fontSize: 10.5,
     fontWeight: '600',
@@ -911,5 +963,8 @@ const styles = StyleSheet.create({
   },
   statusPillTextCompleted: {
     color: '#0F613B',
+  },
+  statusPillTextCancelled: {
+    color: '#DC2626',
   },
 });

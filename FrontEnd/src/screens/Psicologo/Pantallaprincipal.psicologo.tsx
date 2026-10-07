@@ -130,18 +130,17 @@ export const PsychologistDashboardScreen: React.FC<
       try {
         const list = await patientService.getTodayPatients(user?.email);
         if (isMounted) {
-          if (list.length > 0) {
-            setTodayPatients(list);
-          } else {
-            const todayStr = getLocalToday();
-            const localFiltered = patients.filter(
-              (p) => p.fecha_primera_sesion === todayStr
-            );
-            setTodayPatients(localFiltered);
-          }
+          setTodayPatients(list);
         }
       } catch (err) {
         console.warn('[Pantallaprincipal] Error al cargar pacientes del día:', err);
+        if (isMounted) {
+          const todayStr = getLocalToday();
+          const localFiltered = patients.filter(
+            (p) => p.fecha_primera_sesion === todayStr
+          );
+          setTodayPatients(localFiltered);
+        }
       } finally {
         if (isMounted) setLoadingToday(false);
       }
@@ -332,12 +331,12 @@ export const PsychologistDashboardScreen: React.FC<
                 </View>
               ) : (
                 todayPatients.map((patient, index) => {
-                  const hora = (patient as any).hora_cita as string | undefined;
+                  const hora = patient.hora_cita;
                   const isLast = index === todayPatients.length - 1;
 
                   return (
                     <TouchableOpacity
-                      key={`today-${patient.email}-${index}`}
+                      key={`today-${patient.id ?? patient.email}`}
                       style={[
                         styles.agendaRow,
                         !isLast && styles.agendaRowSpacing,
@@ -358,11 +357,35 @@ export const PsychologistDashboardScreen: React.FC<
                       </View>
 
                       <View style={styles.agendaInfo}>
-                        <Text style={styles.agendaName} numberOfLines={1}>
-                          {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno || ''}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <Text
+                            style={[
+                              styles.agendaName,
+                              patient.estado_cita === 'cancelada' && styles.agendaNameCancelled,
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno || ''}
+                          </Text>
+                          {(patient.rol_cita === 'suplente' || patient.tipo_relacion === 'suplente') && (
+                            <View style={styles.suplenteBadge}>
+                              <Text style={styles.suplenteBadgeText}>Suplencia</Text>
+                            </View>
+                          )}
+                          {patient.tipo_relacion === 'titular' && Boolean(patient.suplente_activo) && (
+                            <View style={styles.enSuplenciaBadge}>
+                              <Text style={styles.enSuplenciaBadgeText}>En suplencia</Text>
+                            </View>
+                          )}
+                          {patient.estado_cita === 'cancelada' && (
+                            <View style={styles.canceladaBadge}>
+                              <Text style={styles.canceladaBadgeText}>Cancelada</Text>
+                            </View>
+                          )}
+                        </View>
                         <Text style={styles.agendaMeta} numberOfLines={1}>
                           {patient.edad} años · {patient.genero}
+                          {patient.estado_cita === 'cancelada' ? ' · Cita cancelada' : ''}
                         </Text>
                       </View>
 
@@ -433,7 +456,7 @@ export const PsychologistDashboardScreen: React.FC<
                       (index === 0 || getGroupLetter(sortedPatients[index - 1]) !== letter);
 
                     return (
-                      <React.Fragment key={`all-${patient.email}-${index}`}>
+                      <React.Fragment key={`all-${patient.id ?? patient.email}`}>
                         {showLetter && <Text style={styles.directoryLetter}>{letter}</Text>}
 
                         <TouchableOpacity
@@ -451,9 +474,21 @@ export const PsychologistDashboardScreen: React.FC<
                           </View>
 
                           <View style={styles.directoryInfo}>
-                            <Text style={styles.directoryName} numberOfLines={1}>
-                              {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno || ''}
-                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              <Text style={styles.directoryName} numberOfLines={1}>
+                                {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno || ''}
+                              </Text>
+                              {patient.tipo_relacion === 'suplente' && (
+                                <View style={styles.suplenteBadge}>
+                                  <Text style={styles.suplenteBadgeText}>Suplencia</Text>
+                                </View>
+                              )}
+                              {patient.tipo_relacion === 'titular' && Boolean(patient.suplente_activo) && (
+                                <View style={styles.enSuplenciaBadge}>
+                                  <Text style={styles.enSuplenciaBadgeText}>En suplencia</Text>
+                                </View>
+                              )}
+                            </View>
                             <Text style={styles.directoryMeta} numberOfLines={1}>
                               {patient.edad} años
                               {highlight && (
@@ -944,4 +979,47 @@ const styles = StyleSheet.create({
     borderColor: '#D1D5DB',
   },
 
+  suplenteBadge: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  suplenteBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#1D4ED8',
+  },
+  enSuplenciaBadge: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  enSuplenciaBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#B45309',
+  },
+  canceladaBadge: {
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  canceladaBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
+  agendaNameCancelled: {
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+  },
 });

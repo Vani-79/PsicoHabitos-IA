@@ -75,7 +75,14 @@ export const HabitDetailScreen: React.FC<HabitDetailScreenProps> = ({
   const resources = habitResourcesBySection[habitKey] ?? [];
 
   const openVideo = async (videoUrl: string) => {
-    await Linking.openURL(videoUrl);
+    try {
+      const supported = await Linking.canOpenURL(videoUrl);
+      if (supported) {
+        await Linking.openURL(videoUrl);
+      }
+    } catch (err) {
+      console.warn('[Ejerciciosvideos] Error al abrir recurso de video:', err);
+    }
   };
 
   return (
