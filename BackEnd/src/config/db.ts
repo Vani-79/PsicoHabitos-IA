@@ -36,6 +36,31 @@ export async function testDbConnection(): Promise<void> {
     await connection.query("SET PERSIST time_zone = '-03:00';");
     await connection.query("SET time_zone = '-03:00';");
 
+    // Activar programador de eventos y asegurar tarea periódica de limpieza de códigos OTP
+    try {
+      await connection.query("SET GLOBAL event_scheduler = ON;");
+      await connection.query("DROP EVENT IF EXISTS evt_limpiar_codigos_expirados;");
+      await connection.query(`
+        CREATE EVENT evt_limpiar_codigos_expirados
+        ON SCHEDULE EVERY 1 HOUR
+        COMMENT 'Mantenimiento y depuración automática de tokens OTP (recuperación y traspaso)'
+        DO
+        BEGIN
+          DELETE FROM codigos_recuperacion 
+          WHERE expira_en < NOW() - INTERVAL 1 HOUR;
+
+          DELETE FROM codigos_traspaso_titularidad 
+          WHERE usado = FALSE AND expira_en < NOW() - INTERVAL 1 DAY;
+
+          DELETE FROM codigos_traspaso_titularidad 
+          WHERE usado = TRUE AND created_at < NOW() - INTERVAL 90 DAY;
+        END;
+      `);
+    } catch (eventErr) {
+      console.warn('⚠️ [MySQL] No se pudo registrar el evento automático (requiere permisos de evento):', (eventErr as any)?.message);
+    }
+
+
     // Asegurar existencia de tabla codigos_recuperacion
     await connection.query(`
       CREATE TABLE IF NOT EXISTS codigos_recuperacion (

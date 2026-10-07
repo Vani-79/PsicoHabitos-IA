@@ -350,3 +350,32 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+-- ------------------------------------------------------------------------------
+-- 13. EVENTOS PROGRAMADOS (Mantenimiento y Depuración Automática)
+-- ------------------------------------------------------------------------------
+SET GLOBAL event_scheduler = ON;
+
+DELIMITER $$
+
+DROP EVENT IF EXISTS evt_limpiar_codigos_expirados$$
+CREATE EVENT evt_limpiar_codigos_expirados
+ON SCHEDULE EVERY 1 HOUR
+COMMENT 'Mantenimiento y depuración automática de tokens OTP (recuperación y traspaso)'
+DO
+BEGIN
+  -- 1. Limpieza de tokens de recuperación/activación vencidos hace más de 1 hora
+  DELETE FROM codigos_recuperacion 
+  WHERE expira_en < NOW() - INTERVAL 1 HOUR;
+
+  -- 2. Limpieza de solicitudes de traspaso NO USADAS vencidas hace más de 1 día
+  DELETE FROM codigos_traspaso_titularidad 
+  WHERE usado = FALSE AND expira_en < NOW() - INTERVAL 1 DAY;
+
+  -- 3. Limpieza de autorizaciones de traspaso USADAS que superan plazo de auditoría (90 días)
+  DELETE FROM codigos_traspaso_titularidad 
+  WHERE usado = TRUE AND created_at < NOW() - INTERVAL 90 DAY;
+END$$
+
+DELIMITER ;
+
