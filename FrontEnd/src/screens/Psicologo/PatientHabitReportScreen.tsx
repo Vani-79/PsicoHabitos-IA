@@ -1006,9 +1006,10 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
                       showsHorizontalScrollIndicator={false}
                       contentContainerStyle={styles.chartPillsScroll}
                     >
-                      {filters.habits.map((hKey) => {
+                      {filters.habits.map((hKey: HabitKey) => {
                         const isCurSelected = activeChartHabit === hKey;
                         const cfg = HABIT_CONFIG[hKey];
+                        if (!cfg) return null;
                         return (
                           <TouchableOpacity
                             key={hKey}
@@ -1102,7 +1103,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
               </View>
 
               <View style={styles.habitsCardsList}>
-                {filters.habits.map((habitKey) => (
+                {filters.habits.map((habitKey: HabitKey) => (
                   <HabitBreakdownCard
                     key={habitKey}
                     habitKey={habitKey}
