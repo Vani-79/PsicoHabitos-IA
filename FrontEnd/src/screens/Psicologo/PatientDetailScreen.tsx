@@ -19,6 +19,9 @@ import { TimePickerModal } from '../../components/TimePickerModal';
 import { appointmentService } from '../../services/appointmentService';
 import { useAuth } from '../../context/AuthContext';
 import { formatToChileanDate } from '../../utils/date';
+import { useNavigation } from '@react-navigation/native';
+import { PsychologistNavigationProp, HabitReportFilters } from '../../navigation/types';
+import { HabitFilterModal } from '../../components/HabitFilterModal';
 
 type Duracion = '30' | '45' | '60' | '75' | '90';
 type Modalidad = 'presencial' | 'online';
@@ -1312,6 +1315,16 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
 
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
   const [editingSession, setEditingSession] = useState<AppointmentSession | null>(null);
+  const [showHabitFilterModal, setShowHabitFilterModal] = useState(false);
+  const navigation = useNavigation<PsychologistNavigationProp>();
+
+  const handleConfirmHabitReport = (filters: HabitReportFilters) => {
+    setShowHabitFilterModal(false);
+    navigation.navigate('PatientHabitReport', {
+      patient: currentPatient,
+      filters,
+    });
+  };
 
   const openScheduleModal = () => {
     if (!isSubscriptionActive) {
@@ -1349,6 +1362,24 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
         <PatientRoleBanners patient={currentPatient} />
 
         <PatientInfoCard patient={currentPatient} />
+
+        {/* Botón de acceso al Informe Visual de Hábitos */}
+        <TouchableOpacity
+          style={styles.habitsReportButton}
+          onPress={() => setShowHabitFilterModal(true)}
+          activeOpacity={0.85}
+        >
+          <View style={styles.habitsReportIconWrapper}>
+            <Ionicons name="analytics" size={22} color="#FFFFFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.habitsReportTitle}>Registro de Hábitos</Text>
+            <Text style={styles.habitsReportSubtitle}>
+              Consultar informe visual con gráficas y promedios
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color="#1A7A54" />
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={[
@@ -1416,6 +1447,12 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
           onPatientUpdated?.();
         }}
       />
+
+      <HabitFilterModal
+        visible={showHabitFilterModal}
+        onClose={() => setShowHabitFilterModal(false)}
+        onConfirm={handleConfirmHabitReport}
+      />
     </SafeAreaView>
   );
 };
@@ -1445,6 +1482,40 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   infoText: { fontSize: 13, color: '#60756D', marginBottom: 6 },
+  habitsReportButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#C6E7D6',
+    shadowColor: '#1A7A54',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+    marginBottom: 16,
+  },
+  habitsReportIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#1A7A54',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  habitsReportTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  habitsReportSubtitle: {
+    fontSize: 12,
+    color: '#60756D',
+    marginTop: 2,
+  },
   scheduleButton: {
     backgroundColor: '#0F613B',
     borderRadius: 18,

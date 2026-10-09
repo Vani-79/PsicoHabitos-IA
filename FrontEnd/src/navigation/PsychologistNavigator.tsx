@@ -4,6 +4,7 @@ import { PsychologistStackParamList } from './types';
 import { PsychologistDashboardScreen } from '../screens/Psicologo/Pantallaprincipal.psicologo';
 import { RegisterPatientScreen } from '../screens/Psicologo/Registropaciente.psicologo';
 import { PatientDetailScreen } from '../screens/Psicologo/PatientDetailScreen';
+import { PatientHabitReportScreen } from '../screens/Psicologo/PatientHabitReportScreen';
 import { useAuth } from '../context/AuthContext';
 
 const Stack = createNativeStackNavigator<PsychologistStackParamList>();
@@ -41,8 +42,9 @@ export const PsychologistNavigator: React.FC = () => {
         )}
       </Stack.Screen>
 
+      <Stack.Screen name="PatientHabitReport" component={PatientHabitReportScreen} />
+
       <Stack.Screen name="RegisterPatient">
-        
         {({ navigation }) => (
           <RegisterPatientScreen
             onBack={() => navigation.goBack()}

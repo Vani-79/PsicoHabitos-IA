@@ -16,10 +16,34 @@ export type PatientStackParamList = {
   PatientProfile: undefined;
 };
 
+import { HabitKey } from '../types/habits';
+
+export type HabitPeriod =
+  | 'therapy_start'
+  | 'year'
+  | '6months'
+  | '3months'
+  | 'month'
+  | 'week'
+  | 'custom'
+  | 'day';
+
+export interface HabitReportFilters {
+  habits: HabitKey[];
+  period: HabitPeriod;
+  specificDate?: string; // 'YYYY-MM-DD' (retrocompatibilidad)
+  startDate?: string;    // 'YYYY-MM-DD' fecha inicio de rango
+  endDate?: string;      // 'YYYY-MM-DD' fecha fin de rango
+}
+
 export type PsychologistStackParamList = {
   PsychologistDashboard: undefined;
   RegisterPatient: undefined;
   PatientDetail: { patient: MySqlPatientRecord };
+  PatientHabitReport: {
+    patient: MySqlPatientRecord;
+    filters: HabitReportFilters;
+  };
 };
 
 // Tipos auxiliares para navegación tipada en componentes
