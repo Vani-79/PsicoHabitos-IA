@@ -37,10 +37,6 @@ export const PsychologistNavigator: React.FC = () => {
             patient={route.params.patient}
             onBack={() => navigation.goBack()}
             onPatientUpdated={refreshPatients}
-            onScheduleSession={() => {
-              // Por ahora sin backend: solo un placeholder
-              console.log('Agendar sesión para', route.params.patient.email);
-            }}
           />
         )}
       </Stack.Screen>

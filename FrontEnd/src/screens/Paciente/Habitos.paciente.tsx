@@ -25,7 +25,7 @@ import {
   getRatingLabel,
 } from '../../constants/habits';
 import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
-import { formatToMySqlDate, formatToMySqlDateTime } from '../../utils/date';
+import { formatToMySqlDate, formatToMySqlDateTime, formatToChileanDate } from '../../utils/date';
 import { habitService } from '../../services';
 import { s, vs, ms } from '../../utils/responsive';
 
@@ -125,7 +125,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
     if (isLockedToday) {
       Alert.alert(
         'Check-in completado',
-        `Ya has registrado tus hábitos del día (${serverDate || recordDate}). Por metodología clínica, la evaluación se realiza una sola vez al día. Podrás registrar nuevamente a partir de mañana.`
+        `Ya has registrado tus hábitos del día (${formatToChileanDate(serverDate || recordDate)}). Por metodología clínica, la evaluación se realiza una sola vez al día. Podrás registrar nuevamente a partir de mañana.`
       );
       return;
     }

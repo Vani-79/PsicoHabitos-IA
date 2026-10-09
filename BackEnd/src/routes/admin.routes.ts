@@ -1038,6 +1038,17 @@ adminRouter.get(['/admin/psychologists', '/AdministracionPsicologos', '/administ
       document.getElementById('statInactivas').textContent = psychologistsList.length - activas;
     }
 
+    function formatDDMMAAAA(dStr) {
+      if (!dStr) return 'Sin definir';
+      const clean = String(dStr).split('T')[0].split(' ')[0].trim();
+      const parts = clean.split('-');
+      if (parts.length === 3) {
+        if (parts[0].length === 4) return parts[2] + '/' + parts[1] + '/' + parts[0];
+        if (parts[2].length === 4) return parts[0] + '/' + parts[1] + '/' + parts[2];
+      }
+      return dStr;
+    }
+
     function renderTable() {
       const query = searchInput.value.toLowerCase().trim();
       const statusFilter = filterStatus.value;
@@ -1097,7 +1108,7 @@ adminRouter.get(['/admin/psychologists', '/AdministracionPsicologos', '/administ
               <strong>\${p.mesesContratados} mes(es)</strong>
             </td>
             <td>
-              <span style="font-weight: 600;">\${p.fin || 'Sin definir'}</span>
+              <span style="font-weight: 600;">\${formatDDMMAAAA(p.fin)}</span>
             </td>
             <td>
               <span class="days-badge" style="color: \${daysColor};">\${daysText}</span>
@@ -1154,7 +1165,7 @@ adminRouter.get(['/admin/psychologists', '/AdministracionPsicologos', '/administ
 
       const monthsToAdd = Number(selectExtendMonths.value) || 0;
       const currentFin = currentEditingPsychologist.fin || new Date().toISOString().split('T')[0];
-      currentFinDateSpan.textContent = currentFin;
+      currentFinDateSpan.textContent = formatDDMMAAAA(currentFin);
 
       // Cálculo visual estimado
       let baseDate = new Date();
@@ -1164,17 +1175,17 @@ adminRouter.get(['/admin/psychologists', '/AdministracionPsicologos', '/administ
 
       if (monthsToAdd > 0) {
         baseDate.setMonth(baseDate.getMonth() + monthsToAdd);
-        newFinDateSpan.textContent = baseDate.toISOString().split('T')[0] + ' (+' + monthsToAdd + ' mes' + (monthsToAdd > 1 ? 'es' : '') + ')';
+        newFinDateSpan.textContent = formatDDMMAAAA(baseDate.toISOString().split('T')[0]) + ' (+' + monthsToAdd + ' mes' + (monthsToAdd > 1 ? 'es' : '') + ')';
       } else {
         if (!selectedActiveState) {
-          newFinDateSpan.textContent = currentFin + ' (Acceso pausado inmediatamente)';
+          newFinDateSpan.textContent = formatDDMMAAAA(currentFin) + ' (Acceso pausado inmediatamente)';
         } else if (currentEditingPsychologist.diasRestantes < 0) {
           // Si activa una vencida sin extensión, renueva por 1 mes
           const autoRenew = new Date();
           autoRenew.setMonth(autoRenew.getMonth() + 1);
-          newFinDateSpan.textContent = autoRenew.toISOString().split('T')[0] + ' (Reactivación por 1 mes)';
+          newFinDateSpan.textContent = formatDDMMAAAA(autoRenew.toISOString().split('T')[0]) + ' (Reactivación por 1 mes)';
         } else {
-          newFinDateSpan.textContent = currentFin + ' (Sin cambios de fecha)';
+          newFinDateSpan.textContent = formatDDMMAAAA(currentFin) + ' (Sin cambios de fecha)';
         }
       }
     }

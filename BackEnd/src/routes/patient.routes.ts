@@ -697,54 +697,59 @@ async function resolveOrCreatePatientUser(email: string): Promise<number> {
 }
 
 /**
- * Asigna un paciente ya registrado a la lista del especialista autenticado.
+ * Valida un paciente ya registrado y devuelve un error descriptivo según su estado clínico actual.
  */
 async function assignExistingPatient(
   patient: ExistingPatientRecord,
   targetPsicologoId: number,
-  targetEmail: string,
-  sessionParams: SessionAppointmentParams
+  _targetEmail: string,
+  _sessionParams: SessionAppointmentParams
 ): Promise<ExistingPatientAssignmentResult> {
-  const [existingRel] = await pool.query<RowDataPacket[]>(
-    'SELECT id FROM relacion_psicologo_paciente WHERE psicologo_id = ? AND paciente_id = ? LIMIT 1',
+  // 1. Verificar si el psicólogo solicitante ya lo tiene activo
+  const [myActiveRel] = await pool.query<RowDataPacket[]>(
+    "SELECT id, tipo_relacion FROM relacion_psicologo_paciente WHERE psicologo_id = ? AND paciente_id = ? AND estado = 'activo' LIMIT 1",
     [targetPsicologoId, patient.id]
   );
 
-  if (existingRel.length > 0) {
+  if (myActiveRel.length > 0) {
+    const relType = myActiveRel[0].tipo_relacion === 'suplente' ? 'suplente' : 'titular';
     return {
       status: 409,
       body: {
         success: false,
-        error: 'Ya tienes asignado a este paciente en tu lista clínica.',
+        error: `Este paciente ya se encuentra actualmente en tu lista clínica activa como ${relType}.`,
       },
     };
   }
 
-  await pool.query(
-    `INSERT INTO relacion_psicologo_paciente 
-      (psicologo_id, paciente_id, fecha_primera_sesion, estado) 
-     VALUES (?, ?, COALESCE(?, CURDATE()), 'activo')`,
-    [targetPsicologoId, patient.id, sessionParams.fecha || null]
+  // 2. Verificar si otro especialista lo tiene activo actualmente
+  const [otherActiveRel] = await pool.query<RowDataPacket[]>(
+    `SELECT psi.nombre, psi.apellidos, r.tipo_relacion 
+     FROM relacion_psicologo_paciente r
+     JOIN psicologos psi ON psi.id = r.psicologo_id
+     WHERE r.paciente_id = ? AND r.estado = 'activo' AND r.psicologo_id != ?
+     ORDER BY r.tipo_relacion = 'titular' DESC
+     LIMIT 1`,
+    [patient.id, targetPsicologoId]
   );
 
-  await registerFirstAppointmentSession({
-    psicologoId: targetPsicologoId,
-    pacienteId: patient.id,
-    ...sessionParams,
-  });
-
-  return {
-    status: 201,
-    body: {
-      success: true,
-      message: 'Paciente asignado correctamente a tu lista de pacientes.',
-      data: {
-        id: patient.id,
-        nombre: patient.nombre,
-        apellido_paterno: patient.apellido_paterno,
-        email: targetEmail,
-        fecha_primera_sesion: sessionParams.fecha,
+  if (otherActiveRel.length > 0) {
+    const doctorName = `Ps. ${otherActiveRel[0].nombre} ${otherActiveRel[0].apellidos}`;
+    return {
+      status: 409,
+      body: {
+        success: false,
+        error: `Este paciente ya se encuentra registrado bajo la supervisión de ${doctorName}. Para atenderlo, debes solicitar una suplencia o traspaso desde la pestaña "Paciente ya registrado".`,
       },
+    };
+  }
+
+  // 3. El paciente existe en el sistema pero no está activo con ningún especialista
+  return {
+    status: 409,
+    body: {
+      success: false,
+      error: `El paciente ${patient.nombre} ${patient.apellido_paterno} ya cuenta con una ficha clínica registrada en el sistema pero no está activo. Para volver a atenderlo, vincúlalo desde la pestaña "Paciente ya registrado".`,
     },
   };
 }

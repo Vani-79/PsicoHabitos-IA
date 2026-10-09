@@ -17,17 +17,15 @@ import { MySqlPatientRecord, AppointmentSession } from '../../types/patient';
 import { DatePickerModal } from '../../components/DatePickerModal';
 import { TimePickerModal } from '../../components/TimePickerModal';
 import { appointmentService } from '../../services/appointmentService';
-import { patientService } from '../../services/patientService';
 import { useAuth } from '../../context/AuthContext';
 import { formatToChileanDate } from '../../utils/date';
 
 type Duracion = '30' | '45' | '60' | '75' | '90';
 type Modalidad = 'presencial' | 'online';
 
-interface PatientDetailScreenProps {
+export interface PatientDetailScreenProps {
   patient: MySqlPatientRecord;
   onBack: () => void;
-  onScheduleSession?: () => void;
   onPatientUpdated?: () => void;
 }
 
@@ -41,12 +39,15 @@ const DURATIONS: { key: Duracion; label: string }[] = [
 
 const SESSIONS_PER_PAGE = 3;
 
-// ── Helpers de fecha/hora ────────────────────────────────────────────────
+// ── Helpers de fecha/hora y validaciones ─────────────────────────────────
 
 const getTodayStr = (): string => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
+
+const formatDateForInitialPicker = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 const timeToMinutes = (t: string): number => {
   const [h, m] = t.split(':').map(Number);
@@ -70,72 +71,411 @@ const rangesOverlap = (startA: number, durA: number, startB: number, durB: numbe
   return startA < endB && startB < endA;
 };
 
-export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
-  patient,
-  onBack,
-  onPatientUpdated,
-}) => {
-  const { user } = useAuth();
-  const isSubscriptionActive = user?.subscription ? user.subscription.isActive : true;
+const parseDateParts = (
+  dateValue: string | Date | undefined
+): { y: number; m: number; d: number } | null => {
+  if (!dateValue) return null;
+  const cleanDateStr = String(dateValue).split('T')[0];
+  const parts = cleanDateStr.split('-');
+  if (parts.length !== 3) return null;
+  return { y: Number(parts[0]), m: Number(parts[1]) - 1, d: Number(parts[2]) };
+};
 
-  const [currentPatient, setCurrentPatient] = useState<MySqlPatientRecord>(patient);
-
-  useEffect(() => {
-    setCurrentPatient(patient);
-  }, [patient]);
-
-  // Si el psicólogo es TITULAR y el paciente tiene una suplencia activa,
-  // se bloquean los días cubiertos por la suplencia (minBookingDate = día siguiente al fin de la suplencia).
-  const minBookingDate = useMemo(() => {
-    if (currentPatient.tipo_relacion === 'titular' && currentPatient.suplente_activo?.fecha_fin_suplencia) {
-      const cleanDateStr = String(currentPatient.suplente_activo.fecha_fin_suplencia).split('T')[0];
-      const parts = cleanDateStr.split('-');
-      if (parts.length === 3) {
-        const y = Number(parts[0]);
-        const m = Number(parts[1]) - 1;
-        const d = Number(parts[2]);
-        const dayAfterSuplencia = new Date(y, m, d + 1, 0, 0, 0);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (dayAfterSuplencia > today) {
-          return dayAfterSuplencia;
-        }
-      }
-    }
+const getMinBookingDate = (patient: MySqlPatientRecord): Date => {
+  if (patient.tipo_relacion !== 'titular' || !patient.suplente_activo?.fecha_fin_suplencia) {
     return new Date();
-  }, [currentPatient.tipo_relacion, currentPatient.suplente_activo]);
+  }
+  const parts = parseDateParts(patient.suplente_activo.fecha_fin_suplencia);
+  if (!parts) return new Date();
 
-  // Si el psicólogo es SUPLENTE, no puede agendar más allá de su fecha límite de suplencia.
-  const maxBookingDate = useMemo(() => {
-    if (currentPatient.tipo_relacion === 'suplente' && currentPatient.fecha_fin_suplencia) {
-      const cleanDateStr = String(currentPatient.fecha_fin_suplencia).split('T')[0];
-      const parts = cleanDateStr.split('-');
-      if (parts.length === 3) {
-        const y = Number(parts[0]);
-        const m = Number(parts[1]) - 1;
-        const d = Number(parts[2]);
-        return new Date(y, m, d, 23, 59, 59);
-      }
+  const dayAfterSuplencia = new Date(parts.y, parts.m, parts.d + 1, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return dayAfterSuplencia > today ? dayAfterSuplencia : new Date();
+};
+
+const getMaxBookingDate = (patient: MySqlPatientRecord): Date => {
+  if (patient.tipo_relacion === 'suplente' && patient.fecha_fin_suplencia) {
+    const parts = parseDateParts(patient.fecha_fin_suplencia);
+    if (parts) {
+      return new Date(parts.y, parts.m, parts.d, 23, 59, 59);
     }
-    const d = new Date();
-    d.setMonth(d.getMonth() + 6);
-    return d;
-  }, [currentPatient.tipo_relacion, currentPatient.fecha_fin_suplencia]);
+  }
+  const d = new Date();
+  d.setMonth(d.getMonth() + 6);
+  return d;
+};
 
-  // Historial de sesiones (de este paciente)
-  const [sessions, setSessions] = useState<AppointmentSession[]>([]);
-  const [loadingSessions, setLoadingSessions] = useState(true);
-  const [currentPage, setCurrentPage] = useState(0);
+const checkSuplenciaRestrictions = (
+  patient: MySqlPatientRecord,
+  dateStr: string,
+  isEdit = false
+): string | null => {
+  if (patient.tipo_relacion === 'titular' && patient.suplente_activo?.fecha_fin_suplencia) {
+    const suplenteEndStr = String(patient.suplente_activo.fecha_fin_suplencia).split('T')[0];
+    if (dateStr <= suplenteEndStr) {
+      return isEdit
+        ? `No puedes reprogramar la cita para una fecha cubierta por la suplencia activa de ${
+            patient.suplente_activo.nombre || 'el suplente'
+          } (hasta el ${formatToChileanDate(suplenteEndStr)}).`
+        : `Este paciente se encuentra bajo cobertura del psicólogo suplente (${
+            patient.suplente_activo.nombre
+          }) hasta el ${formatToChileanDate(
+            suplenteEndStr
+          )}.\n\nSolo puedes agendar citas a partir del día siguiente a esa fecha o finalizando la suplencia.`;
+    }
+  }
 
-  const totalPages = Math.ceil(sessions.length / SESSIONS_PER_PAGE);
+  if (patient.tipo_relacion === 'suplente' && patient.fecha_fin_suplencia) {
+    const suplenteEndStr = String(patient.fecha_fin_suplencia).split('T')[0];
+    if (dateStr > suplenteEndStr) {
+      return isEdit
+        ? `Tu periodo de suplencia finaliza el ${formatToChileanDate(
+            suplenteEndStr
+          )}. No puedes reprogramar citas posteriores a esa fecha.`
+        : `Tu periodo de suplencia finaliza el ${formatToChileanDate(
+            suplenteEndStr
+          )}. No puedes programar citas posteriores a esa fecha.`;
+    }
+  }
+
+  return null;
+};
+
+const hasScheduleConflict = (
+  hora: string,
+  duracion: number,
+  busySessions: { hora: string; duracion: number }[]
+): boolean => {
+  const startMinutes = timeToMinutes(hora);
+  return busySessions.some((b) =>
+    rangesOverlap(startMinutes, duracion, timeToMinutes(b.hora), b.duracion)
+  );
+};
+
+const getDoctorRoleSuffix = (session: AppointmentSession): string => {
+  if (session.tipoEspecialista === 'suplente') return ' (Suplente)';
+  if (session.tipoEspecialista === 'titular_anterior') return ' (Titular Anterior)';
+  if (session.esPropia === false) return ' (Colega)';
+  return '';
+};
+
+const getStatusLabel = (isCancelada: boolean, isCompletada: boolean): string => {
+  if (isCancelada) return 'Cancelada';
+  if (isCompletada) return 'Completada';
+  return 'Programada';
+};
+
+// ── Subcomponentes Visuales ───────────────────────────────────────────────
+
+const PatientRoleBanners: React.FC<{ patient: MySqlPatientRecord }> = ({ patient }) => {
+  return (
+    <>
+      {patient.tipo_relacion === 'suplente' && (
+        <View style={styles.suplenteBanner}>
+          <View style={styles.suplenteBannerHeader}>
+            <Ionicons name="shield-checkmark" size={18} color="#1E40AF" />
+            <Text style={styles.suplenteBannerTitle}>Atendiendo como Psicólogo Suplente</Text>
+          </View>
+          <Text style={styles.suplenteBannerText}>
+            Tienes cobertura temporal de atención autorizada por el paciente hasta el{' '}
+            <Text style={{ fontWeight: '700' }}>
+              {patient.fecha_fin_suplencia
+                ? formatToChileanDate(patient.fecha_fin_suplencia)
+                : 'fecha límite'}
+            </Text>
+            . Puedes acceder a su historial clínico completo y registrar nuevas sesiones.
+          </Text>
+        </View>
+      )}
+
+      {patient.tipo_relacion === 'titular' && patient.suplente_activo && (
+        <View style={styles.titularSuplenciaBanner}>
+          <View style={styles.suplenteBannerHeader}>
+            <Ionicons name="information-circle" size={18} color="#92400E" />
+            <Text style={styles.titularBannerTitle}>Cobertura de Suplencia Activa</Text>
+          </View>
+          <Text style={styles.titularBannerText}>
+            El especialista{' '}
+            <Text style={{ fontWeight: '700' }}>{patient.suplente_activo.nombre}</Text> tiene
+            cobertura temporal activa sobre este paciente
+            {patient.suplente_activo.fecha_fin_suplencia
+              ? ` hasta el ${formatToChileanDate(patient.suplente_activo.fecha_fin_suplencia)}`
+              : ''}
+            .
+          </Text>
+          <Text
+            style={[
+              styles.titularBannerText,
+              { marginTop: 4, fontStyle: 'italic', color: '#78350F' },
+            ]}
+          >
+            Nota: La revocación o término anticipado de la suplencia es una decisión exclusiva del
+            paciente desde su perfil.
+          </Text>
+        </View>
+      )}
+    </>
+  );
+};
+
+const PatientInfoCard: React.FC<{ patient: MySqlPatientRecord }> = ({ patient }) => (
+  <View style={styles.infoCard}>
+    <Text style={styles.infoText}>{patient.edad} años</Text>
+    <Text style={styles.infoText}>Correo: {patient.email}</Text>
+    <Text style={styles.infoText}>
+      Primera sesión: {formatToChileanDate(patient.fecha_primera_sesion) || 'No registrada'}
+    </Text>
+  </View>
+);
+
+interface SessionItemCardProps {
+  session: AppointmentSession;
+  onEdit: (session: AppointmentSession) => void;
+}
+
+const SessionItemCard: React.FC<SessionItemCardProps> = ({ session, onEdit }) => {
+  const isCancelada = session.estado?.toLowerCase() === 'cancelada';
+  const isCompletada = session.estado?.toLowerCase() === 'completada';
+  const isProgramada = !isCancelada && !isCompletada;
+  const doctorSuffix = getDoctorRoleSuffix(session);
+  const statusLabel = getStatusLabel(isCancelada, isCompletada);
+
+  return (
+    <View style={[styles.sessionCard, isCancelada && styles.sessionCardCancelled]}>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.sessionDate, isCancelada && styles.sessionDateCancelled]}>
+          {formatToChileanDate(session.fecha)} · {session.hora}{' '}
+          {session.horaFin ? `- ${session.horaFin}` : ''} ·{' '}
+          {session.modalidad === 'presencial' ? 'Presencial' : 'Online'}
+        </Text>
+
+        {session.doctorNombre && (
+          <View style={styles.doctorBadgeRow}>
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={12}
+              color="#6B7280"
+              style={{ marginRight: 4 }}
+            />
+            <Text style={styles.doctorBadgeText}>
+              {session.doctorNombre}
+              {doctorSuffix}
+            </Text>
+          </View>
+        )}
+
+        {session.observaciones ? (
+          <Text style={[styles.sessionMotivo, isCancelada && styles.sessionMotivoCancelled]}>
+            {session.observaciones}
+          </Text>
+        ) : (
+          <Text style={[styles.sessionMotivo, { fontStyle: 'italic', color: '#9CA3AF' }]}>
+            Sin observaciones registradas
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.sessionCardRightCol}>
+        <View
+          style={[
+            styles.statusBadge,
+            isCompletada && styles.statusBadgeCompleted,
+            isCancelada && styles.statusBadgeCancelled,
+          ]}
+        >
+          <Text
+            style={[
+              styles.statusBadgeText,
+              isCompletada && styles.statusBadgeTextCompleted,
+              isCancelada && styles.statusBadgeTextCancelled,
+            ]}
+          >
+            {statusLabel}
+          </Text>
+        </View>
+
+        {isProgramada && (
+          session.esPropia !== false ? (
+            <TouchableOpacity
+              style={styles.manageButton}
+              onPress={() => onEdit(session)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="create-outline"
+                size={13}
+                color="#0F613B"
+                style={{ marginRight: 3 }}
+              />
+              <Text style={styles.manageButtonText}>Modificar</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.readOnlyBadge}>
+              <Ionicons
+                name="lock-closed"
+                size={11}
+                color="#6B7280"
+                style={{ marginRight: 3 }}
+              />
+              <Text style={styles.readOnlyBadgeText}>Solo lectura</Text>
+            </View>
+          )
+        )}
+      </View>
+    </View>
+  );
+};
+
+interface SessionPaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}
+
+const SessionPagination: React.FC<SessionPaginationProps> = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+}) => {
+  if (totalPages <= 1) return null;
+
+  return (
+    <View style={styles.paginationRow}>
+      <TouchableOpacity
+        style={[styles.pageButton, currentPage === 0 && styles.pageButtonDisabled]}
+        onPress={() => onPageChange(Math.max(0, currentPage - 1))}
+        disabled={currentPage === 0}
+        activeOpacity={0.7}
+      >
+        <Ionicons
+          name="chevron-back"
+          size={18}
+          color={currentPage === 0 ? '#CBD5E1' : '#0F613B'}
+        />
+        <Text style={[styles.pageButtonText, currentPage === 0 && styles.pageButtonTextDisabled]}>
+          Anterior
+        </Text>
+      </TouchableOpacity>
+
+      <Text style={styles.pageIndicator}>
+        {currentPage + 1} / {totalPages}
+      </Text>
+
+      <TouchableOpacity
+        style={[
+          styles.pageButton,
+          currentPage >= totalPages - 1 && styles.pageButtonDisabled,
+        ]}
+        onPress={() => onPageChange(Math.min(totalPages - 1, currentPage + 1))}
+        disabled={currentPage >= totalPages - 1}
+        activeOpacity={0.7}
+      >
+        <Text
+          style={[
+            styles.pageButtonText,
+            currentPage >= totalPages - 1 && styles.pageButtonTextDisabled,
+          ]}
+        >
+          Siguiente
+        </Text>
+        <Ionicons
+          name="chevron-forward"
+          size={18}
+          color={currentPage >= totalPages - 1 ? '#CBD5E1' : '#0F613B'}
+        />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+interface SessionsHistorySectionProps {
+  loading: boolean;
+  sessions: AppointmentSession[];
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  onEditSession: (session: AppointmentSession) => void;
+}
+
+const SessionsHistorySection: React.FC<SessionsHistorySectionProps> = ({
+  loading,
+  sessions,
+  currentPage,
+  totalPages,
+  onPageChange,
+  onEditSession,
+}) => {
   const paginatedSessions = sessions.slice(
     currentPage * SESSIONS_PER_PAGE,
     currentPage * SESSIONS_PER_PAGE + SESSIONS_PER_PAGE
   );
 
-  // Modal de agendar sesión
+  const renderHistoryContent = () => {
+    if (loading) {
+      return (
+        <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+          <ActivityIndicator size="small" color="#0F613B" />
+          <Text style={{ marginTop: 8, color: '#6B7280', fontSize: 13 }}>
+            Cargando sesiones...
+          </Text>
+        </View>
+      );
+    }
+
+    if (sessions.length === 0) {
+      return (
+        <View style={styles.emptyHistoryCard}>
+          <Ionicons name="calendar-outline" size={36} color="#9CA3AF" />
+          <Text style={styles.emptyHistoryText}>
+            Aún no hay sesiones agendadas para este paciente.
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <>
+        {paginatedSessions.map((session) => (
+          <SessionItemCard key={session.id} session={session} onEdit={onEditSession} />
+        ))}
+        <SessionPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+        />
+      </>
+    );
+  };
+
+  return (
+    <>
+      <Text style={styles.historyTitle}>Historial de sesiones</Text>
+      {renderHistoryContent()}
+    </>
+  );
+};
+
+// ── Modales ───────────────────────────────────────────────────────────────
+
+interface ScheduleSessionModalProps {
+  visible: boolean;
+  patient: MySqlPatientRecord;
+  minBookingDate: Date;
+  maxBookingDate: Date;
+  onClose: () => void;
+  onSessionCreated: () => void;
+}
+
+const ScheduleSessionModal: React.FC<ScheduleSessionModalProps> = ({
+  visible,
+  patient,
+  minBookingDate,
+  maxBookingDate,
+  onClose,
+  onSessionCreated,
+}) => {
   const [isSaving, setIsSaving] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
@@ -144,102 +484,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
   const [duracion, setDuracion] = useState<Duracion | ''>('');
   const [modalidad, setModalidad] = useState<Modalidad | ''>('');
   const [observaciones, setObservaciones] = useState('');
-
-  // Citas ya ocupadas (de TODOS los pacientes del psicólogo) para la fecha elegida
   const [busySessions, setBusySessions] = useState<{ hora: string; duracion: number }[]>([]);
-
-  // Estados para modal de modificar y/o eliminar cita programada
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editingSession, setEditingSession] = useState<AppointmentSession | null>(null);
-  const [editFecha, setEditFecha] = useState('');
-  const [editHora, setEditHora] = useState('');
-  const [editModalidad, setEditModalidad] = useState<Modalidad>('presencial');
-  const [editDuracion, setEditDuracion] = useState<Duracion>('60');
-  const [editObservaciones, setEditObservaciones] = useState('');
-  const [showEditDatePicker, setShowEditDatePicker] = useState(false);
-  const [showEditTimePicker, setShowEditTimePicker] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [busySessionsForEdit, setBusySessionsForEdit] = useState<{ hora: string; duracion: number }[]>([]);
-
-  const loadSessions = async () => {
-    if (!currentPatient.id) return;
-    setLoadingSessions(true);
-    const data = await appointmentService.getPatientAppointments(currentPatient.id);
-    setSessions(data);
-    setCurrentPage(0);
-    setLoadingSessions(false);
-  };
-
-  useEffect(() => {
-    loadSessions();
-  }, [currentPatient.id]);
-
-  const loadBusySessionsForDate = async (dateStr: string) => {
-    if (!dateStr) {
-      setBusySessions([]);
-      return;
-    }
-    try {
-      const dayAppointments = await appointmentService.getPsychologistCalendar({ date: dateStr });
-
-      const busyForDay = dayAppointments
-        .filter((a) => a.estado !== 'Cancelada')
-        .map((a) => ({ hora: a.hora, duracion: Number(a.duracion) || 60 }));
-
-      setBusySessions(busyForDay);
-    } catch (err) {
-      console.warn('[PatientDetailScreen] Error al cargar horarios ocupados:', err);
-      setBusySessions([]);
-    }
-  };
-
-  // Si cambia la fecha: recarga los horarios ocupados de ese día y
-  // revalida que la hora ya elegida (si había una) siga siendo válida.
-  useEffect(() => {
-    if (fecha && hora && !isTimeStillValid(fecha, hora)) {
-      setHora('');
-      Alert.alert(
-        'Hora ya no disponible',
-        'La hora que habías elegido ya pasó para la fecha seleccionada. Por favor, elige una nueva hora.'
-      );
-    }
-    loadBusySessionsForDate(fecha);
-  }, [fecha]);
-
-  // Si cambia la duración o los horarios ocupados: comprueba si la hora elegida sigue disponible
-  useEffect(() => {
-    if (!fecha || !hora || !duracion) return;
-    const startMinutes = timeToMinutes(hora);
-    const newDuration = Number(duracion) || 60;
-    const hasConflict = busySessions.some((b) =>
-      rangesOverlap(startMinutes, newDuration, timeToMinutes(b.hora), b.duracion)
-    );
-    if (hasConflict) {
-      setHora('');
-      Alert.alert(
-        'Hora no disponible',
-        'La hora que habías seleccionado se cruza con otra sesión para la duración elegida. Por favor, selecciona una nueva hora.'
-      );
-    }
-  }, [duracion, busySessions]);
-
-  // Reactividad para modal de edición si cambia duración u horarios
-  useEffect(() => {
-    if (!editFecha || !editHora || !editDuracion) return;
-    const startMinutes = timeToMinutes(editHora);
-    const newDuration = Number(editDuracion) || 60;
-    const hasConflict = busySessionsForEdit.some((b) =>
-      rangesOverlap(startMinutes, newDuration, timeToMinutes(b.hora), b.duracion)
-    );
-    if (hasConflict) {
-      setEditHora('');
-      Alert.alert(
-        'Hora no disponible',
-        'La hora seleccionada se cruza con otra sesión para la duración elegida. Por favor, selecciona una nueva hora.'
-      );
-    }
-  }, [editDuracion, busySessionsForEdit]);
 
   const resetForm = () => {
     setFecha('');
@@ -250,51 +495,81 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
     setBusySessions([]);
   };
 
-  const openScheduleModal = () => {
-    if (!isSubscriptionActive) {
-      Alert.alert(
-        'Suscripción Finalizada',
-        'Suscripción Finalizada comuníquese con el administrador para renovarla'
-      );
+  const loadBusySessionsForDate = async (dateStr: string) => {
+    if (!dateStr) {
+      setBusySessions([]);
       return;
     }
-    resetForm();
-    setModalVisible(true);
+    try {
+      const dayAppointments = await appointmentService.getPsychologistCalendar({ date: dateStr });
+      const busyForDay = dayAppointments
+        .filter((a) => a.estado !== 'Cancelada')
+        .map((a) => ({ hora: a.hora, duracion: Number(a.duracion) || 60 }));
+      setBusySessions(busyForDay);
+    } catch (err) {
+      console.warn('[PatientDetailScreen] Error al cargar horarios ocupados:', err);
+      setBusySessions([]);
+    }
   };
+
+  useEffect(() => {
+    if (fecha && hora && !isTimeStillValid(fecha, hora)) {
+      setHora('');
+      Alert.alert(
+        'Hora ya no disponible',
+        'La hora que habías elegido ya pasó para la fecha seleccionada. Por favor, elige una nueva hora.'
+      );
+    }
+    void loadBusySessionsForDate(fecha);
+  }, [fecha]);
+
+  useEffect(() => {
+    if (!fecha || !hora || !duracion) return;
+    const conflict = hasScheduleConflict(hora, Number(duracion) || 60, busySessions);
+    if (conflict) {
+      setHora('');
+      Alert.alert(
+        'Hora no disponible',
+        'La hora que habías seleccionado se cruza con otra sesión para la duración elegida. Por favor, selecciona una nueva hora.'
+      );
+    }
+  }, [duracion, busySessions]);
 
   const handleOpenTimePicker = () => {
     if (!fecha) {
-      Alert.alert('Selecciona primero la fecha', 'Elige la fecha de la sesión antes de escoger la hora.');
+      Alert.alert(
+        'Selecciona primero la fecha',
+        'Elige la fecha de la sesión antes de escoger la hora.'
+      );
       return;
     }
     setShowTimePicker(true);
   };
 
-  const hasUnsavedChanges = () => {
-  return Boolean(fecha || hora || duracion || modalidad || observaciones.trim());
-};
+  const hasUnsavedChanges = () =>
+    Boolean(fecha || hora || duracion || modalidad || observaciones.trim());
 
-const handleCloseModal = () => {
-  if (!hasUnsavedChanges()) {
-    setModalVisible(false);
-    return;
-  }
-  Alert.alert(
-    '¿Descartar cambios?',
-    'Tienes datos sin guardar. Si sales ahora, se perderán.',
-    [
-      { text: 'Seguir editando', style: 'cancel' },
-      {
-        text: 'Descartar',
-        style: 'destructive',
-        onPress: () => {
-          resetForm();
-          setModalVisible(false);
+  const handleCloseModal = () => {
+    if (!hasUnsavedChanges()) {
+      onClose();
+      return;
+    }
+    Alert.alert(
+      '¿Descartar cambios?',
+      'Tienes datos sin guardar. Si sales ahora, se perderán.',
+      [
+        { text: 'Seguir editando', style: 'cancel' },
+        {
+          text: 'Descartar',
+          style: 'destructive',
+          onPress: () => {
+            resetForm();
+            onClose();
+          },
         },
-      },
-    ]
-  );
-};
+      ]
+    );
+  };
 
   const handleSaveSession = async () => {
     if (!fecha) {
@@ -314,47 +589,32 @@ const handleCloseModal = () => {
       return;
     }
     if (!isTimeStillValid(fecha, hora)) {
-      Alert.alert('Hora inválida', 'La hora seleccionada ya pasó. Por favor, elige una hora futura.');
+      Alert.alert(
+        'Hora inválida',
+        'La hora seleccionada ya pasó. Por favor, elige una hora futura.'
+      );
       setHora('');
       return;
     }
-    if (!currentPatient.id) {
+    if (!patient.id) {
       Alert.alert('Error', 'No se encontró el ID del paciente.');
       return;
     }
 
-    // Si es TITULAR y el paciente tiene suplente activo, verificar que la fecha no caiga en el periodo de suplencia
-    if (currentPatient.tipo_relacion === 'titular' && currentPatient.suplente_activo?.fecha_fin_suplencia) {
-      const suplenteEndStr = String(currentPatient.suplente_activo.fecha_fin_suplencia).split('T')[0];
-      if (fecha <= suplenteEndStr) {
-        Alert.alert(
-          'Día reservado para suplencia',
-          `Este paciente se encuentra bajo cobertura del psicólogo suplente (${currentPatient.suplente_activo.nombre}) hasta el ${formatToChileanDate(suplenteEndStr)}.\n\nSolo puedes agendar citas a partir del día siguiente a esa fecha o finalizando la suplencia.`
-        );
-        return;
-      }
+    const suplenciaError = checkSuplenciaRestrictions(patient, fecha, false);
+    if (suplenciaError) {
+      Alert.alert(
+        patient.tipo_relacion === 'titular'
+          ? 'Día reservado para suplencia'
+          : 'Fecha excede suplencia',
+        suplenciaError
+      );
+      return;
     }
 
-    // Si es SUPLENTE, verificar que no agende posterior a su fecha límite de suplencia
-    if (currentPatient.tipo_relacion === 'suplente' && currentPatient.fecha_fin_suplencia) {
-      const suplenteEndStr = String(currentPatient.fecha_fin_suplencia).split('T')[0];
-      if (fecha > suplenteEndStr) {
-        Alert.alert(
-          'Fecha excede suplencia',
-          `Tu periodo de suplencia finaliza el ${formatToChileanDate(suplenteEndStr)}. No puedes programar citas posteriores a esa fecha.`
-        );
-        return;
-      }
-    }
-
-    // Choque de horario: bloquea si se cruza con otra sesión existente
-    const newStartMinutes = timeToMinutes(hora);
     const newDuration = Number(duracion);
-    const hasConflict = busySessions.some((b) =>
-      rangesOverlap(newStartMinutes, newDuration, timeToMinutes(b.hora), b.duracion)
-    );
-
-    if (hasConflict) {
+    const conflict = hasScheduleConflict(hora, newDuration, busySessions);
+    if (conflict) {
       Alert.alert(
         'Horario ocupado',
         'Ya existe una sesión que se cruza con este horario y duración. Elige otra hora.'
@@ -365,7 +625,7 @@ const handleCloseModal = () => {
 
     setIsSaving(true);
     const res = await appointmentService.createAppointment({
-      paciente_id: currentPatient.id,
+      paciente_id: patient.id,
       fecha,
       hora,
       duracion: newDuration,
@@ -376,439 +636,20 @@ const handleCloseModal = () => {
 
     if (res.success) {
       Alert.alert('¡Sesión agendada!', 'La sesión se ha programado exitosamente.');
-      setModalVisible(false);
       resetForm();
-      loadSessions();
+      onClose();
+      onSessionCreated();
     } else {
       Alert.alert('Error al agendar', res.error || 'No se pudo guardar la sesión.');
     }
   };
 
-
-
-  // ── Handlers para Modificar / Cancelar Cita Programada ──────────────────
-
-  const loadBusySessionsForEditDate = async (dateStr: string, currentSessionId?: string) => {
-    if (!dateStr) {
-      setBusySessionsForEdit([]);
-      return;
-    }
-    try {
-      const dayAppointments = await appointmentService.getPsychologistCalendar({ date: dateStr });
-      const busyForDay = dayAppointments
-        .filter((a) => a.estado !== 'Cancelada' && String(a.id) !== String(currentSessionId))
-        .map((a) => ({ hora: a.hora, duracion: Number(a.duracion) || 60 }));
-      setBusySessionsForEdit(busyForDay);
-    } catch (err) {
-      console.warn('[PatientDetailScreen] Error al cargar horarios ocupados para edición:', err);
-      setBusySessionsForEdit([]);
-    }
-  };
-
-  const handleOpenEditModal = (session: AppointmentSession) => {
-    if (session.estado !== 'Programada') return;
-    setEditingSession(session);
-    setEditFecha(session.fecha);
-    setEditHora(session.hora);
-    setEditModalidad((session.modalidad === 'online' ? 'online' : 'presencial') as Modalidad);
-    const rawDur = String(session.duracion || '60');
-    setEditDuracion(['30', '45', '60', '75', '90'].includes(rawDur) ? (rawDur as Duracion) : '60');
-    setEditObservaciones(session.observaciones || '');
-    loadBusySessionsForEditDate(session.fecha, session.id);
-    setEditModalVisible(true);
-  };
-
-  const hasEditChanges = () => {
-    if (!editingSession) return false;
-    return (
-      editFecha !== editingSession.fecha ||
-      editHora !== editingSession.hora ||
-      editModalidad !== (editingSession.modalidad === 'online' ? 'online' : 'presencial') ||
-      editDuracion !== String(editingSession.duracion || '60') ||
-      editObservaciones.trim() !== (editingSession.observaciones || '').trim()
-    );
-  };
-
-  const handleCloseEditModal = () => {
-    if (!hasEditChanges()) {
-      setEditModalVisible(false);
-      setEditingSession(null);
-      return;
-    }
-    Alert.alert(
-      '¿Descartar modificaciones?',
-      'Tienes cambios sin guardar en esta cita. Si sales ahora, se perderán las modificaciones.',
-      [
-        { text: 'Seguir editando', style: 'cancel' },
-        {
-          text: 'Descartar',
-          style: 'destructive',
-          onPress: () => {
-            setEditModalVisible(false);
-            setEditingSession(null);
-          },
-        },
-      ]
-    );
-  };
-
-  // Recargar ocupados al cambiar fecha en edición
-  useEffect(() => {
-    if (editModalVisible && editFecha) {
-      loadBusySessionsForEditDate(editFecha, editingSession?.id);
-      if (editHora && !isTimeStillValid(editFecha, editHora)) {
-        setEditHora('');
-        Alert.alert('Hora ya no disponible', 'La hora seleccionada ya pasó para la fecha elegida.');
-      }
-    }
-  }, [editFecha, editModalVisible]);
-
-  const handleSaveEditSession = async () => {
-    if (!editingSession) return;
-    if (!editFecha) {
-      Alert.alert('Falta la fecha', 'Selecciona la fecha para la sesión.');
-      return;
-    }
-    if (!editHora) {
-      Alert.alert('Falta la hora', 'Selecciona la hora para la sesión.');
-      return;
-    }
-    if (!isTimeStillValid(editFecha, editHora)) {
-      Alert.alert('Hora inválida', 'La hora seleccionada ya pasó. Elige una hora futura.');
-      return;
-    }
-
-    // Si es TITULAR y el paciente tiene suplente activo, verificar que la fecha no caiga en el periodo de suplencia
-    if (currentPatient.tipo_relacion === 'titular' && currentPatient.suplente_activo?.fecha_fin_suplencia) {
-      const suplenteEndStr = String(currentPatient.suplente_activo.fecha_fin_suplencia).split('T')[0];
-      if (editFecha <= suplenteEndStr) {
-        Alert.alert(
-          'Día reservado para suplencia',
-          `No puedes reprogramar la cita para una fecha cubierta por la suplencia activa de ${currentPatient.suplente_activo.nombre || 'el suplente'} (hasta el ${formatToChileanDate(suplenteEndStr)}).`
-        );
-        return;
-      }
-    }
-
-    // Si es SUPLENTE, verificar que no reprograme posterior a su fecha límite de suplencia
-    if (currentPatient.tipo_relacion === 'suplente' && currentPatient.fecha_fin_suplencia) {
-      const suplenteEndStr = String(currentPatient.fecha_fin_suplencia).split('T')[0];
-      if (editFecha > suplenteEndStr) {
-        Alert.alert(
-          'Fecha excede suplencia',
-          `Tu periodo de suplencia finaliza el ${formatToChileanDate(suplenteEndStr)}. No puedes reprogramar citas posteriores a esa fecha.`
-        );
-        return;
-      }
-    }
-
-    const startMin = timeToMinutes(editHora);
-    const durMin = Number(editDuracion) || 60;
-    const hasConflict = busySessionsForEdit.some((b) =>
-      rangesOverlap(startMin, durMin, timeToMinutes(b.hora), b.duracion)
-    );
-
-    if (hasConflict) {
-      Alert.alert(
-        'Horario ocupado',
-        'Ya existe otra sesión que se cruza con este horario y duración. Por favor, selecciona otra hora.'
-      );
-      return;
-    }
-
-    Alert.alert(
-      'Confirmar modificaciones',
-      `¿Deseas guardar los cambios en esta cita?\n\n• Fecha: ${editFecha}\n• Hora: ${editHora} hrs\n• Duración: ${editDuracion} min\n• Modalidad: ${editModalidad === 'online' ? 'Online' : 'Presencial'}`,
-      [
-        { text: 'Volver a revisar', style: 'cancel' },
-        {
-          text: 'Confirmar',
-          onPress: async () => {
-            setIsUpdating(true);
-            const res = await appointmentService.updateAppointment(editingSession.id, {
-              fecha: editFecha,
-              hora: editHora,
-              duracion: durMin,
-              modalidad: editModalidad,
-              observaciones: editObservaciones.trim(),
-            });
-            setIsUpdating(false);
-
-            if (res.success) {
-              Alert.alert('¡Cita modificada!', 'La sesión ha sido reprogramada exitosamente.');
-              setEditModalVisible(false);
-              setEditingSession(null);
-              await loadSessions();
-            } else {
-              Alert.alert('Error', res.error || 'No se pudo actualizar la cita.');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleDeleteSession = () => {
-    if (!editingSession) return;
-    Alert.alert(
-      '¿Cancelar cita programada?',
-      `¿Estás seguro de que deseas cancelar la cita del ${formatToChileanDate(editingSession.fecha)} a las ${editingSession.hora} hrs? Esta acción liberará el horario de tu agenda.`,
-      [
-        { text: 'No, mantener cita', style: 'cancel' },
-        {
-          text: 'Sí, cancelar cita',
-          style: 'destructive',
-          onPress: async () => {
-            setIsDeleting(true);
-            const res = await appointmentService.deleteAppointment(editingSession.id);
-            setIsDeleting(false);
-
-            if (res.success) {
-              Alert.alert('Cita cancelada', 'La cita programada ha sido eliminada con éxito.');
-              setEditModalVisible(false);
-              setEditingSession(null);
-              await loadSessions();
-            } else {
-              Alert.alert('Error', res.error || 'No se pudo cancelar la cita.');
-            }
-          },
-        },
-      ]
-    );
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={onBack} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="arrow-back" size={22} color="#374151" />
-        </TouchableOpacity>
-        <View style={{ marginLeft: 10 }}>
-          <Text style={styles.tag}>FICHA DEL PACIENTE</Text>
-          <Text style={styles.patientName}>
-            {currentPatient.nombre} {currentPatient.apellido_paterno} {currentPatient.apellido_materno}
-          </Text>
-        </View>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Banner si el psicólogo está atendiendo como SUPLENTE */}
-        {currentPatient.tipo_relacion === 'suplente' && (
-          <View style={styles.suplenteBanner}>
-            <View style={styles.suplenteBannerHeader}>
-              <Ionicons name="shield-checkmark" size={18} color="#1E40AF" />
-              <Text style={styles.suplenteBannerTitle}>Atendiendo como Psicólogo Suplente</Text>
-            </View>
-            <Text style={styles.suplenteBannerText}>
-              Tienes cobertura temporal de atención autorizada por el paciente hasta el{' '}
-              <Text style={{ fontWeight: '700' }}>
-                {currentPatient.fecha_fin_suplencia ? formatToChileanDate(currentPatient.fecha_fin_suplencia) : 'fecha límite'}
-              </Text>.
-              Puedes acceder a su historial clínico completo y registrar nuevas sesiones.
-            </Text>
-          </View>
-        )}
-
-        {/* Banner si el psicólogo es TITULAR y hay una SUPLENCIA ACTIVA */}
-        {currentPatient.tipo_relacion === 'titular' && currentPatient.suplente_activo && (
-          <View style={styles.titularSuplenciaBanner}>
-            <View style={styles.suplenteBannerHeader}>
-              <Ionicons name="information-circle" size={18} color="#92400E" />
-              <Text style={styles.titularBannerTitle}>Cobertura de Suplencia Activa</Text>
-            </View>
-            <Text style={styles.titularBannerText}>
-              El especialista <Text style={{ fontWeight: '700' }}>{currentPatient.suplente_activo.nombre}</Text> tiene cobertura temporal activa sobre este paciente
-              {currentPatient.suplente_activo.fecha_fin_suplencia ? ` hasta el ${formatToChileanDate(currentPatient.suplente_activo.fecha_fin_suplencia)}` : ''}.
-            </Text>
-            <Text style={[styles.titularBannerText, { marginTop: 4, fontStyle: 'italic', color: '#78350F' }]}>
-              Nota: La revocación o término anticipado de la suplencia es una decisión exclusiva del paciente desde su perfil.
-            </Text>
-          </View>
-        )}
-
-        <View style={styles.infoCard}>
-          <Text style={styles.infoText}>{currentPatient.edad} años</Text>
-          <Text style={styles.infoText}>Correo: {currentPatient.email}</Text>
-          <Text style={styles.infoText}>Primera sesión: {formatToChileanDate(currentPatient.fecha_primera_sesion)}</Text>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.scheduleButton, !isSubscriptionActive && { backgroundColor: '#9CA3AF' }]}
-          onPress={openScheduleModal}
-          activeOpacity={isSubscriptionActive ? 0.85 : 0.6}
-        >
-          <View style={styles.scheduleIconWrapper}>
-            <Ionicons name={isSubscriptionActive ? 'calendar' : 'lock-closed'} size={22} color="#FFFFFF" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.scheduleTitle}>
-              {isSubscriptionActive ? 'Agendar nueva sesión' : 'Agendar sesión (Bloqueado)'}
-            </Text>
-            <Text style={styles.scheduleSubtitle}>
-              {isSubscriptionActive
-                ? 'Programa una cita con este paciente'
-                : 'Suscripción finalizada: comuníquese con el administrador'}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={22} color={isSubscriptionActive ? '#A8DED3' : '#FCA5A5'} />
-        </TouchableOpacity>
-
-        <Text style={styles.historyTitle}>Historial de sesiones</Text>
-
-        {loadingSessions ? (
-          <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-            <ActivityIndicator size="small" color="#0F613B" />
-            <Text style={{ marginTop: 8, color: '#6B7280', fontSize: 13 }}>Cargando sesiones...</Text>
-          </View>
-        ) : sessions.length === 0 ? (
-          <View style={styles.emptyHistoryCard}>
-            <Ionicons name="calendar-outline" size={36} color="#9CA3AF" />
-            <Text style={styles.emptyHistoryText}>
-              Aún no hay sesiones agendadas para este paciente.
-            </Text>
-          </View>
-        ) : (
-          paginatedSessions.map((session) => {
-            const isCancelada = session.estado?.toLowerCase() === 'cancelada';
-            const isCompletada = session.estado?.toLowerCase() === 'completada';
-            const isProgramada = !isCancelada && !isCompletada;
-
-            return (
-              <View
-                key={session.id}
-                style={[
-                  styles.sessionCard,
-                  isCancelada && styles.sessionCardCancelled,
-                ]}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.sessionDate, isCancelada && styles.sessionDateCancelled]}>
-                    {formatToChileanDate(session.fecha)} · {session.hora} {session.horaFin ? `- ${session.horaFin}` : ''} ·{' '}
-                    {session.modalidad === 'presencial' ? 'Presencial' : 'Online'}
-                  </Text>
-
-                  {session.doctorNombre && (
-                    <View style={styles.doctorBadgeRow}>
-                      <Ionicons name="shield-checkmark-outline" size={12} color="#6B7280" style={{ marginRight: 4 }} />
-                      <Text style={styles.doctorBadgeText}>
-                        {session.doctorNombre}
-                        {session.tipoEspecialista === 'suplente'
-                          ? ' (Suplente)'
-                          : session.tipoEspecialista === 'titular_anterior'
-                          ? ' (Titular Anterior)'
-                          : session.esPropia === false
-                          ? ' (Colega)'
-                          : ''}
-                      </Text>
-                    </View>
-                  )}
-
-                  {session.observaciones ? (
-                    <Text style={[styles.sessionMotivo, isCancelada && styles.sessionMotivoCancelled]}>
-                      {session.observaciones}
-                    </Text>
-                  ) : (
-                    <Text style={[styles.sessionMotivo, { fontStyle: 'italic', color: '#9CA3AF' }]}>
-                      Sin observaciones registradas
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.sessionCardRightCol}>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      isCompletada && styles.statusBadgeCompleted,
-                      isCancelada && styles.statusBadgeCancelled,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusBadgeText,
-                        isCompletada && styles.statusBadgeTextCompleted,
-                        isCancelada && styles.statusBadgeTextCancelled,
-                      ]}
-                    >
-                      {isCancelada ? 'Cancelada' : isCompletada ? 'Completada' : 'Programada'}
-                    </Text>
-                  </View>
-
-                  {isProgramada && (
-                    session.esPropia !== false ? (
-                      <TouchableOpacity
-                        style={styles.manageButton}
-                        onPress={() => handleOpenEditModal(session)}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="create-outline" size={13} color="#0F613B" style={{ marginRight: 3 }} />
-                        <Text style={styles.manageButtonText}>Modificar</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <View style={styles.readOnlyBadge}>
-                        <Ionicons name="lock-closed" size={11} color="#6B7280" style={{ marginRight: 3 }} />
-                        <Text style={styles.readOnlyBadgeText}>Solo lectura</Text>
-                      </View>
-                    )
-                  )}
-                </View>
-              </View>
-            );
-          })
-        )}
-
-        {totalPages > 1 && (
-          <View style={styles.paginationRow}>
-            <TouchableOpacity
-              style={[styles.pageButton, currentPage === 0 && styles.pageButtonDisabled]}
-              onPress={() => setCurrentPage((p) => Math.max(0, p - 1))}
-              disabled={currentPage === 0}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="chevron-back"
-                size={18}
-                color={currentPage === 0 ? '#CBD5E1' : '#0F613B'}
-              />
-              <Text style={[styles.pageButtonText, currentPage === 0 && styles.pageButtonTextDisabled]}>
-                Anterior
-              </Text>
-            </TouchableOpacity>
-
-            <Text style={styles.pageIndicator}>
-              {currentPage + 1} / {totalPages}
-            </Text>
-
-            <TouchableOpacity
-              style={[
-                styles.pageButton,
-                currentPage >= totalPages - 1 && styles.pageButtonDisabled,
-              ]}
-              onPress={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={currentPage >= totalPages - 1}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.pageButtonText,
-                  currentPage >= totalPages - 1 && styles.pageButtonTextDisabled,
-                ]}
-              >
-                Siguiente
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={currentPage >= totalPages - 1 ? '#CBD5E1' : '#0F613B'}
-              />
-            </TouchableOpacity>
-          </View>
-        )}
-      </ScrollView>
-
-      {/* Modal para agendar sesión */}
+    <>
       <Modal
         animationType="fade"
         transparent
-        visible={modalVisible}
+        visible={visible}
         onRequestClose={handleCloseModal}
       >
         <Pressable style={styles.modalOverlay} onPress={handleCloseModal}>
@@ -816,13 +657,18 @@ const handleCloseModal = () => {
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text style={styles.modalTitle}>Agendar nueva sesión</Text>
 
-              {currentPatient.tipo_relacion === 'titular' && currentPatient.suplente_activo && (
+              {patient.tipo_relacion === 'titular' && patient.suplente_activo && (
                 <View style={styles.substitutionScheduleNotice}>
-                  <Ionicons name="information-circle" size={17} color="#92400E" style={{ marginRight: 6 }} />
+                  <Ionicons
+                    name="information-circle"
+                    size={17}
+                    color="#92400E"
+                    style={{ marginRight: 6 }}
+                  />
                   <Text style={styles.substitutionScheduleNoticeText}>
                     Paciente en suplencia activa hasta el{' '}
                     <Text style={{ fontWeight: '700' }}>
-                      {formatToChileanDate(currentPatient.suplente_activo.fecha_fin_suplencia)}
+                      {formatToChileanDate(patient.suplente_activo.fecha_fin_suplencia)}
                     </Text>
                     . Los días cubiertos están bloqueados; puedes agendar a partir del día siguiente.
                   </Text>
@@ -843,7 +689,7 @@ const handleCloseModal = () => {
                 <Ionicons name="chevron-down" size={16} color="#6B7280" />
               </TouchableOpacity>
 
-              {/* Hora (bloqueada hasta elegir fecha) */}
+              {/* Hora */}
               <Text style={styles.fieldLabel}>Hora</Text>
               <TouchableOpacity
                 style={[styles.pickerTrigger, !fecha && styles.pickerTriggerDisabled]}
@@ -887,7 +733,12 @@ const handleCloseModal = () => {
                   onPress={() => setModalidad('presencial')}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.chipText, modalidad === 'presencial' && styles.chipTextActive]}>
+                  <Text
+                    style={[
+                      styles.chipText,
+                      modalidad === 'presencial' && styles.chipTextActive,
+                    ]}
+                  >
                     Presencial
                   </Text>
                 </TouchableOpacity>
@@ -896,7 +747,12 @@ const handleCloseModal = () => {
                   onPress={() => setModalidad('online')}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.chipText, modalidad === 'online' && styles.chipTextActive]}>
+                  <Text
+                    style={[
+                      styles.chipText,
+                      modalidad === 'online' && styles.chipTextActive,
+                    ]}
+                  >
                     Online
                   </Text>
                 </TouchableOpacity>
@@ -905,7 +761,10 @@ const handleCloseModal = () => {
               {/* Observaciones */}
               <Text style={styles.fieldLabel}>Observaciones</Text>
               <TextInput
-                style={[styles.input, { minHeight: 64, textAlignVertical: 'top', paddingTop: 10 }]}
+                style={[
+                  styles.input,
+                  { minHeight: 64, textAlignVertical: 'top', paddingTop: 10 },
+                ]}
                 placeholder="Ej. Seguimiento de ansiedad, evaluación inicial, acuerdos previos..."
                 placeholderTextColor="#9CA3AF"
                 value={observaciones}
@@ -934,11 +793,10 @@ const handleCloseModal = () => {
         </Pressable>
       </Modal>
 
-      {/* DatePickerModal para la fecha de la cita: respeta bloqueos de suplencia */}
       <DatePickerModal
         visible={showDatePicker}
         title="Fecha de la Sesión"
-        initialDate={fecha || `${minBookingDate.getFullYear()}-${String(minBookingDate.getMonth() + 1).padStart(2, '0')}-${String(minBookingDate.getDate()).padStart(2, '0')}`}
+        initialDate={fecha || formatDateForInitialPicker(minBookingDate)}
         minDate={minBookingDate}
         maxDate={maxBookingDate}
         yearOrder="asc"
@@ -946,7 +804,6 @@ const handleCloseModal = () => {
         onSelectDate={(formattedDate: string) => setFecha(formattedDate)}
       />
 
-      {/* TimePickerModal: filtra horas pasadas y horas ya ocupadas ese día considerando duración */}
       <TimePickerModal
         visible={showTimePicker}
         selectedTime={hora || '10:00'}
@@ -957,27 +814,255 @@ const handleCloseModal = () => {
         onClose={() => setShowTimePicker(false)}
         onSelectTime={(selected) => setHora(selected)}
       />
+    </>
+  );
+};
 
-      {/* Modal Pop-up para Modificar o Cancelar Sesión Programada */}
+interface EditSessionModalProps {
+  visible: boolean;
+  session: AppointmentSession | null;
+  patient: MySqlPatientRecord;
+  minBookingDate: Date;
+  maxBookingDate: Date;
+  onClose: () => void;
+  onSessionUpdated: () => void;
+}
+
+const EditSessionModal: React.FC<EditSessionModalProps> = ({
+  visible,
+  session,
+  patient,
+  minBookingDate,
+  maxBookingDate,
+  onClose,
+  onSessionUpdated,
+}) => {
+  const [editFecha, setEditFecha] = useState('');
+  const [editHora, setEditHora] = useState('');
+  const [editModalidad, setEditModalidad] = useState<Modalidad>('presencial');
+  const [editDuracion, setEditDuracion] = useState<Duracion>('60');
+  const [editObservaciones, setEditObservaciones] = useState('');
+  const [showEditDatePicker, setShowEditDatePicker] = useState(false);
+  const [showEditTimePicker, setShowEditTimePicker] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [busySessionsForEdit, setBusySessionsForEdit] = useState<
+    { hora: string; duracion: number }[]
+  >([]);
+
+  const loadBusySessionsForEditDate = async (dateStr: string, currentSessionId?: string) => {
+    if (!dateStr) {
+      setBusySessionsForEdit([]);
+      return;
+    }
+    try {
+      const dayAppointments = await appointmentService.getPsychologistCalendar({ date: dateStr });
+      const busyForDay = dayAppointments
+        .filter((a) => a.estado !== 'Cancelada' && String(a.id) !== String(currentSessionId))
+        .map((a) => ({ hora: a.hora, duracion: Number(a.duracion) || 60 }));
+      setBusySessionsForEdit(busyForDay);
+    } catch (err) {
+      console.warn('[PatientDetailScreen] Error al cargar horarios ocupados para edición:', err);
+      setBusySessionsForEdit([]);
+    }
+  };
+
+  useEffect(() => {
+    if (session && visible) {
+      setEditFecha(session.fecha);
+      setEditHora(session.hora);
+      setEditModalidad(session.modalidad === 'online' ? 'online' : 'presencial');
+      const rawDur = String(session.duracion || '60');
+      setEditDuracion(
+        ['30', '45', '60', '75', '90'].includes(rawDur) ? (rawDur as Duracion) : '60'
+      );
+      setEditObservaciones(session.observaciones || '');
+      void loadBusySessionsForEditDate(session.fecha, session.id);
+    }
+  }, [session, visible]);
+
+  useEffect(() => {
+    if (visible && editFecha && session) {
+      void loadBusySessionsForEditDate(editFecha, session.id);
+      if (editHora && !isTimeStillValid(editFecha, editHora)) {
+        setEditHora('');
+        Alert.alert('Hora ya no disponible', 'La hora seleccionada ya pasó para la fecha elegida.');
+      }
+    }
+  }, [editFecha]);
+
+  useEffect(() => {
+    if (!editFecha || !editHora || !editDuracion) return;
+    const hasConflict = hasScheduleConflict(
+      editHora,
+      Number(editDuracion) || 60,
+      busySessionsForEdit
+    );
+    if (hasConflict) {
+      setEditHora('');
+      Alert.alert(
+        'Hora no disponible',
+        'La hora seleccionada se cruza con otra sesión para la duración elegida. Por favor, selecciona una nueva hora.'
+      );
+    }
+  }, [editDuracion, busySessionsForEdit]);
+
+  const hasEditChanges = () => {
+    if (!session) return false;
+    return (
+      editFecha !== session.fecha ||
+      editHora !== session.hora ||
+      editModalidad !== (session.modalidad === 'online' ? 'online' : 'presencial') ||
+      editDuracion !== String(session.duracion || '60') ||
+      editObservaciones.trim() !== (session.observaciones || '').trim()
+    );
+  };
+
+  const handleClose = () => {
+    if (!hasEditChanges()) {
+      onClose();
+      return;
+    }
+    Alert.alert(
+      '¿Descartar modificaciones?',
+      'Tienes cambios sin guardar en esta cita. Si sales ahora, se perderán las modificaciones.',
+      [
+        { text: 'Seguir editando', style: 'cancel' },
+        {
+          text: 'Descartar',
+          style: 'destructive',
+          onPress: onClose,
+        },
+      ]
+    );
+  };
+
+  const handleSaveEditSession = () => {
+    if (!session) return;
+    if (!editFecha) {
+      Alert.alert('Falta la fecha', 'Selecciona la fecha para la sesión.');
+      return;
+    }
+    if (!editHora) {
+      Alert.alert('Falta la hora', 'Selecciona la hora para la sesión.');
+      return;
+    }
+    if (!isTimeStillValid(editFecha, editHora)) {
+      Alert.alert('Hora inválida', 'La hora seleccionada ya pasó. Elige una hora futura.');
+      return;
+    }
+
+    const suplenciaError = checkSuplenciaRestrictions(patient, editFecha, true);
+    if (suplenciaError) {
+      Alert.alert(
+        patient.tipo_relacion === 'titular'
+          ? 'Día reservado para suplencia'
+          : 'Fecha excede suplencia',
+        suplenciaError
+      );
+      return;
+    }
+
+    const durMin = Number(editDuracion) || 60;
+    const hasConflict = hasScheduleConflict(editHora, durMin, busySessionsForEdit);
+    if (hasConflict) {
+      Alert.alert(
+        'Horario ocupado',
+        'Ya existe otra sesión que se cruza con este horario y duración. Por favor, selecciona otra hora.'
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Confirmar modificaciones',
+      `¿Deseas guardar los cambios en esta cita?\n\n• Fecha: ${editFecha}\n• Hora: ${editHora} hrs\n• Duración: ${editDuracion} min\n• Modalidad: ${
+        editModalidad === 'online' ? 'Online' : 'Presencial'
+      }`,
+      [
+        { text: 'Volver a revisar', style: 'cancel' },
+        {
+          text: 'Confirmar',
+          onPress: async () => {
+            setIsUpdating(true);
+            const res = await appointmentService.updateAppointment(session.id, {
+              fecha: editFecha,
+              hora: editHora,
+              duracion: durMin,
+              modalidad: editModalidad,
+              observaciones: editObservaciones.trim(),
+            });
+            setIsUpdating(false);
+
+            if (res.success) {
+              Alert.alert('¡Cita modificada!', 'La sesión ha sido reprogramada exitosamente.');
+              onClose();
+              onSessionUpdated();
+            } else {
+              Alert.alert('Error', res.error || 'No se pudo actualizar la cita.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteSession = () => {
+    if (!session) return;
+    Alert.alert(
+      '¿Cancelar cita programada?',
+      `¿Estás seguro de que deseas cancelar la cita del ${formatToChileanDate(
+        session.fecha
+      )} a las ${session.hora} hrs? Esta acción liberará el horario de tu agenda.`,
+      [
+        { text: 'No, mantener cita', style: 'cancel' },
+        {
+          text: 'Sí, cancelar cita',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true);
+            const res = await appointmentService.deleteAppointment(session.id);
+            setIsDeleting(false);
+
+            if (res.success) {
+              Alert.alert('Cita cancelada', 'La cita programada ha sido eliminada con éxito.');
+              onClose();
+              onSessionUpdated();
+            } else {
+              Alert.alert('Error', res.error || 'No se pudo cancelar la cita.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  return (
+    <>
       <Modal
         animationType="fade"
         transparent
-        visible={editModalVisible}
-        onRequestClose={handleCloseEditModal}
+        visible={visible && Boolean(session)}
+        onRequestClose={handleClose}
       >
-        <Pressable style={styles.modalOverlay} onPress={handleCloseEditModal}>
+        <Pressable style={styles.modalOverlay} onPress={handleClose}>
           <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.modalHeaderRow}>
                 <Text style={styles.modalHeaderTitle}>Modificar Cita</Text>
-                <TouchableOpacity onPress={handleCloseEditModal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <TouchableOpacity
+                  onPress={handleClose}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
                   <Ionicons name="close" size={22} color="#6B7280" />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.infoBanner}>
                 <Text style={styles.infoBannerText}>
-                  Paciente: <Text style={{ fontWeight: '700' }}>{patient.nombre} {patient.apellido_paterno}</Text>
+                  Paciente:{' '}
+                  <Text style={{ fontWeight: '700' }}>
+                    {patient.nombre} {patient.apellido_paterno}
+                  </Text>
                 </Text>
               </View>
 
@@ -988,7 +1073,12 @@ const handleCloseModal = () => {
                 onPress={() => setShowEditDatePicker(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="calendar-outline" size={18} color="#0F613B" style={styles.pickerIcon} />
+                <Ionicons
+                  name="calendar-outline"
+                  size={18}
+                  color="#0F613B"
+                  style={styles.pickerIcon}
+                />
                 <Text style={styles.pickerValueText}>{formatToChileanDate(editFecha)}</Text>
                 <Ionicons name="chevron-down" size={16} color="#6B7280" />
               </TouchableOpacity>
@@ -1000,7 +1090,12 @@ const handleCloseModal = () => {
                 onPress={() => setShowEditTimePicker(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="time-outline" size={18} color="#0F613B" style={styles.pickerIcon} />
+                <Ionicons
+                  name="time-outline"
+                  size={18}
+                  color="#0F613B"
+                  style={styles.pickerIcon}
+                />
                 <Text style={styles.pickerValueText}>{editHora} hrs</Text>
                 <Ionicons name="chevron-down" size={16} color="#6B7280" />
               </TouchableOpacity>
@@ -1015,7 +1110,12 @@ const handleCloseModal = () => {
                     onPress={() => setEditDuracion(d.key)}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.chipText, editDuracion === d.key && styles.chipTextActive]}>
+                    <Text
+                      style={[
+                        styles.chipText,
+                        editDuracion === d.key && styles.chipTextActive,
+                      ]}
+                    >
                       {d.label}
                     </Text>
                   </TouchableOpacity>
@@ -1026,7 +1126,10 @@ const handleCloseModal = () => {
               <Text style={styles.fieldLabel}>Modalidad</Text>
               <View style={styles.chipRow}>
                 <TouchableOpacity
-                  style={[styles.chip, editModalidad === 'presencial' && styles.chipActive]}
+                  style={[
+                    styles.chip,
+                    editModalidad === 'presencial' && styles.chipActive,
+                  ]}
                   onPress={() => setEditModalidad('presencial')}
                   activeOpacity={0.8}
                 >
@@ -1036,7 +1139,10 @@ const handleCloseModal = () => {
                     color={editModalidad === 'presencial' ? '#0F613B' : '#6B7280'}
                   />
                   <Text
-                    style={[styles.chipText, editModalidad === 'presencial' && styles.chipTextActive]}
+                    style={[
+                      styles.chipText,
+                      editModalidad === 'presencial' && styles.chipTextActive,
+                    ]}
                   >
                     Presencial
                   </Text>
@@ -1053,7 +1159,10 @@ const handleCloseModal = () => {
                     color={editModalidad === 'online' ? '#0F613B' : '#6B7280'}
                   />
                   <Text
-                    style={[styles.chipText, editModalidad === 'online' && styles.chipTextActive]}
+                    style={[
+                      styles.chipText,
+                      editModalidad === 'online' && styles.chipTextActive,
+                    ]}
                   >
                     Online
                   </Text>
@@ -1063,7 +1172,10 @@ const handleCloseModal = () => {
               {/* Observaciones */}
               <Text style={styles.fieldLabel}>Observaciones</Text>
               <TextInput
-                style={[styles.input, { minHeight: 64, textAlignVertical: 'top', paddingTop: 10 }]}
+                style={[
+                  styles.input,
+                  { minHeight: 64, textAlignVertical: 'top', paddingTop: 10 },
+                ]}
                 placeholder="Observaciones de la sesión..."
                 placeholderTextColor="#9CA3AF"
                 value={editObservaciones}
@@ -1073,7 +1185,10 @@ const handleCloseModal = () => {
 
               {/* Botón Guardar Modificaciones */}
               <TouchableOpacity
-                style={[styles.saveButton, (isUpdating || isDeleting) && { opacity: 0.7 }]}
+                style={[
+                  styles.saveButton,
+                  (isUpdating || isDeleting) && { opacity: 0.7 },
+                ]}
                 onPress={handleSaveEditSession}
                 activeOpacity={0.85}
                 disabled={isUpdating || isDeleting}
@@ -1087,7 +1202,10 @@ const handleCloseModal = () => {
 
               {/* Botón Cancelar / Eliminar Cita */}
               <TouchableOpacity
-                style={[styles.deleteButton, (isUpdating || isDeleting) && { opacity: 0.7 }]}
+                style={[
+                  styles.deleteButton,
+                  (isUpdating || isDeleting) && { opacity: 0.7 },
+                ]}
                 onPress={handleDeleteSession}
                 activeOpacity={0.85}
                 disabled={isUpdating || isDeleting}
@@ -1095,14 +1213,21 @@ const handleCloseModal = () => {
                 {isDeleting ? (
                   <ActivityIndicator size="small" color="#DC2626" />
                 ) : (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                    }}
+                  >
                     <Ionicons name="trash-outline" size={17} color="#DC2626" />
                     <Text style={styles.deleteButtonText}>Cancelar y eliminar cita</Text>
                   </View>
                 )}
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={handleCloseEditModal} style={{ marginTop: 10 }}>
+              <TouchableOpacity onPress={handleClose} style={{ marginTop: 10 }}>
                 <Text style={styles.cancelText}>Volver</Text>
               </TouchableOpacity>
             </ScrollView>
@@ -1110,11 +1235,10 @@ const handleCloseModal = () => {
         </Pressable>
       </Modal>
 
-      {/* DatePickerModal para editar fecha */}
       <DatePickerModal
         visible={showEditDatePicker}
         title="Modificar Fecha de la Sesión"
-        initialDate={editFecha || `${minBookingDate.getFullYear()}-${String(minBookingDate.getMonth() + 1).padStart(2, '0')}-${String(minBookingDate.getDate()).padStart(2, '0')}`}
+        initialDate={editFecha || formatDateForInitialPicker(minBookingDate)}
         minDate={minBookingDate}
         maxDate={maxBookingDate}
         yearOrder="asc"
@@ -1122,7 +1246,6 @@ const handleCloseModal = () => {
         onSelectDate={(formattedDate: string) => setEditFecha(formattedDate)}
       />
 
-      {/* TimePickerModal para editar hora */}
       <TimePickerModal
         visible={showEditTimePicker}
         selectedTime={editHora || '10:00'}
@@ -1132,6 +1255,166 @@ const handleCloseModal = () => {
         title="Modificar hora de la sesión"
         onClose={() => setShowEditTimePicker(false)}
         onSelectTime={(selected) => setEditHora(selected)}
+      />
+    </>
+  );
+};
+
+// ── Componente Principal ──────────────────────────────────────────────────
+
+export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
+  patient,
+  onBack,
+  onPatientUpdated,
+}) => {
+  const { user } = useAuth();
+  const isSubscriptionActive = user?.subscription?.isActive ?? true;
+
+  const [currentPatient, setCurrentPatient] = useState<MySqlPatientRecord>(patient);
+
+  useEffect(() => {
+    setCurrentPatient(patient);
+  }, [patient]);
+
+  const minBookingDate = useMemo(
+    () => getMinBookingDate(currentPatient),
+    [currentPatient.tipo_relacion, currentPatient.suplente_activo]
+  );
+
+  const maxBookingDate = useMemo(
+    () => getMaxBookingDate(currentPatient),
+    [currentPatient.tipo_relacion, currentPatient.fecha_fin_suplencia]
+  );
+
+  const [sessions, setSessions] = useState<AppointmentSession[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const totalPages = Math.ceil(sessions.length / SESSIONS_PER_PAGE);
+
+  const loadSessions = async () => {
+    if (!currentPatient.id) return;
+    setLoadingSessions(true);
+    try {
+      const data = await appointmentService.getPatientAppointments(currentPatient.id);
+      setSessions(data);
+      setCurrentPage(0);
+    } catch (err) {
+      console.warn('[PatientDetailScreen] Error al cargar sesiones:', err);
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadSessions();
+  }, [currentPatient.id]);
+
+  const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
+  const [editingSession, setEditingSession] = useState<AppointmentSession | null>(null);
+
+  const openScheduleModal = () => {
+    if (!isSubscriptionActive) {
+      Alert.alert(
+        'Suscripción Finalizada',
+        'Suscripción Finalizada comuníquese con el administrador para renovarla'
+      );
+      return;
+    }
+    setScheduleModalVisible(true);
+  };
+
+  const handleOpenEditModal = (session: AppointmentSession) => {
+    if (session.estado === 'Programada') {
+      setEditingSession(session);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={onBack} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="arrow-back" size={22} color="#374151" />
+        </TouchableOpacity>
+        <View style={{ marginLeft: 10 }}>
+          <Text style={styles.tag}>FICHA DEL PACIENTE</Text>
+          <Text style={styles.patientName}>
+            {currentPatient.nombre} {currentPatient.apellido_paterno}{' '}
+            {currentPatient.apellido_materno}
+          </Text>
+        </View>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <PatientRoleBanners patient={currentPatient} />
+
+        <PatientInfoCard patient={currentPatient} />
+
+        <TouchableOpacity
+          style={[
+            styles.scheduleButton,
+            !isSubscriptionActive && { backgroundColor: '#9CA3AF' },
+          ]}
+          onPress={openScheduleModal}
+          activeOpacity={isSubscriptionActive ? 0.85 : 0.6}
+        >
+          <View style={styles.scheduleIconWrapper}>
+            <Ionicons
+              name={isSubscriptionActive ? 'calendar' : 'lock-closed'}
+              size={22}
+              color="#FFFFFF"
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.scheduleTitle}>
+              {isSubscriptionActive ? 'Agendar nueva sesión' : 'Agendar sesión (Bloqueado)'}
+            </Text>
+            <Text style={styles.scheduleSubtitle}>
+              {isSubscriptionActive
+                ? 'Programa una cita con este paciente'
+                : 'Suscripción finalizada: comuníquese con el administrador'}
+            </Text>
+          </View>
+          <Ionicons
+            name="chevron-forward"
+            size={22}
+            color={isSubscriptionActive ? '#A8DED3' : '#FCA5A5'}
+          />
+        </TouchableOpacity>
+
+        <SessionsHistorySection
+          loading={loadingSessions}
+          sessions={sessions}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onEditSession={handleOpenEditModal}
+        />
+      </ScrollView>
+
+      <ScheduleSessionModal
+        visible={scheduleModalVisible}
+        patient={currentPatient}
+        minBookingDate={minBookingDate}
+        maxBookingDate={maxBookingDate}
+        onClose={() => setScheduleModalVisible(false)}
+        onSessionCreated={() => {
+          void loadSessions();
+          onPatientUpdated?.();
+        }}
+      />
+
+      <EditSessionModal
+        visible={Boolean(editingSession)}
+        session={editingSession}
+        patient={currentPatient}
+        minBookingDate={minBookingDate}
+        maxBookingDate={maxBookingDate}
+        onClose={() => setEditingSession(null)}
+        onSessionUpdated={() => {
+          void loadSessions();
+          onPatientUpdated?.();
+        }}
       />
     </SafeAreaView>
   );
@@ -1212,7 +1495,12 @@ const styles = StyleSheet.create({
   },
   sessionDate: { fontSize: 12.5, fontWeight: '600', color: '#374151' },
   sessionMotivo: { fontSize: 12, color: '#6B7280', marginTop: 2 },
-  statusBadge: { backgroundColor: '#FEF3C7', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 10 },
+  statusBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+  },
   statusBadgeText: { fontSize: 11, fontWeight: '700', color: '#B45309' },
   statusBadgeCompleted: { backgroundColor: '#E8F5E9' },
   statusBadgeTextCompleted: { color: '#0F613B' },
@@ -1265,7 +1553,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
   },
-  modalTitle: { fontSize: 17, fontWeight: '700', color: '#1F2937', marginBottom: 14, textAlign: 'center' },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 14,
+    textAlign: 'center',
+  },
   fieldLabel: { fontSize: 12.5, fontWeight: '700', color: '#4A5568', marginBottom: 6 },
   pickerTrigger: {
     flexDirection: 'row',
@@ -1306,9 +1600,20 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     marginBottom: 16,
   },
-  saveButton: { backgroundColor: '#0F613B', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  saveButton: {
+    backgroundColor: '#0F613B',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
   saveButtonText: { color: '#FFFFFF', fontSize: 15.5, fontWeight: '700' },
-  cancelText: { color: '#6B7280', fontSize: 13, fontWeight: '600', textAlign: 'center', marginTop: 8 },
+  cancelText: {
+    color: '#6B7280',
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 8,
+  },
 
   sessionCardRightCol: {
     alignItems: 'flex-end',

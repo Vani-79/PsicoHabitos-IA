@@ -47,7 +47,7 @@ const getAvatarColor = (p: MySqlPatientRecord) => {
   const key = `${p.nombre ?? ''}${p.apellido_paterno ?? ''}`;
   let hash = 0;
   for (let i = 0; i < key.length; i++) {
-    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+    hash = (hash * 31 + (key.codePointAt(i) ?? 0)) >>> 0;
   }
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 };
@@ -69,9 +69,11 @@ const isNewPatient = (fecha?: string | null) => {
 
 // Orden alfabético por nombre, luego apellido paterno y apellido materno (reglas del español)
 const comparePatientsByName = (a: MySqlPatientRecord, b: MySqlPatientRecord) => {
-  const fields: (keyof MySqlPatientRecord)[] = ['nombre', 'apellido_paterno', 'apellido_materno'];
+  const fields = ['nombre', 'apellido_paterno', 'apellido_materno'] as const;
   for (const field of fields) {
-    const result = String(a[field] ?? '').localeCompare(String(b[field] ?? ''), 'es', {
+    const valA = a[field] ?? '';
+    const valB = b[field] ?? '';
+    const result = valA.localeCompare(valB, 'es', {
       sensitivity: 'base',
     });
     if (result !== 0) return result;
@@ -108,27 +110,18 @@ const normalizeText = (text: string) =>
     .toLowerCase();
 
 
-export const PsychologistDashboardScreen: React.FC<
-  PsychologistDashboardScreenProps
-> = ({
-  doctorName,
-  patients,
-  onLogout,
-  onRegisterPatient,
-  onSelectPatient,
-}) => {
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<PsychologistTab>('inicio');
-  const [searchTerm, setSearchTerm] = useState('');
+// Hook para cargar y gestionar los pacientes agendados para el día de hoy
+const useTodayPatients = (
+  userEmail: string | undefined,
+  patients: MySqlPatientRecord[]
+) => {
   const [todayPatients, setTodayPatients] = useState<MySqlPatientRecord[]>([]);
-  const [loadingToday, setLoadingToday] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
     const fetchTodayPatients = async () => {
-      setLoadingToday(true);
       try {
-        const list = await patientService.getTodayPatients(user?.email);
+        const list = await patientService.getTodayPatients(userEmail);
         if (isMounted) {
           setTodayPatients(list);
         }
@@ -141,22 +134,449 @@ export const PsychologistDashboardScreen: React.FC<
           );
           setTodayPatients(localFiltered);
         }
-      } finally {
-        if (isMounted) setLoadingToday(false);
       }
     };
 
-    fetchTodayPatients();
+    void fetchTodayPatients();
 
     return () => {
       isMounted = false;
     };
-  }, [user?.email, patients]);
+  }, [userEmail, patients]);
+
+  return todayPatients;
+};
+
+// Banner visual cuando la suscripción se encuentra finalizada o inactiva
+const SubscriptionBanner: React.FC = () => (
+  <View style={styles.subscriptionBanner}>
+    <Ionicons name="alert-circle" size={24} color="#991B1B" />
+    <View style={styles.subscriptionBannerTextWrapper}>
+      <Text style={styles.subscriptionBannerTitle}>Suscripción Finalizada</Text>
+      <Text style={styles.subscriptionBannerMessage}>
+        Comuníquese con el administrador para renovarla
+      </Text>
+    </View>
+  </View>
+);
+
+interface PatientsHintProps {
+  isEmpty: boolean;
+}
+
+// Mensaje centrado en el espacio libre de la tarjeta de Pacientes
+const PatientsHint: React.FC<PatientsHintProps> = ({ isEmpty }) => (
+  <View style={styles.patientsHint}>
+    <View style={styles.patientsHintIcon}>
+      <Ionicons name="people-outline" size={26} color="#3FB889" />
+    </View>
+    <Text style={styles.patientsHintTitle}>
+      {isEmpty ? 'Tu lista está vacía por ahora' : 'Tu lista crece aquí'}
+    </Text>
+    <Text style={styles.patientsHintText}>
+      Cada persona que registres desde Inicio aparecerá aquí, en orden alfabético.
+    </Text>
+  </View>
+);
+
+interface TodayAgendaRowProps {
+  patient: MySqlPatientRecord;
+  isLast: boolean;
+  isSubscriptionActive: boolean;
+  onPress: () => void;
+}
+
+// Fila individual de cita en la agenda del día
+const TodayAgendaRow: React.FC<TodayAgendaRowProps> = ({
+  patient,
+  isLast,
+  isSubscriptionActive,
+  onPress,
+}) => {
+  const hora = patient.hora_cita;
+  const avatar = getAvatarColor(patient);
+  const isCancelled = patient.estado_cita === 'cancelada';
+  const isSuplente = patient.rol_cita === 'suplente' || patient.tipo_relacion === 'suplente';
+  const isEnSuplencia = patient.tipo_relacion === 'titular' && Boolean(patient.suplente_activo);
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.agendaRow,
+        !isLast && styles.agendaRowSpacing,
+        !isSubscriptionActive && styles.agendaRowDisabled,
+      ]}
+      onPress={onPress}
+      activeOpacity={isSubscriptionActive ? 0.7 : 0.6}
+    >
+      <Text style={styles.agendaTime}>
+        {hora ? hora.slice(0, 5) : 'Hoy'}
+      </Text>
+
+      <View style={[styles.agendaAvatar, { backgroundColor: avatar.bg }]}>
+        <Text style={[styles.agendaAvatarText, { color: avatar.fg }]}>
+          {getInitials(patient)}
+        </Text>
+      </View>
+
+      <View style={styles.agendaInfo}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <Text
+            style={[
+              styles.agendaName,
+              isCancelled && styles.agendaNameCancelled,
+            ]}
+            numberOfLines={1}
+          >
+            {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno || ''}
+          </Text>
+          {isSuplente && (
+            <View style={styles.suplenteBadge}>
+              <Text style={styles.suplenteBadgeText}>Suplencia</Text>
+            </View>
+          )}
+          {isEnSuplencia && (
+            <View style={styles.enSuplenciaBadge}>
+              <Text style={styles.enSuplenciaBadgeText}>En suplencia</Text>
+            </View>
+          )}
+          {isCancelled && (
+            <View style={styles.canceladaBadge}>
+              <Text style={styles.canceladaBadgeText}>Cancelada</Text>
+            </View>
+          )}
+        </View>
+        <Text style={styles.agendaMeta} numberOfLines={1}>
+          {patient.edad} años · {patient.genero}
+          {isCancelled ? ' · Cita cancelada' : ''}
+        </Text>
+      </View>
+
+      <Ionicons
+        name={isSubscriptionActive ? 'chevron-forward' : 'lock-closed'}
+        size={16}
+        color="#9CA3AF"
+      />
+    </TouchableOpacity>
+  );
+};
+
+interface PsychologistHomeTabProps {
+  doctorName: string;
+  isSubscriptionActive: boolean;
+  todayPatients: MySqlPatientRecord[];
+  onRegisterPatient: () => void;
+  onSelectPatient: (patient: MySqlPatientRecord) => void;
+  onOpenCalendar: () => void;
+}
+
+// Contenido de la pestaña Inicio (Saludo, botón registrar y agenda de hoy)
+const PsychologistHomeTab: React.FC<PsychologistHomeTabProps> = ({
+  doctorName,
+  isSubscriptionActive,
+  todayPatients,
+  onRegisterPatient,
+  onSelectPatient,
+  onOpenCalendar,
+}) => {
+  const greeting = getGreeting();
+
+  return (
+    <>
+      {/* Tarjeta de saludo */}
+      <View style={styles.greetingCard}>
+        <View style={styles.greetingTextWrapper}>
+          <Text style={styles.greetingText}>{greeting.text}</Text>
+          <Text style={styles.doctorName} numberOfLines={1}>
+            {doctorName}
+          </Text>
+        </View>
+        <View style={styles.greetingIconCircle}>
+          <Ionicons name={greeting.icon} size={22} color="#3FB889" />
+        </View>
+      </View>
+
+      {/* Sección de registro de pacientes */}
+      <View style={styles.actionSection}>
+        <TouchableOpacity
+          style={[
+            styles.registerPatientButton,
+            !isSubscriptionActive && styles.registerButtonDisabled,
+          ]}
+          onPress={onRegisterPatient}
+          activeOpacity={isSubscriptionActive ? 0.85 : 0.6}
+        >
+          <View
+            style={[
+              styles.buttonIconWrapper,
+              !isSubscriptionActive && styles.buttonIconWrapperDisabled,
+            ]}
+          >
+            <Ionicons
+              name={isSubscriptionActive ? 'add' : 'lock-closed'}
+              size={18}
+              color={isSubscriptionActive ? '#0F613B' : '#9CA3AF'}
+            />
+          </View>
+
+          <Text
+            style={[
+              styles.registerButtonTitle,
+              !isSubscriptionActive && styles.registerButtonTitleDisabled,
+            ]}
+            numberOfLines={1}
+          >
+            {isSubscriptionActive ? 'Registrar nuevo paciente' : 'Registro bloqueado'}
+          </Text>
+
+          <Ionicons
+            name="chevron-forward"
+            size={18}
+            color={isSubscriptionActive ? '#3FB889' : '#D1D5DB'}
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* Sección de pacientes del día */}
+      <View style={[styles.patientsSection, styles.agendaCard]}>
+        <View style={styles.agendaHeader}>
+          <Text style={styles.agendaTitle}>Agenda de hoy</Text>
+          <TouchableOpacity
+            onPress={onOpenCalendar}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.agendaLink}>Ver calendario</Text>
+          </TouchableOpacity>
+        </View>
+
+        {todayPatients.length === 0 ? (
+          <View style={styles.agendaEmpty}>
+            <Ionicons name="calendar-outline" size={40} color="#9CA3AF" />
+            <Text style={styles.emptyStateTitle}>Sin sesiones hoy</Text>
+            <Text style={styles.emptyStateText}>
+              No tienes consultas o citas programadas para el día de hoy.
+            </Text>
+          </View>
+        ) : (
+          todayPatients.map((patient, index) => (
+            <TodayAgendaRow
+              key={`today-${patient.id ?? patient.email}`}
+              patient={patient}
+              isLast={index === todayPatients.length - 1}
+              isSubscriptionActive={isSubscriptionActive}
+              onPress={() => onSelectPatient(patient)}
+            />
+          ))
+        )}
+      </View>
+    </>
+  );
+};
+
+// "Sesión hoy" tiene prioridad sobre "Nuevo" por ser lo más urgente
+const getPatientHighlight = (hasSessionToday: boolean, fechaPrimeraSesion?: string | null) => {
+  if (hasSessionToday) return 'Sesión hoy';
+  if (isNewPatient(fechaPrimeraSesion)) return 'Nuevo';
+  return null;
+};
+
+interface DirectoryPatientCardProps {
+  patient: MySqlPatientRecord;
+  letter: string;
+  showLetter: boolean;
+  hasSessionToday: boolean;
+  isSubscriptionActive: boolean;
+  onPress: () => void;
+}
+
+// Tarjeta individual en el directorio de pacientes
+const DirectoryPatientCard: React.FC<DirectoryPatientCardProps> = ({
+  patient,
+  letter,
+  showLetter,
+  hasSessionToday,
+  isSubscriptionActive,
+  onPress,
+}) => {
+  const avatarColor = getAvatarColor(patient);
+  const highlight = getPatientHighlight(hasSessionToday, patient.fecha_primera_sesion);
+
+  return (
+    <React.Fragment key={`all-${patient.id ?? patient.email}`}>
+      {showLetter && <Text style={styles.directoryLetter}>{letter}</Text>}
+
+      <TouchableOpacity
+        style={[
+          styles.directoryCard,
+          !isSubscriptionActive && styles.directoryCardDisabled,
+        ]}
+        onPress={onPress}
+        activeOpacity={isSubscriptionActive ? 0.8 : 0.6}
+      >
+        <View style={[styles.directoryAvatar, { backgroundColor: avatarColor.bg }]}>
+          <Text style={[styles.directoryAvatarText, { color: avatarColor.fg }]}>
+            {getInitials(patient)}
+          </Text>
+        </View>
+
+        <View style={styles.directoryInfo}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <Text style={styles.directoryName} numberOfLines={1}>
+              {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno || ''}
+            </Text>
+            {patient.tipo_relacion === 'suplente' && (
+              <View style={styles.suplenteBadge}>
+                <Text style={styles.suplenteBadgeText}>Suplencia</Text>
+              </View>
+            )}
+            {patient.tipo_relacion === 'titular' && Boolean(patient.suplente_activo) && (
+              <View style={styles.enSuplenciaBadge}>
+                <Text style={styles.enSuplenciaBadgeText}>En suplencia</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.directoryMeta} numberOfLines={1}>
+            {patient.edad} años
+            {highlight && (
+              <>
+                {' · '}
+                <Text style={styles.directoryHighlight}>{highlight}</Text>
+              </>
+            )}
+          </Text>
+        </View>
+
+        <Ionicons
+          name={isSubscriptionActive ? 'chevron-forward' : 'lock-closed'}
+          size={16}
+          color="#9CA3AF"
+        />
+      </TouchableOpacity>
+    </React.Fragment>
+  );
+};
+
+interface PatientDirectorySectionProps {
+  patients: MySqlPatientRecord[];
+  todayEmails: Set<string | undefined>;
+  searchTerm: string;
+  onChangeSearchTerm: (term: string) => void;
+  isSubscriptionActive: boolean;
+  onSelectPatient: (patient: MySqlPatientRecord) => void;
+  onShowSubscriptionAlert: () => void;
+}
+
+// Sección completa del Directorio de Pacientes (Buscador, lista agrupada y estado vacío)
+const PatientDirectorySection: React.FC<PatientDirectorySectionProps> = ({
+  patients,
+  todayEmails,
+  searchTerm,
+  onChangeSearchTerm,
+  isSubscriptionActive,
+  onSelectPatient,
+  onShowSubscriptionAlert,
+}) => {
+  const normalizedSearch = normalizeText(searchTerm.trim());
+  const filteredPatients = patients.filter((p) => {
+    const fullName = `${p.nombre ?? ''} ${p.apellido_paterno ?? ''} ${p.apellido_materno ?? ''}`;
+    return normalizeText(fullName).includes(normalizedSearch);
+  });
+
+  const sortedPatients = [...filteredPatients].sort(comparePatientsByName);
+  const showLetterGroups = patients.length >= MIN_PATIENTS_FOR_LETTERS;
+  const showFewPatientsHint = patients.length < FEW_PATIENTS_LIMIT && !searchTerm.trim();
+
+  const renderContent = () => {
+    if (patients.length === 0) {
+      return <PatientsHint isEmpty />;
+    }
+    if (filteredPatients.length === 0) {
+      return (
+        <View style={styles.directoryEmpty}>
+          <Ionicons name="search-outline" size={36} color="#9CA3AF" />
+          <Text style={styles.emptyStateTitle}>Sin resultados para tu búsqueda</Text>
+        </View>
+      );
+    }
+    return (
+      <>
+        {sortedPatients.map((patient, index) => {
+          const letter = getGroupLetter(patient);
+          const showLetter =
+            showLetterGroups &&
+            (index === 0 || getGroupLetter(sortedPatients[index - 1]) !== letter);
+
+          return (
+            <DirectoryPatientCard
+              key={`all-${patient.id ?? patient.email}`}
+              patient={patient}
+              letter={letter}
+              showLetter={showLetter}
+              hasSessionToday={todayEmails.has(patient.email)}
+              isSubscriptionActive={isSubscriptionActive}
+              onPress={() => onSelectPatient(patient)}
+            />
+          );
+        })}
+        {showFewPatientsHint && <PatientsHint isEmpty={false} />}
+      </>
+    );
+  };
+
+  return (
+    <View
+      style={[
+        styles.patientsSection,
+        styles.allPatientsSection,
+        styles.directoryPanel,
+        !showLetterGroups && styles.directoryPanelNoLetters,
+      ]}
+    >
+      <View style={styles.directoryHeader}>
+        <Text style={styles.directoryTitle}>Mis pacientes</Text>
+        <Text style={styles.directoryCount}>
+          {patients.length === 1 ? '1 registrado' : `${patients.length} registrados`}
+        </Text>
+      </View>
+
+      <View style={styles.searchBox}>
+        <Ionicons name="search-outline" size={17} color="#9CA3AF" style={{ marginRight: 8 }} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar por nombre o apellido"
+          placeholderTextColor="#9CA3AF"
+          value={searchTerm}
+          onChangeText={onChangeSearchTerm}
+          editable={isSubscriptionActive}
+          onPressIn={() => {
+            if (!isSubscriptionActive) onShowSubscriptionAlert();
+          }}
+        />
+      </View>
+
+      {renderContent()}
+    </View>
+  );
+};
+
+export const PsychologistDashboardScreen: React.FC<
+  PsychologistDashboardScreenProps
+> = ({
+  doctorName,
+  patients,
+  onLogout,
+  onRegisterPatient,
+  onSelectPatient,
+}) => {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<PsychologistTab>('inicio');
+  const [searchTerm, setSearchTerm] = useState('');
+  const todayPatients = useTodayPatients(user?.email, patients);
 
   // Control unificado de suscripción:
   // Si la suscripción no está activa o ya venció, se bloquean todas las acciones clínicas
   // permitiendo exclusivamente navegar entre pestañas, leer el aviso y cerrar sesión.
-  const isSubscriptionActive = user?.subscription ? user.subscription.isActive : true;
+  const isSubscriptionActive = user?.subscription?.isActive ?? true;
 
   const showSubscriptionAlert = () => {
     Alert.alert(
@@ -182,35 +602,6 @@ export const PsychologistDashboardScreen: React.FC<
     onSelectPatient(patient);
   };
 
-  const normalizedSearch = normalizeText(searchTerm.trim());
-  const filteredPatients = patients.filter((p) => {
-    const fullName = `${p.nombre ?? ''} ${p.apellido_paterno ?? ''} ${p.apellido_materno ?? ''}`;
-    // Solo por nombre y apellidos, insensible a mayúsculas y tildes
-    return normalizeText(fullName).includes(normalizedSearch);
-  });
-
-  const greeting = getGreeting();
-  const todayEmails = new Set(todayPatients.map((p) => p.email));
-  const sortedPatients = [...filteredPatients].sort(comparePatientsByName);
-  // Se calcula con el total de pacientes (no con la búsqueda) para que las letras no aparezcan y desaparezcan al escribir
-  const showLetterGroups = patients.length >= MIN_PATIENTS_FOR_LETTERS;
-  const showFewPatientsHint = patients.length < FEW_PATIENTS_LIMIT && !searchTerm.trim();
-
-  // Mensaje centrado en el espacio libre de la tarjeta de Pacientes
-  const renderPatientsHint = (isEmpty: boolean) => (
-    <View style={styles.patientsHint}>
-      <View style={styles.patientsHintIcon}>
-        <Ionicons name="people-outline" size={26} color="#3FB889" />
-      </View>
-      <Text style={styles.patientsHintTitle}>
-        {isEmpty ? 'Tu lista está vacía por ahora' : 'Tu lista crece aquí'}
-      </Text>
-      <Text style={styles.patientsHintText}>
-        Cada persona que registres desde Inicio aparecerá aquí, en orden alfabético.
-      </Text>
-    </View>
-  );
-
   if (activeTab === 'perfil') {
     return (
       <PsychologistProfileScreen
@@ -226,24 +617,22 @@ export const PsychologistDashboardScreen: React.FC<
       <PsychologistCalendarScreen
         doctorName={doctorName}
         onNavigateTab={setActiveTab}
+        onSelectPatientById={(patientId) => {
+          const found = patients.find((p) => Number(p.id) === Number(patientId));
+          if (found) {
+            onSelectPatient(found);
+          }
+        }}
       />
     );
   }
 
+  const todayEmails = new Set(todayPatients.map((p) => p.email));
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Banner de Suscripción Inactiva / Expirada */}
-      {!isSubscriptionActive && (
-        <View style={styles.subscriptionBanner}>
-          <Ionicons name="alert-circle" size={24} color="#991B1B" />
-          <View style={styles.subscriptionBannerTextWrapper}>
-            <Text style={styles.subscriptionBannerTitle}>Suscripción Finalizada</Text>
-            <Text style={styles.subscriptionBannerMessage}>
-              Comuníquese con el administrador para renovarla
-            </Text>
-          </View>
-        </View>
-      )}
+      {!isSubscriptionActive && <SubscriptionBanner />}
 
       <ScrollView
         contentContainerStyle={[
@@ -254,266 +643,27 @@ export const PsychologistDashboardScreen: React.FC<
       >
         {/* PESTAÑA 1: INICIO */}
         {activeTab === 'inicio' && (
-          <>
-            {/* Tarjeta de saludo */}
-            <View style={styles.greetingCard}>
-              <View style={styles.greetingTextWrapper}>
-                <Text style={styles.greetingText}>{greeting.text}</Text>
-                <Text style={styles.doctorName} numberOfLines={1}>
-                  {doctorName}
-                </Text>
-              </View>
-              <View style={styles.greetingIconCircle}>
-                <Ionicons name={greeting.icon} size={22} color="#3FB889" />
-              </View>
-            </View>
-
-            {/* Sección de registro de pacientes */}
-            <View style={styles.actionSection}>
-              <TouchableOpacity
-                style={[
-                  styles.registerPatientButton,
-                  !isSubscriptionActive && styles.registerButtonDisabled,
-                ]}
-                onPress={handleRegisterPatientPress}
-                activeOpacity={isSubscriptionActive ? 0.85 : 0.6}
-              >
-                <View
-                  style={[
-                    styles.buttonIconWrapper,
-                    !isSubscriptionActive && styles.buttonIconWrapperDisabled,
-                  ]}
-                >
-                  <Ionicons
-                    name={isSubscriptionActive ? 'add' : 'lock-closed'}
-                    size={18}
-                    color={isSubscriptionActive ? '#0F613B' : '#9CA3AF'}
-                  />
-                </View>
-
-                <Text
-                  style={[
-                    styles.registerButtonTitle,
-                    !isSubscriptionActive && styles.registerButtonTitleDisabled,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {isSubscriptionActive ? 'Registrar nuevo paciente' : 'Registro bloqueado'}
-                </Text>
-
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={isSubscriptionActive ? '#3FB889' : '#D1D5DB'}
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* Sección de pacientes del día: una tarjeta grande con cada cita separada */}
-            <View style={[styles.patientsSection, styles.agendaCard]}>
-              <View style={styles.agendaHeader}>
-                <Text style={styles.agendaTitle}>Agenda de hoy</Text>
-                <TouchableOpacity
-                  onPress={() => setActiveTab('calendario')}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Text style={styles.agendaLink}>Ver calendario</Text>
-                </TouchableOpacity>
-              </View>
-
-              {todayPatients.length === 0 ? (
-                <View style={styles.agendaEmpty}>
-                  <Ionicons name="calendar-outline" size={40} color="#9CA3AF" />
-                  <Text style={styles.emptyStateTitle}>Sin sesiones hoy</Text>
-                  <Text style={styles.emptyStateText}>
-                    No tienes consultas o citas programadas para el día de hoy.
-                  </Text>
-                </View>
-              ) : (
-                todayPatients.map((patient, index) => {
-                  const hora = patient.hora_cita;
-                  const isLast = index === todayPatients.length - 1;
-
-                  return (
-                    <TouchableOpacity
-                      key={`today-${patient.id ?? patient.email}`}
-                      style={[
-                        styles.agendaRow,
-                        !isLast && styles.agendaRowSpacing,
-                        !isSubscriptionActive && styles.agendaRowDisabled,
-                      ]}
-                      onPress={() => handlePatientPress(patient)}
-                      activeOpacity={isSubscriptionActive ? 0.7 : 0.6}
-                    >
-                      <Text style={styles.agendaTime}>
-                        {hora ? hora.slice(0, 5) : 'Hoy'}
-                      </Text>
-
-                      {/* Mismo color por paciente que en la lista de Pacientes */}
-                      <View style={[styles.agendaAvatar, { backgroundColor: getAvatarColor(patient).bg }]}>
-                        <Text style={[styles.agendaAvatarText, { color: getAvatarColor(patient).fg }]}>
-                          {getInitials(patient)}
-                        </Text>
-                      </View>
-
-                      <View style={styles.agendaInfo}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <Text
-                            style={[
-                              styles.agendaName,
-                              patient.estado_cita === 'cancelada' && styles.agendaNameCancelled,
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno || ''}
-                          </Text>
-                          {(patient.rol_cita === 'suplente' || patient.tipo_relacion === 'suplente') && (
-                            <View style={styles.suplenteBadge}>
-                              <Text style={styles.suplenteBadgeText}>Suplencia</Text>
-                            </View>
-                          )}
-                          {patient.tipo_relacion === 'titular' && Boolean(patient.suplente_activo) && (
-                            <View style={styles.enSuplenciaBadge}>
-                              <Text style={styles.enSuplenciaBadgeText}>En suplencia</Text>
-                            </View>
-                          )}
-                          {patient.estado_cita === 'cancelada' && (
-                            <View style={styles.canceladaBadge}>
-                              <Text style={styles.canceladaBadgeText}>Cancelada</Text>
-                            </View>
-                          )}
-                        </View>
-                        <Text style={styles.agendaMeta} numberOfLines={1}>
-                          {patient.edad} años · {patient.genero}
-                          {patient.estado_cita === 'cancelada' ? ' · Cita cancelada' : ''}
-                        </Text>
-                      </View>
-
-                      <Ionicons
-                        name={isSubscriptionActive ? 'chevron-forward' : 'lock-closed'}
-                        size={16}
-                        color="#9CA3AF"
-                      />
-                    </TouchableOpacity>
-                  );
-                })
-              )}
-            </View>
-          </>
+          <PsychologistHomeTab
+            doctorName={doctorName}
+            isSubscriptionActive={isSubscriptionActive}
+            todayPatients={todayPatients}
+            onRegisterPatient={handleRegisterPatientPress}
+            onSelectPatient={handlePatientPress}
+            onOpenCalendar={() => setActiveTab('calendario')}
+          />
         )}
 
-        {/* PESTAÑA 2: PACIENTES: título, buscador y lista dentro de una sola tarjeta */}
+        {/* PESTAÑA 2: PACIENTES */}
         {activeTab === 'pacientes' && (
-          <View
-            style={[
-              styles.patientsSection,
-              styles.allPatientsSection,
-              styles.directoryPanel,
-              !showLetterGroups && styles.directoryPanelNoLetters,
-            ]}
-          >
-            <View style={styles.directoryHeader}>
-              <Text style={styles.directoryTitle}>Mis pacientes</Text>
-              <Text style={styles.directoryCount}>
-                {patients.length === 1 ? '1 registrado' : `${patients.length} registrados`}
-              </Text>
-            </View>
-
-            <View style={styles.searchBox}>
-              <Ionicons name="search-outline" size={17} color="#9CA3AF" style={{ marginRight: 8 }} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Buscar por nombre o apellido"
-                placeholderTextColor="#9CA3AF"
-                value={searchTerm}
-                onChangeText={setSearchTerm}
-                editable={isSubscriptionActive}
-                onPressIn={() => {
-                  if (!isSubscriptionActive) showSubscriptionAlert();
-                }}
-              />
-            </View>
-
-            {patients.length === 0 ? (
-              renderPatientsHint(true)
-            ) : filteredPatients.length === 0 ? (
-              <View style={styles.directoryEmpty}>
-                <Ionicons name="search-outline" size={36} color="#9CA3AF" />
-                <Text style={styles.emptyStateTitle}>Sin resultados para tu búsqueda</Text>
-              </View>
-            ) : (
-              <>
-                  {sortedPatients.map((patient, index) => {
-                    const avatarColor = getAvatarColor(patient);
-                    const hasSessionToday = todayEmails.has(patient.email);
-                    const isNew = isNewPatient(patient.fecha_primera_sesion);
-                    // "Sesión hoy" tiene prioridad sobre "Nuevo" por ser lo más urgente
-                    const highlight = hasSessionToday ? 'Sesión hoy' : isNew ? 'Nuevo' : null;
-
-                    const letter = getGroupLetter(patient);
-                    const showLetter =
-                      showLetterGroups &&
-                      (index === 0 || getGroupLetter(sortedPatients[index - 1]) !== letter);
-
-                    return (
-                      <React.Fragment key={`all-${patient.id ?? patient.email}`}>
-                        {showLetter && <Text style={styles.directoryLetter}>{letter}</Text>}
-
-                        <TouchableOpacity
-                          style={[
-                            styles.directoryCard,
-                            !isSubscriptionActive && styles.directoryCardDisabled,
-                          ]}
-                          onPress={() => handlePatientPress(patient)}
-                          activeOpacity={isSubscriptionActive ? 0.8 : 0.6}
-                        >
-                          <View style={[styles.directoryAvatar, { backgroundColor: avatarColor.bg }]}>
-                            <Text style={[styles.directoryAvatarText, { color: avatarColor.fg }]}>
-                              {getInitials(patient)}
-                            </Text>
-                          </View>
-
-                          <View style={styles.directoryInfo}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                              <Text style={styles.directoryName} numberOfLines={1}>
-                                {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno || ''}
-                              </Text>
-                              {patient.tipo_relacion === 'suplente' && (
-                                <View style={styles.suplenteBadge}>
-                                  <Text style={styles.suplenteBadgeText}>Suplencia</Text>
-                                </View>
-                              )}
-                              {patient.tipo_relacion === 'titular' && Boolean(patient.suplente_activo) && (
-                                <View style={styles.enSuplenciaBadge}>
-                                  <Text style={styles.enSuplenciaBadgeText}>En suplencia</Text>
-                                </View>
-                              )}
-                            </View>
-                            <Text style={styles.directoryMeta} numberOfLines={1}>
-                              {patient.edad} años
-                              {highlight && (
-                                <>
-                                  {' · '}
-                                  <Text style={styles.directoryHighlight}>{highlight}</Text>
-                                </>
-                              )}
-                            </Text>
-                          </View>
-
-                          <Ionicons
-                            name={isSubscriptionActive ? 'chevron-forward' : 'lock-closed'}
-                            size={16}
-                            color="#9CA3AF"
-                          />
-                        </TouchableOpacity>
-                      </React.Fragment>
-                    );
-                  })}
-
-                {showFewPatientsHint && renderPatientsHint(false)}
-              </>
-            )}
-          </View>
+          <PatientDirectorySection
+            patients={patients}
+            todayEmails={todayEmails}
+            searchTerm={searchTerm}
+            onChangeSearchTerm={setSearchTerm}
+            isSubscriptionActive={isSubscriptionActive}
+            onSelectPatient={handlePatientPress}
+            onShowSubscriptionAlert={showSubscriptionAlert}
+          />
         )}
       </ScrollView>
 

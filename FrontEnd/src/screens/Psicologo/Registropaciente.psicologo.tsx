@@ -483,18 +483,17 @@ const useNuevoPaciente = (
   useEffect(() => {
     if (!form.horaPrimeraSesion || !form.fechaPrimeraSesion) return;
 
-    const isPast = isSessionTimeInPast(form.fechaPrimeraSesion, form.horaPrimeraSesion);
     const hasConflict = hasScheduleConflict(
       form.horaPrimeraSesion,
       form.duracionPrimeraSesion,
       busySessions
     );
 
-    if (isPast || hasConflict) {
+    if (hasConflict) {
       updateField('horaPrimeraSesion', '');
       Alert.alert(
         'Hora no disponible',
-        'La hora seleccionada se cruza con otra sesión o ya no está disponible para esta fecha/duración. Por favor, selecciona una nueva hora.'
+        'La hora seleccionada se cruza con otra sesión agendada para esta fecha/duración. Por favor, selecciona una nueva hora.'
       );
     }
   }, [busySessions, form.duracionPrimeraSesion]);
@@ -776,6 +775,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
         visible={showSessionTimePicker}
         selectedTime={form.horaPrimeraSesion || '10:00'}
         selectedDate={form.fechaPrimeraSesion}
+        allowPastTimes={true}
         busySessions={busySessions}
         duration={Number(form.duracionPrimeraSesion) || 60}
         title="Hora de Inicio de la Primera Sesión"

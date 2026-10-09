@@ -12,9 +12,9 @@ import { Ionicons } from '@expo/vector-icons';
 
 const generateTimeSlots = (): string[] => {
   const slots: string[] = [];
-  for (let hour = 8; hour <= 20; hour++) {
+  for (let hour = 8; hour <= 21; hour++) {
     const hStr = String(hour).padStart(2, '0');
-    if (hour < 20) {
+    if (hour < 21) {
       slots.push(`${hStr}:00`, `${hStr}:15`, `${hStr}:30`, `${hStr}:45`);
     } else {
       slots.push(`${hStr}:00`);
@@ -31,9 +31,10 @@ interface TimePickerModalProps {
   onSelectTime: (time: string) => void;
   onClose: () => void;
   title?: string;
-  selectedDate?: string; // si es hoy, se filtran las horas ya pasadas
+  selectedDate?: string; // si es hoy y allowPastTimes=false, se filtran las horas ya pasadas
   busySessions?: { hora: string; duracion: number }[];
   duration?: number; // Duración de la sesión solicitada en minutos (por defecto 60)
+  allowPastTimes?: boolean; // Permite horas pasadas de hoy (ej: registro retrospectivo de primera sesión)
 }
 
 export const TimePickerModal: React.FC<TimePickerModalProps> = ({
@@ -45,6 +46,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   selectedDate,
   busySessions = [],
   duration = 60,
+  allowPastTimes = false,
 }) => {
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -69,7 +71,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
     const [h, m] = slot.split(':').map(Number);
     const slotMinutes = h * 60 + m;
 
-    if (isToday && slotMinutes <= nowMinutes + 30) return false;
+    if (isToday && !allowPastTimes && slotMinutes <= nowMinutes + 30) return false;
     if (isSlotColliding(slotMinutes, duration)) return false;
     // Solo evitar que una sesión cruce al día siguiente (después de las 23:59)
     if (slotMinutes + duration > 24 * 60) return false;
@@ -96,9 +98,9 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
           <ScrollView style={styles.scrollList} showsVerticalScrollIndicator={false}>
             {availableSlots.length === 0 && (
               <Text style={styles.noSlotsText}>
-                {isToday
+                {isToday && !allowPastTimes
                   ? 'No quedan horarios disponibles para hoy. Elige otra fecha.'
-                  : 'No hay horarios disponibles para esta fecha. Elige otra fecha.'}
+                  : 'No hay horarios disponibles sin conflicto para esta fecha. Elige otra fecha u otra duración.'}
               </Text>
             )}
             {availableSlots.map((slot) => {

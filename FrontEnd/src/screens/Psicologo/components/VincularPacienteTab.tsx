@@ -18,6 +18,7 @@ import {
   PatientLookupResult,
   MySqlPatientRecord,
 } from '../../../types/patient';
+import { formatToChileanDate } from '../../../utils/date';
 
 const SESSION_DURATIONS = [
   { key: '30', label: '30 min' },
@@ -42,14 +43,7 @@ const timeToMinutes = (timeStr: string) => {
 };
 
 const formatFullDateSpanish = (dateStr: string): string => {
-  if (!dateStr) return '';
-  const parts = dateStr.split('-');
-  if (parts.length !== 3) return dateStr;
-  const monthNames = [
-    'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-    'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
-  ];
-  return `${parts[2]} de ${monthNames[Number(parts[1]) - 1]} de ${parts[0]}`;
+  return formatToChileanDate(dateStr);
 };
 
 const isValidEmail = (email: string): boolean => {

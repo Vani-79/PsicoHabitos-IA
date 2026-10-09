@@ -267,12 +267,12 @@ const handleSelectYear = (year: number) => {
     onClose();
   };
 
-  // Formato para mostrar arriba: ej. "14 de Mayo, 1998"
+  // Formato día-mes-año para mostrar arriba: ej. "14/05/1998"
   const headerDateString = useMemo(() => {
-    const d = selectedDate.getDate();
-    const mName = MONTH_NAMES[selectedDate.getMonth()];
+    const d = String(selectedDate.getDate()).padStart(2, '0');
+    const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
     const y = selectedDate.getFullYear();
-    return `${d} de ${mName}, ${y}`;
+    return `${d}/${m}/${y}`;
   }, [selectedDate]);
 
   return (

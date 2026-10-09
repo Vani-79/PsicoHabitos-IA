@@ -19,6 +19,7 @@ import { appointmentService } from '../../services/appointmentService';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { AppointmentSession } from '../../types/patient';
+import { formatToChileanDate } from '../../utils/date';
 
 interface PsychologistCalendarScreenProps {
   doctorName?: string;
@@ -84,13 +85,13 @@ const getWeekDays = (baseDate: Date) => {
 
 const formatFullDateSpanish = (dateStr: string): string => {
   const parts = dateStr.split('-');
-  if (parts.length !== 3) return dateStr;
+  if (parts.length !== 3) return formatToChileanDate(dateStr) || dateStr;
   const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
   const dayFullName = [
     'Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado',
   ][d.getDay()];
   const monthName = MONTH_NAMES[d.getMonth()];
-  return `${dayFullName}, ${d.getDate()} de ${monthName}`;
+  return `${dayFullName}, ${d.getDate()} de ${monthName} de ${d.getFullYear()} (${formatToChileanDate(dateStr)})`;
 };
 
 const parseEntryDate = (dateStr?: string): Date | null => {
@@ -123,6 +124,7 @@ const parseEntryDate = (dateStr?: string): Date | null => {
 export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProps> = ({
   doctorName = 'Especialista',
   onNavigateTab,
+  onSelectPatientById,
 }) => {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -147,7 +149,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
         console.warn('[PsychologistCalendarScreen] Error obteniendo fecha de ingreso:', err);
       }
     };
-    fetchEntryDate();
+    void fetchEntryDate();
     return () => {
       isMounted = false;
     };
@@ -194,11 +196,10 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
     try {
-      const allResults: AppointmentSession[] = [];
-      for (const m of monthsInWeek) {
-        const data = await appointmentService.getPsychologistCalendar({ month: m });
-        allResults.push(...data);
-      }
+      const resultsByMonth = await Promise.all(
+        monthsInWeek.map((m) => appointmentService.getPsychologistCalendar({ month: m }))
+      );
+      const allResults = resultsByMonth.flat();
 
       // Eliminar duplicados si alguna cita coincidió
       const uniqueMap = new Map<string, AppointmentSession>();
@@ -212,7 +213,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
   }, [monthsInWeek]);
 
   useEffect(() => {
-    fetchAppointments();
+    void fetchAppointments();
   }, [fetchAppointments]);
 
   const onRefresh = async () => {
@@ -265,6 +266,178 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
   }, [dayAppointments]);
 
   const isCurrentSelectionToday = selectedDateStr === todayDateStr;
+
+  const getStatusPillStyle = (estado: string) => {
+    if (estado === 'Completada') return styles.statusPillCompleted;
+    if (estado === 'Cancelada') return styles.statusPillCancelled;
+    return styles.statusPillScheduled;
+  };
+
+  const getStatusTextStyle = (estado: string) => {
+    if (estado === 'Completada') return styles.statusPillTextCompleted;
+    if (estado === 'Cancelada') return styles.statusPillTextCancelled;
+    return styles.statusPillTextScheduled;
+  };
+
+  const renderTimelineContent = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color="#0F613B" />
+          <Text style={styles.loadingText}>Cargando agenda de la semana...</Text>
+        </View>
+      );
+    }
+
+    if (dayAppointments.length === 0) {
+      return (
+        <View style={styles.emptyDayContainer}>
+          <View style={styles.emptyIconCircle}>
+            <Ionicons name="time-outline" size={32} color="#0F613B" />
+          </View>
+          <Text style={styles.emptyTitle}>Sin sesiones programadas</Text>
+          <Text style={styles.emptySubtitle}>
+            No hay citas agendadas para el {formatToChileanDate(selectedDateStr)}. Puedes agendar nuevas sesiones directamente desde la ficha de cada paciente.
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.timelineContainer}>
+        {HOURS_LIST.map((hour) => {
+          const aptsAtHour = appointmentsByHour[hour] || [];
+
+          return (
+            <View key={hour} style={styles.timelineRow}>
+              {/* Etiqueta horaria */}
+              <View style={styles.hourCol}>
+                <Text style={styles.hourText}>{hour}</Text>
+              </View>
+
+              {/* Línea divisoria y contenido de sesiones */}
+              <View style={styles.eventsCol}>
+                <View style={styles.hourDivider} />
+
+                {aptsAtHour.map((apt) => {
+                  const isClickable = Boolean(apt.paciente_id && onSelectPatientById);
+
+                  return (
+                    <TouchableOpacity
+                      key={apt.id}
+                      activeOpacity={isClickable ? 0.7 : 1}
+                      disabled={!isClickable}
+                      onPress={() => {
+                        if (apt.paciente_id && onSelectPatientById) {
+                          onSelectPatientById(apt.paciente_id);
+                        }
+                      }}
+                      style={[
+                        styles.sessionCard,
+                        apt.modalidad === 'online' ? styles.sessionCardOnline : styles.sessionCardPresencial,
+                      ]}
+                    >
+                      {/* Cabecera de la cita */}
+                      <View style={styles.sessionHeaderRow}>
+                        <View style={styles.timeDurationPill}>
+                          <Ionicons name="time" size={13} color="#0F613B" style={{ marginRight: 4 }} />
+                          <Text style={styles.timeDurationText}>
+                            {apt.hora} {apt.horaFin ? `- ${apt.horaFin}` : ''} ({apt.duracion} min)
+                          </Text>
+                        </View>
+
+                        <View
+                          style={[
+                            styles.modalityBadge,
+                            apt.modalidad === 'online' ? styles.modalityBadgeOnline : styles.modalityBadgePresencial,
+                          ]}
+                        >
+                          <Ionicons
+                            name={apt.modalidad === 'online' ? 'videocam' : 'business'}
+                            size={12}
+                            color={apt.modalidad === 'online' ? '#2563EB' : '#0F613B'}
+                            style={{ marginRight: 4 }}
+                          />
+                          <Text
+                            style={[
+                              styles.modalityBadgeText,
+                              apt.modalidad === 'online' ? styles.modalityBadgeTextOnline : styles.modalityBadgeTextPresencial,
+                            ]}
+                          >
+                            {apt.modalidad === 'online' ? 'Online' : 'Presencial'}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Nombre del Paciente con recordatorio de Suplencia si aplica */}
+                      <View style={styles.patientRowWithBadge}>
+                        <Text
+                          style={[
+                            styles.patientNameText,
+                            apt.estado === 'Cancelada' && styles.patientNameCancelled,
+                          ]}
+                        >
+                          {apt.paciente_nombre || 'Paciente'}
+                        </Text>
+                        {apt.rol_psicologo === 'suplente' && (
+                          <View style={styles.suplenteRoleBadge}>
+                            <Ionicons name="repeat" size={11} color="#1D4ED8" style={{ marginRight: 3 }} />
+                            <Text style={styles.suplenteRoleBadgeText}>Suplencia</Text>
+                          </View>
+                        )}
+                        {isClickable && (
+                          <Ionicons
+                            name="chevron-forward"
+                            size={15}
+                            color="#9CA3AF"
+                            style={{ marginLeft: 4 }}
+                          />
+                        )}
+                      </View>
+
+                      {/* Observaciones */}
+                      {apt.observaciones ? (
+                        <View style={styles.notesRow}>
+                          <Ionicons
+                            name="document-text-outline"
+                            size={13}
+                            color="#4B5563"
+                            style={{ marginRight: 4, marginTop: 1 }}
+                          />
+                          <Text style={styles.notesText} numberOfLines={2}>
+                            {apt.observaciones}
+                          </Text>
+                        </View>
+                      ) : null}
+
+                      {/* Estado */}
+                      <View style={styles.sessionFooterRow}>
+                        <View
+                          style={[
+                            styles.statusPill,
+                            getStatusPillStyle(apt.estado),
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.statusPillText,
+                              getStatusTextStyle(apt.estado),
+                            ]}
+                          >
+                            {apt.estado}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -326,6 +499,20 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
               ? day.dateObj < new Date(minCalendarDate.getFullYear(), minCalendarDate.getMonth(), minCalendarDate.getDate())
               : false;
 
+            let dayIndicator = <View style={styles.dotPlaceholder} />;
+            if (hasApts) {
+              dayIndicator = (
+                <View
+                  style={[
+                    styles.dotIndicator,
+                    isSelected && styles.dotIndicatorActive,
+                  ]}
+                />
+              );
+            } else if (day.isToday && !isSelected) {
+              dayIndicator = <View style={styles.todaySmallDot} />;
+            }
+
             return (
               <TouchableOpacity
                 key={day.dateStr}
@@ -361,18 +548,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
 
                 {/* Indicador de citas o badge de hoy */}
                 <View style={styles.indicatorsRow}>
-                  {hasApts ? (
-                    <View
-                      style={[
-                        styles.dotIndicator,
-                        isSelected && styles.dotIndicatorActive,
-                      ]}
-                    />
-                  ) : day.isToday && !isSelected ? (
-                    <View style={styles.todaySmallDot} />
-                  ) : (
-                    <View style={styles.dotPlaceholder} />
-                  )}
+                  {dayIndicator}
                 </View>
               </TouchableOpacity>
             );
@@ -395,144 +571,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
         </View>
 
         {/* Timeline del Día Seleccionado */}
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color="#0F613B" />
-            <Text style={styles.loadingText}>Cargando agenda de la semana...</Text>
-          </View>
-        ) : dayAppointments.length === 0 ? (
-          <View style={styles.emptyDayContainer}>
-            <View style={styles.emptyIconCircle}>
-              <Ionicons name="time-outline" size={32} color="#0F613B" />
-            </View>
-            <Text style={styles.emptyTitle}>Sin sesiones programadas</Text>
-            <Text style={styles.emptySubtitle}>
-              No hay citas agendadas para el {formatFullDateSpanish(selectedDateStr)}. Puedes agendar nuevas sesiones directamente desde la ficha de cada paciente.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.timelineContainer}>
-            {HOURS_LIST.map((hour) => {
-              const aptsAtHour = appointmentsByHour[hour] || [];
-
-              return (
-                <View key={hour} style={styles.timelineRow}>
-                  {/* Etiqueta horaria */}
-                  <View style={styles.hourCol}>
-                    <Text style={styles.hourText}>{hour}</Text>
-                  </View>
-
-                  {/* Línea divisoria y contenido de sesiones */}
-                  <View style={styles.eventsCol}>
-                    <View style={styles.hourDivider} />
-
-                    {aptsAtHour.map((apt) => (
-                      <View
-                        key={apt.id}
-                        style={[
-                          styles.sessionCard,
-                          apt.modalidad === 'online' ? styles.sessionCardOnline : styles.sessionCardPresencial,
-                        ]}
-                      >
-                        {/* Cabecera de la cita */}
-                        <View style={styles.sessionHeaderRow}>
-                          <View style={styles.timeDurationPill}>
-                            <Ionicons name="time" size={13} color="#0F613B" style={{ marginRight: 4 }} />
-                            <Text style={styles.timeDurationText}>
-                              {apt.hora} {apt.horaFin ? `- ${apt.horaFin}` : ''} ({apt.duracion} min)
-                            </Text>
-                          </View>
-
-                          <View
-                            style={[
-                              styles.modalityBadge,
-                              apt.modalidad === 'online' ? styles.modalityBadgeOnline : styles.modalityBadgePresencial,
-                            ]}
-                          >
-                            <Ionicons
-                              name={apt.modalidad === 'online' ? 'videocam' : 'business'}
-                              size={12}
-                              color={apt.modalidad === 'online' ? '#2563EB' : '#0F613B'}
-                              style={{ marginRight: 4 }}
-                            />
-                            <Text
-                              style={[
-                                styles.modalityBadgeText,
-                                apt.modalidad === 'online' ? styles.modalityBadgeTextOnline : styles.modalityBadgeTextPresencial,
-                              ]}
-                            >
-                              {apt.modalidad === 'online' ? 'Online' : 'Presencial'}
-                            </Text>
-                          </View>
-                        </View>
-
-                        {/* Nombre del Paciente con recordatorio de Suplencia si aplica */}
-                        <View style={styles.patientRowWithBadge}>
-                          <Text
-                            style={[
-                              styles.patientNameText,
-                              apt.estado === 'Cancelada' && styles.patientNameCancelled,
-                            ]}
-                          >
-                            {apt.paciente_nombre || 'Paciente'}
-                          </Text>
-                          {apt.rol_psicologo === 'suplente' && (
-                            <View style={styles.suplenteRoleBadge}>
-                              <Ionicons name="repeat" size={11} color="#1D4ED8" style={{ marginRight: 3 }} />
-                              <Text style={styles.suplenteRoleBadgeText}>Suplencia</Text>
-                            </View>
-                          )}
-                        </View>
-
-                        {/* Observaciones */}
-                        {apt.observaciones ? (
-                          <View style={styles.notesRow}>
-                            <Ionicons
-                              name="document-text-outline"
-                              size={13}
-                              color="#4B5563"
-                              style={{ marginRight: 4, marginTop: 1 }}
-                            />
-                            <Text style={styles.notesText} numberOfLines={2}>
-                              {apt.observaciones}
-                            </Text>
-                          </View>
-                        ) : null}
-
-                        {/* Estado */}
-                        <View style={styles.sessionFooterRow}>
-                          <View
-                            style={[
-                              styles.statusPill,
-                              apt.estado === 'Completada'
-                                ? styles.statusPillCompleted
-                                : apt.estado === 'Cancelada'
-                                ? styles.statusPillCancelled
-                                : styles.statusPillScheduled,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.statusPillText,
-                                apt.estado === 'Completada'
-                                  ? styles.statusPillTextCompleted
-                                  : apt.estado === 'Cancelada'
-                                  ? styles.statusPillTextCancelled
-                                  : styles.statusPillTextScheduled,
-                              ]}
-                            >
-                              {apt.estado}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
+        {renderTimelineContent()}
       </ScrollView>
 
       {/* Modal Desplegable con Cuadrícula Completa de Mes (bloqueando años anteriores al ingreso) */}

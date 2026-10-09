@@ -7,6 +7,7 @@ import { ProfileRoleHeader } from '../../components/ProfileRoleHeader';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { PsychologistProfileData } from '../../constants/auth';
+import { formatToChileanDate } from '../../utils/date';
 
 interface PsychologistProfileScreenProps {
   onNavigateTab: (tab: PsychologistTab) => void;
@@ -42,7 +43,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
       }
     };
 
-    fetchProfile();
+    void fetchProfile();
 
     return () => {
       isMounted = false;
@@ -74,7 +75,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
             if (onLogout) {
               onLogout();
             } else {
-              logout();
+              void logout();
             }
           },
         },
@@ -93,14 +94,19 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
       );
     }
 
-    const fechaIngresoDisplay = profile?.fechaIngreso || 'No registrada';
+    const fechaIngresoDisplay = profile?.fechaIngreso
+      ? formatToChileanDate(profile.fechaIngreso)
+      : 'No registrada';
     const estadoSuscripcionDisplay = profile?.estadoSuscripcion || (user?.subscription?.isActive ? 'Activo' : 'Inactivo');
     const isActivo = estadoSuscripcionDisplay === 'Activo';
-    const fechaVencimientoDisplay = !isActivo
-      ? 'Vencida'
-      : (profile?.fechaVencimiento && profile.fechaVencimiento !== 'Vencida'
-          ? profile.fechaVencimiento
-          : (user?.subscription?.finDate || 'No registrada'));
+    const fechaVencimientoActiva =
+      profile?.fechaVencimiento && profile.fechaVencimiento !== 'Vencida'
+        ? profile.fechaVencimiento
+        : (user?.subscription?.finDate || 'No registrada');
+    const fechaVencimientoRaw = !isActivo ? 'Vencida' : fechaVencimientoActiva;
+    const fechaVencimientoDisplay = fechaVencimientoRaw === 'Vencida' || fechaVencimientoRaw === 'No registrada'
+      ? fechaVencimientoRaw
+      : formatToChileanDate(fechaVencimientoRaw);
 
     return (
       <View style={styles.profileCard}>

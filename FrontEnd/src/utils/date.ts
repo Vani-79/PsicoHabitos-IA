@@ -28,21 +28,46 @@ export function formatToMySqlDateTime(date: Date = new Date()): string {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
+function parseDateParts(clean: string): Date | null {
+  const parts = clean.split(/[-/]/);
+  if (parts.length !== 3) {
+    return null;
+  }
+
+  const numbers = parts.map(Number);
+  if (numbers.some(Number.isNaN)) {
+    return null;
+  }
+
+  const [p1, p2, p3] = numbers;
+  if (parts[0].length === 4) {
+    // YYYY-MM-DD o YYYY/MM/DD
+    return new Date(p1, p2 - 1, p3);
+  }
+
+  if (parts[2].length === 4) {
+    // DD-MM-YYYY o DD/MM/YYYY
+    return new Date(p3, p2 - 1, p1);
+  }
+
+  return null;
+}
+
 /**
- * Normaliza un string 'YYYY-MM-DD' o un Date a un objeto Date local
+ * Normaliza un string 'YYYY-MM-DD', 'DD-MM-YYYY', 'DD/MM/YYYY' o un Date a un objeto Date local
  * para evitar desfases horarios por conversión UTC.
  */
 export function parseLocalDate(dateInput: Date | string): Date {
   if (dateInput instanceof Date) {
     return dateInput;
   }
-  const parts = dateInput.split('-');
-  if (parts.length === 3) {
-    const [year, month, day] = parts.map(Number);
-    if (!Number.isNaN(year) && !Number.isNaN(month) && !Number.isNaN(day)) {
-      return new Date(year, month - 1, day);
-    }
+
+  const clean = dateInput.split('T')[0].split(' ')[0].trim();
+  const parsed = parseDateParts(clean);
+  if (parsed) {
+    return parsed;
   }
+
   return new Date(dateInput);
 }
 
@@ -51,8 +76,9 @@ export function parseLocalDate(dateInput: Date | string): Date {
  */
 export function isFutureDate(dateInput: Date | string): boolean {
   const date = parseLocalDate(dateInput);
-  const now = new Date();
-  return date.getTime() > now.getTime();
+  const endOfToday = new Date();
+  endOfToday.setHours(23, 59, 59, 999);
+  return date.getTime() > endOfToday.getTime();
 }
 
 /**
@@ -64,28 +90,42 @@ export function isDateBefore(dateAInput: Date | string, dateBInput: Date | strin
   return dateA.getTime() < dateB.getTime();
 }
 
+function tryFormatStringDate(clean: string): string | null {
+  const isHyphen = clean.includes('-');
+  const parts = isHyphen ? clean.split('-') : clean.split('/');
+  if (parts.length !== 3) {
+    return null;
+  }
+
+  const [p1, p2, p3] = parts;
+  if (p1.length === 4) {
+    // YYYY-MM-DD o YYYY/MM/DD -> DD/MM/YYYY
+    return `${p3.padStart(2, '0')}/${p2.padStart(2, '0')}/${p1}`;
+  }
+  if (p3.length === 4) {
+    // DD-MM-YYYY o DD/MM/YYYY -> DD/MM/YYYY
+    return `${p1.padStart(2, '0')}/${p2.padStart(2, '0')}/${p3}`;
+  }
+  return isHyphen ? null : clean;
+}
+
 /**
- * Formatea una fecha al formato chileno estándar 'DD/MM/YYYY' (día-mes-año).
- * Acepta string 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS', ISO string o Date.
- * Retorna la fecha en formato chileno (ej: '24/09/2026').
+ * Formatea una fecha al formato estándar 'DD/MM/YYYY' (día-mes-año).
+ * Acepta string 'YYYY-MM-DD', 'DD-MM-YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD HH:MM:SS', ISO string o Date.
+ * Retorna la fecha en formato día-mes-año (ej: '24/09/2026').
  */
 export function formatToChileanDate(dateInput?: string | Date | null): string {
   if (!dateInput) return '';
+
   if (typeof dateInput === 'string') {
     const clean = dateInput.split('T')[0].split(' ')[0].trim();
-    const parts = clean.split('-');
-    if (parts.length === 3) {
-      const [year, month, day] = parts;
-      if (year.length === 4) {
-        return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
-      }
-    }
-    if (clean.includes('/')) {
-      return clean;
-    }
+    const formatted = tryFormatStringDate(clean);
+    if (formatted) return formatted;
   }
+
   const date = parseLocalDate(dateInput);
   if (Number.isNaN(date.getTime())) return String(dateInput);
+
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
