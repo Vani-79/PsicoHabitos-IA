@@ -7,37 +7,35 @@
 [![React Native / Expo](https://img.shields.io/badge/Expo-SDK%2057%20(React%2019)-blue.svg)](https://expo.dev/)
 [![MySQL](https://img.shields.io/badge/Database-MySQL%208.0-orange.svg)](https://www.mysql.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
-[![Security & Health](https://img.shields.io/badge/Normativa-Ley%2021.719%20Chile-red.svg)](#cumplimiento-normativo-y-seguridad-clinica)
+[![Security & Health](https://img.shields.io/badge/Normativa-Ley%2021.719%20Chile-red.svg)](#cumplimiento-normativo-y-seguridad-clínica)
 
 ---
 
-## 📋 Índice
-1. [Descripción del Proyecto](#descripcion-del-proyecto)
-   - [¿Qué hace?](#que-hace)
-   - [¿A quién va dirigido?](#a-quien-va-dirigido)
-   - [¿Qué problema resuelve? Contexto y Estadísticas](#que-problema-resuelve)
-   - [Solución Propuesta](#solucion-propuesta)
-2. [Tecnologías Utilizadas](#tecnologias-utilizadas)
-3. [Arquitectura de la Solución](#arquitectura-de-la-solucion)
-   - [Descripción de la Arquitectura](#descripcion-de-la-arquitectura)
+## Índice
+1. [Descripción del Proyecto](#descripción-del-proyecto)
+   - [¿Qué hace?](#qué-hace)
+   - [¿A quién va dirigido?](#a-quién-va-dirigido)
+   - [¿Qué problema resuelve? Contexto y Estadísticas](#qué-problema-resuelve-contexto-y-estadísticas)
+   - [Solución Propuesta](#solución-propuesta)
+2. [Tecnologías Utilizadas](#tecnologías-utilizadas)
+3. [Arquitectura de la Solución](#arquitectura-de-la-solución)
+   - [Descripción de la Arquitectura](#descripción-de-la-arquitectura)
    - [Diagrama de Arquitectura](#diagrama-de-arquitectura)
-4. [Instrucciones de Instalación y Ejecución Local](#instrucciones-de-instalacion)
+4. [Instrucciones de Instalación y Ejecución Local](#instrucciones-de-instalación-y-ejecución-local)
    - [Prerrequisitos](#prerrequisitos)
    - [Paso 1: Clonar el Repositorio](#paso-1-clonar-el-repositorio)
    - [Paso 2: Base de Datos MySQL 8.0](#paso-2-base-de-datos-mysql-80)
-   - [Paso 3: Configuración del BackEnd y Variables de Entorno (.env)](#paso-3-configuracion-del-backend-y-variables-de-entorno-env)
-   - [Paso 4: Configuración y Ejecución del FrontEnd](#paso-4-configuracion-y-ejecucion-del-frontend)
+   - [Paso 3: Configuración del BackEnd y Variables de Entorno (.env)](#paso-3-configuración-del-backend-y-variables-de-entorno-env)
+   - [Paso 4: Configuración y Ejecución del FrontEnd](#paso-4-configuración-y-ejecución-del-frontend)
    - [Paso 5: Aprovisionar Especialista de Prueba](#paso-5-aprovisionar-especialista-de-prueba)
 5. [Integrantes del Equipo y Roles](#integrantes-del-equipo-y-roles)
-6. [Metodología de Trabajo](#metodologia-de-trabajo)
-7. [Cumplimiento Normativo y Seguridad Clínica](#cumplimiento-normativo-y-seguridad-clinica)
+6. [Metodología de Trabajo](#metodología-de-trabajo)
+7. [Cumplimiento Normativo y Seguridad Clínica](#cumplimiento-normativo-y-seguridad-clínica)
 
 ---
 
-<a id="descripcion-del-proyecto"></a>
-## 📖 Descripción del Proyecto
+## Descripción del Proyecto
 
-<a id="que-hace"></a>
 ### ¿Qué hace?
 **PsicoHábitos** es un ecosistema digital compuesto por una aplicación móvil (React Native / Expo) y una API REST robusta (Node.js / Express con MySQL 8.0) diseñada para transformar la psicoterapia tradicional en un proceso activo, continuo y respaldado por evidencia diaria. 
 
@@ -45,7 +43,6 @@ Permite que pacientes registren día a día sus hábitos clave (hidratación, al
 
 ---
 
-<a id="a-quien-va-dirigido"></a>
 ### ¿A quién va dirigido?
 El proyecto está orientado a dos públicos clave:
 
@@ -55,7 +52,6 @@ El proyecto está orientado a dos públicos clave:
 
 ---
 
-<a id="que-problema-resuelve"></a>
 ### ¿Qué problema resuelve? Contexto y Estadísticas
 
 A partir de la crisis sanitaria desencadenada por el COVID-19, la población en Chile se ha visto inmersa en una profunda crisis de salud mental que continúa agudizándose:
@@ -76,7 +72,6 @@ El proceso psicoterapéutico profesional consta de 5 fases estructuradas:
 
 ---
 
-<a id="solucion-propuesta"></a>
 ### Solución Propuesta
 
 **PsicoHábitos se posiciona en el punto 5 (*Seguimiento y Ajuste del Plan Terapéutico*)**, cerrando la brecha entre sesiones mediante:
@@ -86,8 +81,7 @@ El proceso psicoterapéutico profesional consta de 5 fases estructuradas:
 
 ---
 
-<a id="tecnologias-utilizadas"></a>
-## 🛠️ Tecnologías Utilizadas
+## Tecnologías Utilizadas
 
 | Capa / Dominio | Tecnología / Herramienta | Propósito en el Proyecto |
 | :--- | :--- | :--- |
@@ -105,10 +99,8 @@ El proceso psicoterapéutico profesional consta de 5 fases estructuradas:
 
 ---
 
-<a id="arquitectura-de-la-solucion"></a>
-## 🏗️ Arquitectura de la Solución
+## Arquitectura de la Solución
 
-<a id="descripcion-de-la-arquitectura"></a>
 ### Descripción de la Arquitectura
 La solución implementa una **Arquitectura en Capas Desacopladas (Clean Architecture / 3 Capas)**:
 
@@ -118,7 +110,6 @@ La solución implementa una **Arquitectura en Capas Desacopladas (Clean Architec
 
 ---
 
-<a id="diagrama-de-arquitectura"></a>
 ### Diagrama de Arquitectura
 
 <p align="center">
@@ -185,10 +176,8 @@ flowchart TD
 
 ---
 
-<a id="instrucciones-de-instalacion"></a>
-## 🚀 Instrucciones de Instalación y Ejecución Local
+## Instrucciones de Instalación y Ejecución Local
 
-<a id="prerrequisitos"></a>
 ### Prerrequisitos
 * **Node.js** v18 o v20 LTS instalado ([Descargar Node.js](https://nodejs.org/)).
 * **MySQL 8.0** instalado localmente o mediante **Docker**.
@@ -197,7 +186,6 @@ flowchart TD
 
 ---
 
-<a id="paso-1-clonar-el-repositorio"></a>
 ### Paso 1: Clonar el Repositorio
 
 ```bash
@@ -209,7 +197,6 @@ cd PiscoHabitos-IA
 
 ---
 
-<a id="paso-2-base-de-datos-mysql-80"></a>
 ### Paso 2: Base de Datos MySQL 8.0
 
 1. Asegúrate de tener el servicio MySQL 8.0 iniciado (por ejemplo en el puerto `3306`).
@@ -225,7 +212,6 @@ cd PiscoHabitos-IA
 
 ---
 
-<a id="paso-3-configuracion-del-backend-y-variables-de-entorno-env"></a>
 ### Paso 3: Configuración del BackEnd y Variables de Entorno (.env)
 
 Ingresa a la carpeta del backend e instala dependencias:
@@ -294,7 +280,6 @@ Verás en consola:
 
 ---
 
-<a id="paso-4-configuracion-y-ejecucion-del-frontend"></a>
 ### Paso 4: Configuración y Ejecución del FrontEnd
 
 Abre una nueva terminal, ve a la carpeta del frontend e instala dependencias:
@@ -320,7 +305,6 @@ npm install
 
 ---
 
-<a id="paso-5-aprovisionar-especialista-de-prueba"></a>
 ### Paso 5: Aprovisionar Especialista de Prueba
 
 Para probar el flujo clínico como psicólogo, puedes registrar un especialista inicial con el script incluido en el backend:
@@ -333,8 +317,7 @@ node scripts/register-psychologist.js "Claudia" "Rojas Mery" "claudia.rojas@gmai
 
 ---
 
-<a id="integrantes-del-equipo-y-roles"></a>
-## 👥 Integrantes del Equipo y Roles
+## Integrantes del Equipo y Roles
 
 | Integrante | Rol en el Proyecto | Responsabilidades Principales |
 | :--- | :--- | :--- |
@@ -343,8 +326,7 @@ node scripts/register-psychologist.js "Claudia" "Rojas Mery" "claudia.rojas@gmai
 
 ---
 
-<a id="metodologia-de-trabajo"></a>
-## 🔄 Metodología de Trabajo
+## Metodología de Trabajo
 
 El equipo adoptó el marco de trabajo ágil **Scrum**, adaptándolo a un ciclo iterativo de entregas continuas:
 
@@ -360,8 +342,7 @@ El equipo adoptó el marco de trabajo ágil **Scrum**, adaptándolo a un ciclo i
 
 ---
 
-<a id="cumplimiento-normativo-y-seguridad-clinica"></a>
-## 🛡️ Cumplimiento Normativo y Seguridad Clínica
+## Cumplimiento Normativo y Seguridad Clínica
 
 El desarrollo de PsicoHábitos contempla altos estándares de protección de información sensible en salud:
 
