@@ -113,7 +113,7 @@ La solución implementa una **Arquitectura en Capas Desacopladas (Clean Architec
 ### Diagrama de Arquitectura
 
 <p align="center">
-  <img src="docs/arquitectura.png" alt="Arquitectura de la Solución - PsicoHábitos" width="100%"/>
+  <img src="Arquitectura Tecnológica.png" alt="Arquitectura de la Solución - PsicoHábitos" width="100%"/>
 </p>
 
 <details>
