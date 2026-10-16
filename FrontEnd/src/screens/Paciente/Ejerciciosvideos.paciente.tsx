@@ -68,7 +68,6 @@ interface HabitDetailScreenProps {
 export const HabitDetailScreen: React.FC<HabitDetailScreenProps> = ({
   habitKey = 'ansiedad',
   habitTitle = 'Ansiedad',
-  onBack,
   onNavigateTab,
 }) => {
   const insets = useSafeAreaInsets();
@@ -87,9 +86,7 @@ export const HabitDetailScreen: React.FC<HabitDetailScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{habitTitle}</Text>
-      </View>
+  
 
       <ScrollView
         contentContainerStyle={[
@@ -170,6 +167,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D9ECDC',
     marginBottom: 18,
+    marginTop: 20,
   },
   heroBadge: {
     fontSize: 11,

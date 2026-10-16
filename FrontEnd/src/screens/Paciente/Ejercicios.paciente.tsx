@@ -22,13 +22,13 @@ export type ExerciseHabitKey =
   | 'hidratacion';
 
 interface PatientExercisesScreenProps {
-  onBack?: () => void;
+ 
   onNavigateTab: (tab: PatientTab) => void;
   onOpenHabit?: (
     habitKey: ExerciseHabitKey,
     habitTitle: string
   ) => void;
-  userName?: string;
+
 }
 
 interface HabitCardItem {
@@ -178,21 +178,15 @@ const HabitCard: React.FC<{
 export const PatientExercisesScreen: React.FC<
   PatientExercisesScreenProps
 > = ({
-  onBack,
   onNavigateTab,
   onOpenHabit,
-  userName = 'Paciente',
+  
 }) => {
   const insets = useSafeAreaInsets();
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          Prácticas de bienestar
-        </Text>
-      </View>
-
+      
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -247,24 +241,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#EAF5EE',
   },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5EEE8',
-    backgroundColor: '#F8FBF9',
-  },
-
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
@@ -276,11 +252,11 @@ const styles = StyleSheet.create({
   introCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F4F8F5',
+    backgroundColor: '#FFF',
     borderRadius: 20,
     paddingVertical: 18,
     paddingHorizontal: 18,
-    marginTop: 0,
+    marginTop: 20,
     marginBottom: 20,
     borderWidth: 1,
     borderColor: '#E0EBE3',

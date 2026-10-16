@@ -6,6 +6,7 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import {
   SafeAreaView,
@@ -63,8 +64,9 @@ const getCardAccentStyle = (tipo?: string) => {
 
 export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
   onNavigateTab,
-  userName = 'Paciente',
 }) => {
+  const ITEMS_PER_PAGE = 3; // Número de elementos por página
+  const [currentPage, setCurrentPage] = useState(1);
   const insets = useSafeAreaInsets();
   const [proximas, setProximas] = useState<AppointmentSession[]>([]);
   const [historial, setHistorial] = useState<AppointmentSession[]>([]);
@@ -77,6 +79,7 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
       const data = await appointmentService.getMySessions();
       setProximas(data.proximas);
       setHistorial(data.historial);
+      setCurrentPage(1); // Reiniciar a página 1 al cargar
     } catch (error) {
       console.error('Error al cargar sesiones:', error);
     } finally {
@@ -94,10 +97,29 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
       const data = await appointmentService.getMySessions();
       setProximas(data.proximas);
       setHistorial(data.historial);
+      setCurrentPage(1);
     } catch (error) {
       console.error('Error al refrescar sesiones:', error);
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  // CÁLCULOS DE PAGINACIÓN DE HISTORIAL
+  const totalPages = Math.ceil(historial.length / ITEMS_PER_PAGE);
+  const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
+  const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
+  const currentHistorial = historial.slice(indexOfFirstItem, indexOfLastItem);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
     }
   };
 
@@ -115,16 +137,6 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0F613B']} />
         }
       >
-        {/* TARJETA DE INTRODUCCIÓN */}
-        <View style={styles.introCard}>
-          <View style={styles.introContent}>
-            <Text style={styles.introTitle}>Tus sesiones</Text>
-            <Text style={styles.introText}>
-              Hola {userName}, revisa tus próximas citas y consulta el historial de todas tus sesiones clínicas.
-            </Text>
-          </View>
-        </View>
-
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color="#0F613B" />
@@ -220,7 +232,7 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
               )}
             </View>
 
-            {/* HISTORIAL */}
+            {/* HISTORIAL CON PAGINACIÓN */}
             <View style={styles.sectionCard}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionTitle}>Historial de sesiones</Text>
@@ -242,75 +254,109 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
                   </Text>
                 </View>
               ) : (
-                historial.map((item) => (
-                  <View key={item.id} style={[styles.historyCard, getCardAccentStyle(item.tipoEspecialista)]}>
-                    <View style={styles.cardHeaderRow}>
-                      <View style={styles.dateBadge}>
-                        <Ionicons name="calendar" size={14} color="#0F613B" style={{ marginRight: 5 }} />
-                        <Text style={styles.dateBadgeText}>{formatToChileanDate(item.fecha)}</Text>
+                <>
+                  {/* Se mapean únicamente los elementos recortados por la página actual */}
+                  {currentHistorial.map((item) => (
+                    <View key={item.id} style={[styles.historyCard, getCardAccentStyle(item.tipoEspecialista)]}>
+                      <View style={styles.cardHeaderRow}>
+                        <View style={styles.dateBadge}>
+                          <Ionicons name="calendar" size={14} color="#0F613B" style={{ marginRight: 5 }} />
+                          <Text style={styles.dateBadgeText}>{formatToChileanDate(item.fecha)}</Text>
+                        </View>
+
+                        {renderSpecialistBadge(item.tipoEspecialista)}
                       </View>
 
-                      {renderSpecialistBadge(item.tipoEspecialista)}
-                    </View>
+                      <Text style={styles.cardTimeText}>
+                        Hora: {item.hora}{item.horaFin ? ` - ${item.horaFin}` : ''}
+                      </Text>
 
-                    <Text style={styles.cardTimeText}>
-                      Hora: {item.hora}{item.horaFin ? ` - ${item.horaFin}` : ''}
-                    </Text>
+                      {item.doctorNombre ? (
+                        <View style={styles.doctorRow}>
+                          <Ionicons name="person-outline" size={14} color="#4B5563" style={{ marginRight: 4 }} />
+                          <Text style={styles.doctorText}>
+                            Atendió:{' '}
+                            <Text style={{ fontWeight: '700', color: '#1F2937' }}>{item.doctorNombre}</Text>
+                          </Text>
+                        </View>
+                      ) : null}
 
-                    {item.doctorNombre ? (
-                      <View style={styles.doctorRow}>
-                        <Ionicons name="person-outline" size={14} color="#4B5563" style={{ marginRight: 4 }} />
-                        <Text style={styles.doctorText}>
-                          Atendió:{' '}
-                          <Text style={{ fontWeight: '700', color: '#1F2937' }}>{item.doctorNombre}</Text>
-                        </Text>
-                      </View>
-                    ) : null}
+                      {item.observaciones ? (
+                        <View style={styles.observationsBox}>
+                          <Ionicons name="document-text-outline" size={13} color="#4B5563" style={{ marginRight: 4, marginTop: 1 }} />
+                          <Text style={styles.observationsText}>
+                            {item.observaciones}
+                          </Text>
+                        </View>
+                      ) : null}
 
-                    {item.observaciones ? (
-                      <View style={styles.observationsBox}>
-                        <Ionicons name="document-text-outline" size={13} color="#4B5563" style={{ marginRight: 4, marginTop: 1 }} />
-                        <Text style={styles.observationsText}>
-                          {item.observaciones}
-                        </Text>
-                      </View>
-                    ) : null}
-
-                    <View style={styles.historyFooterRow}>
-                      <View
-                        style={[
-                          styles.modalityPill,
-                          item.modalidad?.toLowerCase() === 'online' ? styles.modalityPillOnline : styles.modalityPillPresencial,
-                        ]}
-                      >
-                        <Ionicons
-                          name={item.modalidad?.toLowerCase() === 'online' ? 'videocam' : 'business'}
-                          size={12}
-                          color={item.modalidad?.toLowerCase() === 'online' ? '#2563EB' : '#0F613B'}
-                          style={{ marginRight: 4 }}
-                        />
-                        <Text
+                      <View style={styles.historyFooterRow}>
+                        <View
                           style={[
-                            styles.modalityPillText,
-                            item.modalidad?.toLowerCase() === 'online' ? styles.modalityPillTextOnline : styles.modalityPillTextPresencial,
+                            styles.modalityPill,
+                            item.modalidad?.toLowerCase() === 'online' ? styles.modalityPillOnline : styles.modalityPillPresencial,
                           ]}
                         >
-                          {item.modalidad?.toLowerCase() === 'online' ? 'Online' : 'Presencial'}
-                        </Text>
-                      </View>
+                          <Ionicons
+                            name={item.modalidad?.toLowerCase() === 'online' ? 'videocam' : 'business'}
+                            size={12}
+                            color={item.modalidad?.toLowerCase() === 'online' ? '#2563EB' : '#0F613B'}
+                            style={{ marginRight: 4 }}
+                          />
+                          <Text
+                            style={[
+                              styles.modalityPillText,
+                              item.modalidad?.toLowerCase() === 'online' ? styles.modalityPillTextOnline : styles.modalityPillTextPresencial,
+                            ]}
+                          >
+                            {item.modalidad?.toLowerCase() === 'online' ? 'Online' : 'Presencial'}
+                          </Text>
+                        </View>
 
-                      {item.estado === 'Cancelada' ? (
-                        <View style={styles.statusBadgeCancelled}>
-                          <Text style={styles.statusBadgeTextCancelled}>Cancelada</Text>
-                        </View>
-                      ) : (
-                        <View style={styles.statusBadgeCompleted}>
-                          <Text style={styles.statusBadgeTextCompleted}>Completada</Text>
-                        </View>
-                      )}
+                        {item.estado === 'Cancelada' ? (
+                          <View style={styles.statusBadgeCancelled}>
+                            <Text style={styles.statusBadgeTextCancelled}>Cancelada</Text>
+                          </View>
+                        ) : (
+                          <View style={styles.statusBadgeCompleted}>
+                            <Text style={styles.statusBadgeTextCompleted}>Completada</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
-                  </View>
-                ))
+                  ))}
+
+                  {/* CONTROLES DE PAGINACIÓN */}
+                  {totalPages > 1 && (
+                    <View style={styles.paginationContainer}>
+                      <TouchableOpacity
+                        style={[styles.paginationButton, currentPage === 1 && styles.paginationButtonDisabled]}
+                        onPress={handlePrevPage}
+                        disabled={currentPage === 1}
+                      >
+                        <Ionicons name="chevron-back" size={18} color={currentPage === 1 ? '#9CA3AF' : '#0F613B'} />
+                        <Text style={[styles.paginationButtonText, currentPage === 1 && styles.paginationButtonTextDisabled]}>
+                          Anterior
+                        </Text>
+                      </TouchableOpacity>
+
+                      <Text style={styles.paginationInfoText}>
+                        Página {currentPage} de {totalPages}
+                      </Text>
+
+                      <TouchableOpacity
+                        style={[styles.paginationButton, currentPage === totalPages && styles.paginationButtonDisabled]}
+                        onPress={handleNextPage}
+                        disabled={currentPage === totalPages}
+                      >
+                        <Text style={[styles.paginationButtonText, currentPage === totalPages && styles.paginationButtonTextDisabled]}>
+                          Siguiente
+                        </Text>
+                        <Ionicons name="chevron-forward" size={18} color={currentPage === totalPages ? '#9CA3AF' : '#0F613B'} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </>
               )}
             </View>
           </>
@@ -328,13 +374,14 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    width: '100%',
     flex: 1,
     backgroundColor: '#EAF5EE',
   },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 40,
   },
   loadingContainer: {
     paddingVertical: 40,
@@ -345,41 +392,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6B7280',
   },
-  introCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#D5E2D9',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  introContent: {
-    flex: 1,
-  },
-  introTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 5,
-  },
-  introText: {
-    fontSize: 13.5,
-    lineHeight: 19,
-    color: '#4B5563',
-  },
+
   sectionCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 18,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: '#DDE6E1',
-    shadowColor: '#000',
+    borderColor: '#e3e8e5',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 3,
@@ -394,7 +414,8 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16.5,
     fontWeight: '700',
-    color: '#111827',
+    color: '#40444f',
+    
   },
   countBadgeUpcoming: {
     backgroundColor: '#EAF5EE',
@@ -457,30 +478,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  badgesCluster: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
+
   cardAccentTitular: {
-    borderLeftWidth: 4.5,
-    borderLeftColor: '#0F613B',
+    borderLeftWidth: 6,
+    borderLeftColor: '#46c0af61',
   },
   cardAccentSuplente: {
     borderLeftWidth: 4.5,
-    borderLeftColor: '#2563EB',
+    borderLeftColor: '#a5abb7',
   },
   cardAccentAnterior: {
     borderLeftWidth: 4.5,
-    borderLeftColor: '#94A3B8',
+    borderLeftColor: '#47a871',
   },
   badgeTitular: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EAF5EE',
     borderWidth: 1,
-    borderColor: '#A7F3D0',
+    borderColor: '#cbc8c8',
     paddingHorizontal: 6,
     paddingVertical: 2.5,
     borderRadius: 6,
@@ -488,7 +503,7 @@ const styles = StyleSheet.create({
   badgeTitularText: {
     fontSize: 10.5,
     fontWeight: '700',
-    color: '#0F613B',
+    color: '#3a3b3b',
   },
   badgeSuplente: {
     flexDirection: 'row',
@@ -529,7 +544,8 @@ const styles = StyleSheet.create({
   dateBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EAF5EE',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -537,7 +553,7 @@ const styles = StyleSheet.create({
   dateBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0F613B',
+    color: '#3a3b3b',
   },
   modalityPill: {
     flexDirection: 'row',
@@ -547,7 +563,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   modalityPillPresencial: {
-    backgroundColor: '#EAF5EE',
+    backgroundColor: '#7c7f8023',
   },
   modalityPillOnline: {
     backgroundColor: '#EFF6FF',
@@ -557,10 +573,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modalityPillTextPresencial: {
-    color: '#0F613B',
+    color: '#4e5053',
   },
   modalityPillTextOnline: {
-    color: '#2563EB',
+    color: '#4e5053',
   },
   cardTimeText: {
     fontSize: 14,
@@ -646,10 +662,41 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#DC2626',
   },
-  historyNotesText: {
+
+  /* ESTILOS DE PAGINACIÓN */
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  paginationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderColor: '#D1D5DB',
+    borderWidth: 1,
+    backgroundColor: '#FFF',
+  },
+  paginationButtonDisabled: {
+    backgroundColor: '#F3F4F6',
+  },
+  paginationButtonText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#181e1b',
+  },
+  paginationButtonTextDisabled: {
+    color: '#9CA3AF',
+  },
+  paginationInfoText: {
     fontSize: 12,
+    fontWeight: '600',
     color: '#4B5563',
-    lineHeight: 16,
-    marginTop: 2,
   },
 });

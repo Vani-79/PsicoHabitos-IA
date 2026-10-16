@@ -141,7 +141,7 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
     if (loading) {
       return (
         <View style={styles.loadingCard}>
-          <ActivityIndicator size="large" color="#0F613B" />
+          <ActivityIndicator size="large" color="#aed7c4" />
           <Text style={styles.loadingText}>Cargando datos desde la base de datos...</Text>
         </View>
       );
@@ -150,19 +150,30 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
     if (profile) {
       return (
         <View style={styles.profileCard}>
-          <View style={styles.avatarCircle}>
-            <Ionicons name="person" size={42} color="#0F613B" />
-          </View>
-          <Text style={styles.profileName}>{fullName}</Text>
-          <View style={styles.roleTag}>
-            <Text style={styles.roleTagText}>PACIENTE REGISTRADO</Text>
-          </View>
 
+          {/* CONTENEDOR HORIZONTAL CORRECTO */}
+          <View style={styles.headerProfileRow}>
+            {/* Ícono a la izquierda */}
+            <View style={styles.avatarCircle}>
+              <Ionicons name="person" size={26} color="#5b6b64c7" />
+            </View>
+
+            {/* Nombre y Rol a la derecha */}
+            <View style={styles.headerTextWrapper}>
+              <Text style={styles.profileName}>{fullName}</Text>
+              <View style={styles.roleTag}>
+                <Text style={styles.roleTagText}>PACIENTE REGISTRADO</Text>
+              </View>
+            </View>
+          </View>
+      
+
+          {/* A partir de aquí sigue la lista de información (infoSection) */}
           <View style={styles.infoSection}>
             {/* Campo: Nombre */}
             <View style={styles.infoRow}>
               <View style={styles.infoIconWrapper}>
-                <Ionicons name="person-outline" size={18} color="#0F613B" />
+                <Ionicons name="person-outline" size={18} color="#575c68" />
               </View>
               <View style={styles.infoTextWrapper}>
                 <Text style={styles.infoLabel}>Nombre</Text>
@@ -173,7 +184,7 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
             {/* Campo: Edad */}
             <View style={styles.infoRow}>
               <View style={styles.infoIconWrapper}>
-                <Ionicons name="hourglass-outline" size={18} color="#0F613B" />
+                <Ionicons name="hourglass-outline" size={18} color="#575c68" />
               </View>
               <View style={styles.infoTextWrapper}>
                 <Text style={styles.infoLabel}>Edad</Text>
@@ -184,7 +195,7 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
             {/* Campo: Fecha de Nacimiento */}
             <View style={styles.infoRow}>
               <View style={styles.infoIconWrapper}>
-                <Ionicons name="calendar-outline" size={18} color="#0F613B" />
+                <Ionicons name="calendar-outline" size={18} color="#575c68" />
               </View>
               <View style={styles.infoTextWrapper}>
                 <Text style={styles.infoLabel}>Fecha de Nacimiento</Text>
@@ -195,7 +206,7 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
             {/* Campo: Correo */}
             <View style={styles.infoRow}>
               <View style={styles.infoIconWrapper}>
-                <Ionicons name="mail-outline" size={18} color="#0F613B" />
+                <Ionicons name="mail-outline" size={18} color="#575c68" />
               </View>
               <View style={styles.infoTextWrapper}>
                 <Text style={styles.infoLabel}>Correo</Text>
@@ -206,7 +217,7 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
             {/* Campo: Especialista */}
             <View style={styles.infoRow}>
               <View style={styles.infoIconWrapper}>
-                <Ionicons name="medkit-outline" size={18} color="#0F613B" />
+                <Ionicons name="medkit-outline" size={18} color="#575c68" />
               </View>
               <View style={styles.infoTextWrapper}>
                 <Text style={styles.infoLabel}>Especialista Titular</Text>
@@ -246,6 +257,17 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
               </View>
             )}
           </View>
+          
+
+          {/* Botón Cerrar Sesión */}
+        <TouchableOpacity
+          style={styles.logoutButton}
+          activeOpacity={0.8}
+          onPress={handleLogoutPress}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#FFFFFF" style={styles.logoutIcon} />
+          <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+        </TouchableOpacity>
         </View>
       );
     }
@@ -253,7 +275,7 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
     return (
       <View style={styles.profileCard}>
         <View style={styles.avatarCircle}>
-          <Ionicons name="person-outline" size={42} color="#0F613B" />
+          <Ionicons name="person-outline" size={42} color="#092116" />
         </View>
         <Text style={styles.profileName}>{userName}</Text>
         <View style={styles.roleTag}>
@@ -263,24 +285,19 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
           No se encontraron registros en MySQL para este usuario.
         </Text>
       </View>
+
+
+
     );
+
+
+    
   };
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Encabezado con selector desplegable desde 'Mi Perfil' */}
-      <ProfileRoleHeader
-        title="Mi Perfil"
-        currentRole="paciente"
-        canSwitch={canSwitchToPsychologist}
-        onSwitchRole={async (targetRole) => {
-          const success = await switchRole(targetRole);
-          if (!success) {
-            Alert.alert('Error', 'No se pudo cambiar al perfil de psicólogo.');
-          }
-        }}
-      />
-
+      
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -289,15 +306,6 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
       >
         {renderProfileContent()}
 
-        {/* Botón Cerrar Sesión */}
-        <TouchableOpacity
-          style={styles.logoutButton}
-          activeOpacity={0.8}
-          onPress={handleLogoutPress}
-        >
-          <Ionicons name="log-out-outline" size={20} color="#FFFFFF" style={styles.logoutIcon} />
-          <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
-        </TouchableOpacity>
       </ScrollView>
 
       {/* Barra de navegación inferior */}
@@ -308,24 +316,19 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#EAF5EE' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5EEE8',
-    backgroundColor: '#F8FBF9',
-  },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
+  
+
+  
   scrollContent: {
-    padding: 20,
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 40, // <-- Brolla la tarjeta bajándola un poco desde la parte superior
     alignItems: 'center',
   },
   profileCard: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
+    minHeight: 600,
+    backgroundColor: '#FFF',
     borderRadius: 22,
     padding: 24,
     alignItems: 'center',
@@ -362,33 +365,47 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   avatarCircle: {
-    width: 86,
-    height: 86,
+    width: 60,
+    height: 60,
     borderRadius: 43,
-    backgroundColor: '#E4EDE7',
+    backgroundColor: '#bddcc8ae',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 14,
     borderWidth: 2,
-    borderColor: '#A5C1B3',
+    borderColor: '#FFF',
   },
+
+  headerProfileRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  width: '100%',
+  marginBottom: 16,
+},
+headerTextWrapper: {
+  flex: 1,
+  marginLeft: 16,
+  justifyContent: 'center',
+  alignItems: 'flex-start', // Alinea el texto a la izquierda
+},
   profileName: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#57585a',
     marginBottom: 6,
   },
   roleTag: {
-    backgroundColor: '#E4EDE7',
+    backgroundColor: '#66a37a',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
-    marginBottom: 24,
+    alignSelf: 'flex-start',
+    marginBottom: 0,
   },
   roleTagText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0F613B',
+    color: '#FFF',
     letterSpacing: 0.5,
   },
   infoSection: {
@@ -406,7 +423,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#e7e8eb90',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -426,15 +443,16 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   logoutButton: {
-    width: '100%',
-    backgroundColor: '#DC2626',
-    borderRadius: 16,
+    width: '80%',
+    minHeight: 0,
+    backgroundColor: '#c61f1fd7',
+    borderRadius: 10,
     paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
-    shadowColor: '#DC2626',
+    marginTop: 80,
+    shadowColor: '#c61f1f',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,

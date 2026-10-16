@@ -16,17 +16,6 @@ export const PatientChatbotScreen: React.FC<PatientChatbotScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Encabezado */}
-      <View style={styles.header}>
-        <View style={styles.headerTitleContainer}>
-          <Image
-            source={require('../../../assets/h.o.p.e.png')}
-            style={styles.headerHopeIcon}
-            resizeMode="contain"
-          />
-          <Text style={styles.headerTitle}>H.o.p.e</Text>
-        </View>
-      </View>
 
       <ScrollView
         contentContainerStyle={[
@@ -68,39 +57,19 @@ export const PatientChatbotScreen: React.FC<PatientChatbotScreenProps> = ({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#EAF5EE' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5EEE8',
-    backgroundColor: '#F8FBF9',
-  },
-  headerTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerHopeIcon: {
-    width: 28,
-    height: 28,
-    marginRight: 8,
-  },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
-    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 40, // <-- Brolla la tarjeta bajándola un poco desde la parte superior
     alignItems: 'center',
   },
   chatCard: {
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 22,
+    borderRadius: 20,
     padding: 28,
-    width: '100%',
+    width: "100%",  // Nuevo ancho fijo
+    height: 600, // Nuevo alto fijo
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,

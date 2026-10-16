@@ -25,12 +25,11 @@ import {
   getRatingLabel,
 } from '../../constants/habits';
 import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
-import { formatToMySqlDate, formatToMySqlDateTime, formatToChileanDate } from '../../utils/date';
+import { formatToMySqlDate, formatToMySqlDateTime, } from '../../utils/date';
 import { habitService } from '../../services';
 import { s, vs, ms } from '../../utils/responsive';
 
 interface DailyCheckInScreenProps {
-  onBack?: () => void;
   onSaveRecord?: (record: MySqlDailyHabitRecord) => void;
   userName?: string;
   userEmail?: string;
@@ -48,7 +47,7 @@ const HABIT_CARD_COLORS: Record<HabitKey, string> = {
 
 const HABIT_CARD_BORDER_COLORS: Record<HabitKey, string> = {
   comida: '#E3A72F',
-  ejercicio: '#4A9F45',
+  ejercicio: '#5e8b5c',
   hidratacion: '#2596B5',
   ansiedad: '#D97786',
   sueno: '#8962B8',
@@ -56,13 +55,13 @@ const HABIT_CARD_BORDER_COLORS: Record<HabitKey, string> = {
 };
 
 export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
-  onBack,
   onSaveRecord,
   userName = 'Carlos',
   userEmail,
   onNavigateTab,
 }) => {
   const insets = useSafeAreaInsets();
+
 
   // Fecha estipulada en formato estándar MySQL 'YYYY-MM-DD'
   const recordDate = useMemo(() => formatToMySqlDate(), []);
@@ -97,8 +96,8 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
       if (status.serverDate) setServerDate(status.serverDate);
 
       if (status.completedToday && status.record) {
-        setIsLockedToday(true);
-        setIsConfirmed(true);
+        setIsLockedToday(false);
+        setIsConfirmed(false);
         setHabits({
           comida: status.record.comida ?? null,
           ejercicio: status.record.ejercicio ?? null,
@@ -122,6 +121,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   }, [loadTodayStatus]);
 
   const openHabitModal = (key: HabitKey) => {
+    /*
     if (isLockedToday) {
       Alert.alert(
         'Check-in completado',
@@ -129,7 +129,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
       );
       return;
     }
-
+    */
     setActiveHabit(key);
     const currentVal = habits[key];
 
@@ -211,6 +211,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   });
 
   const handleConfirm = async () => {
+   /*
     if (isLockedToday) {
       Alert.alert(
         'Check-in completado',
@@ -218,6 +219,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
       );
       return;
     }
+      */
 
     if (registeredCount < 6) {
       Alert.alert(
@@ -629,6 +631,8 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   );
 };
 
+
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#EAF5EE' },
   scrollContent: { paddingHorizontal: s(16), paddingTop: vs(14) },
@@ -636,53 +640,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#DCEEDF',
+    backgroundColor: '#d0ebd5',
     borderRadius: ms(24),
     borderBottomLeftRadius: ms(6),
     paddingVertical: vs(16),
     paddingHorizontal: s(20),
-    marginTop: 0,
+    marginTop: 30,
     marginBottom: vs(32),
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
   greetingRow: { flexDirection: 'row', alignItems: 'center' },
-  greeting: { fontSize: ms(21), fontWeight: '600', color: '#0F613B' },
-  welcomeText: { fontSize: ms(13), color: '#3F6A4B', marginTop: vs(2), fontWeight: '500' },
-  headerDate: { fontSize: ms(13), color: '#6B7280', marginTop: vs(4), fontWeight: '500' },
- 
-  // Banner de bloqueo superior
-  lockedBannerCard: {
-    flexDirection: 'row',
-    backgroundColor: '#F0FDF4',
-    borderWidth: 1.5,
-    borderColor: '#BBF7D0',
-    borderRadius: ms(16),
-    padding: s(12),
-    marginBottom: vs(16),
-    alignItems: 'center',
-    shadowColor: '#0F613B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  lockedBannerIconBadge: {
-    marginRight: s(10),
-  },
-  lockedBannerTextWrapper: {
-    flex: 1,
-  },
-  lockedBannerTitle: {
-    fontSize: ms(14.5),
-    fontWeight: '700',
-    color: '#0F613B',
-    marginBottom: vs(2),
-  },
-  lockedBannerDesc: {
-    fontSize: ms(12),
-    color: '#374151',
-    lineHeight: ms(16.5),
-  },
+  greeting: { fontSize: ms(21), fontWeight: '600', color: '#48534e' },
+  welcomeText: { fontSize: ms(13), color: '#66756a', marginTop: vs(2), fontWeight: '500' },
+
 
   progressCard: {
     width:'100%',
@@ -697,6 +667,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: s(10),
     marginBottom: vs(16),
+    marginTop: vs(10),
   },
   progressNumber: { fontSize: ms(26), fontWeight: '800', color: '#64748B' },
   progressEmoji: { fontSize: ms(20) },
@@ -746,7 +717,7 @@ const styles = StyleSheet.create({
     width: s(22),
     height: s(22),
     borderRadius: s(11),
-    backgroundColor: '#4A9F45',
+    backgroundColor: '#67bd8e',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -773,7 +744,7 @@ const styles = StyleSheet.create({
     },
     
   globalConfirmButton: {
-    backgroundColor: '#0F613B',
+    backgroundColor: '#5ab081',
     width: '85%',
     maxWidth: s(320),
     alignSelf: 'center',
@@ -781,7 +752,7 @@ const styles = StyleSheet.create({
     paddingVertical: vs(12),
     borderRadius: ms(14),
     borderWidth: 1,
-    borderColor: '#0F613B',
+    borderColor: '#5ab081',
     alignItems: 'center',
     justifyContent: 'center',
     shadowOpacity: 0,
@@ -790,7 +761,7 @@ const styles = StyleSheet.create({
   globalConfirmDisabled: { backgroundColor: '#F3F4F6', borderColor: '#E1E5E9', shadowOpacity: 0 },
   confirmButtonContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   confirmIcon: { marginRight: s(6) },
-  globalConfirmText: { color: '#374151', fontSize: ms(16), fontWeight: 'bold' },
+  globalConfirmText: { color: '#FFFFFF', fontSize: ms(16), fontWeight: 'bold' },
   globalConfirmDisabledText: { color: '#64748B', fontSize: ms(14), fontWeight: '600' },
 
   // Sección inferior bloqueada
@@ -816,7 +787,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   lockedBottomHappyIcon: {
-    marginRight: s(6),
+    marginRight: s(17),
   },
   lockedBottomHelpText: {
     fontSize: ms(12),
@@ -878,7 +849,7 @@ const styles = StyleSheet.create({
   segmentLabelActive: { color: '#334155' },
 
   registerButton: {
-    backgroundColor: '#0F613B',
+    backgroundColor: '#5ab081',
     paddingVertical: vs(11),
     paddingHorizontal: s(44),
     borderRadius: ms(25),
@@ -916,11 +887,11 @@ const styles = StyleSheet.create({
   waterInput: { fontSize: ms(26), fontWeight: '800', color: '#1E3A8A', textAlign: 'center', minWidth: s(46) },
   waterUnitText: { fontSize: ms(15), fontWeight: '600', color: '#3B82F6', marginLeft: s(6) },
   waterSaveButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#67bd8e',
     paddingVertical: vs(12),
     paddingHorizontal: s(50),
     borderRadius: ms(25),
-    shadowColor: '#2563EB',
+    shadowColor: '#67bd8e',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,

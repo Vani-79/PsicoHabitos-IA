@@ -64,7 +64,7 @@ export const PatientBottomNav: React.FC<PatientBottomNavProps> = ({
               : 'calendar-outline'
           }
           size={26}
-          color="#6FAF86"
+          color="#10331dad"
         />
       </TouchableOpacity>
 
@@ -86,11 +86,11 @@ export const PatientBottomNav: React.FC<PatientBottomNavProps> = ({
           <Ionicons
             name={
               activeTab === 'exercises'
-                ? 'fitness'
-                : 'fitness-outline'
+                ? 'body'
+                : 'body-outline'
             }
             size={27}
-            color="#6FAF86"
+            color="#10331dad"
           />
         </Animated.View>
       </TouchableOpacity>
@@ -116,13 +116,15 @@ export const PatientBottomNav: React.FC<PatientBottomNavProps> = ({
         activeOpacity={0.7}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
-        <View style={styles.chatbotIconWrapper}>
-          <Image
-            source={require('../../assets/h.o.p.e.png')}
-            style={styles.chatbotImage}
-            resizeMode="contain"
-          />
-        </View>
+        <Ionicons
+          name={
+            activeTab === 'chatbot'
+              ? 'chatbox'
+              : 'chatbox-outline'
+          }
+          size={26}
+          color="#10331dad"
+        />
       </TouchableOpacity>
 
       {/* Botón 5: Perfil */}
@@ -139,7 +141,7 @@ export const PatientBottomNav: React.FC<PatientBottomNavProps> = ({
               : 'person-outline'
           }
           size={26}
-          color="#6FAF86"
+          color="#10331dad"
         />
       </TouchableOpacity>
     </View>

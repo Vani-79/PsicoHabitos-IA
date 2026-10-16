@@ -67,7 +67,6 @@ export const PatientNavigator: React.FC = () => {
       <Stack.Screen name="PatientExercises">
         {({ navigation }) => (
           <PatientExercisesScreen
-            userName={userName}
             onNavigateTab={getTabHandler(navigation)}
             onOpenHabit={(habitKey, habitTitle) => {
               navigation.navigate('PatientExerciseDetail', { habitKey, habitTitle });
