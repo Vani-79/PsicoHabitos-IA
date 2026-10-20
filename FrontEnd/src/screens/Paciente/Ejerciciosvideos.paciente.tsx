@@ -9,7 +9,23 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
+import { PatientBottomNav, PatientTab } from '../../components/Iconosbarrapaciente';
+
+const COLORS = {
+  // Superficies
+  screenBackground: '#EAF5EE',
+  cardBackground: '#F7FCF8',
+  cardBorder: '#E5F0E7',
+  greenTint: '#DDF6E6',
+  greenPill: '#EEF6F0',
+  greenBorder: '#D9ECDC',
+
+  // Texto
+  greenPrimary: '#0F613B',
+  textPrimary: '#1F2937',
+  textSecondary: '#5B6473',
+  textMuted: '#475569',
+};
 
 export type HabitSection =
   | 'ansiedad'
@@ -28,7 +44,7 @@ type HabitResource = {
   type: string;
 };
 
-const anxietyResources: HabitResource[] = [
+const ANXIETY_RESOURCES: HabitResource[] = [
   {
     id: 1,
     title: 'Respiración 4-6 para calmar la activación',
@@ -49,8 +65,8 @@ const anxietyResources: HabitResource[] = [
   },
 ];
 
-const habitResourcesBySection: Record<HabitSection, HabitResource[]> = {
-  ansiedad: anxietyResources,
+const HABIT_RESOURCES_BY_SECTION: Record<HabitSection, HabitResource[]> = {
+  ansiedad: ANXIETY_RESOURCES,
   estres: [],
   sueno: [],
   ejercicio: [],
@@ -71,7 +87,7 @@ export const HabitDetailScreen: React.FC<HabitDetailScreenProps> = ({
   onNavigateTab,
 }) => {
   const insets = useSafeAreaInsets();
-  const resources = habitResourcesBySection[habitKey] ?? [];
+  const resources = HABIT_RESOURCES_BY_SECTION[habitKey] ?? [];
 
   const openVideo = async (videoUrl: string) => {
     try {
@@ -86,8 +102,6 @@ export const HabitDetailScreen: React.FC<HabitDetailScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-  
-
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -116,7 +130,7 @@ export const HabitDetailScreen: React.FC<HabitDetailScreenProps> = ({
               onPress={() => openVideo(resource.videoUrl)}
             >
               <View style={styles.videoThumb}>
-                <Ionicons name="play-circle" size={42} color="#0F613B" />
+                <Ionicons name="play-circle" size={42} color={COLORS.greenPrimary} />
               </View>
 
               <View style={styles.videoInfo}>
@@ -126,7 +140,7 @@ export const HabitDetailScreen: React.FC<HabitDetailScreenProps> = ({
 
                 <View style={styles.metaRow}>
                   <View style={styles.metaPill}>
-                    <Ionicons name="time-outline" size={14} color="#475569" />
+                    <Ionicons name="time-outline" size={14} color={COLORS.textMuted} />
                     <Text style={styles.metaText}>{resource.duration}</Text>
                   </View>
                   <Text style={styles.watchText}>Ver video</Text>
@@ -143,36 +157,25 @@ export const HabitDetailScreen: React.FC<HabitDetailScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#EAF5EE' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5EEE8',
-    backgroundColor: '#F8FBF9',
-  },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
+  container: { flex: 1, backgroundColor: COLORS.screenBackground },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
   },
   heroCard: {
-    backgroundColor: '#F7FCF8',
+    backgroundColor: COLORS.cardBackground,
     borderRadius: 22,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#D9ECDC',
+    borderColor: COLORS.greenBorder,
     marginBottom: 18,
     marginTop: 20,
   },
   heroBadge: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0F613B',
+    color: COLORS.greenPrimary,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: 10,
@@ -180,29 +183,29 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
     marginBottom: 8,
   },
   heroText: {
     fontSize: 14,
-    color: '#5B6473',
+    color: COLORS.textSecondary,
     lineHeight: 20,
   },
   videoCard: {
-    backgroundColor: '#F7FCF8',
+    backgroundColor: COLORS.cardBackground,
     borderRadius: 18,
     padding: 12,
     flexDirection: 'row',
     gap: 12,
     borderWidth: 1,
-    borderColor: '#E5F0E7',
+    borderColor: COLORS.cardBorder,
     marginBottom: 14,
   },
   videoThumb: {
     width: 92,
     height: 92,
     borderRadius: 16,
-    backgroundColor: '#DDF6E6',
+    backgroundColor: COLORS.greenTint,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -213,7 +216,7 @@ const styles = StyleSheet.create({
   videoType: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0F613B',
+    color: COLORS.greenPrimary,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: 6,
@@ -221,13 +224,13 @@ const styles = StyleSheet.create({
   videoTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
     marginBottom: 6,
   },
   videoDescription: {
     fontSize: 12,
     lineHeight: 18,
-    color: '#5B6473',
+    color: COLORS.textSecondary,
     marginBottom: 10,
   },
   metaRow: {
@@ -238,7 +241,7 @@ const styles = StyleSheet.create({
   metaPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EEF6F0',
+    backgroundColor: COLORS.greenPill,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
@@ -246,31 +249,31 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 11,
-    color: '#475569',
+    color: COLORS.textMuted,
     fontWeight: '600',
   },
   watchText: {
     fontSize: 12,
-    color: '#0F613B',
+    color: COLORS.greenPrimary,
     fontWeight: '700',
   },
   emptyState: {
-    backgroundColor: '#F7FCF8',
+    backgroundColor: COLORS.cardBackground,
     borderRadius: 18,
     padding: 24,
     borderWidth: 1,
-    borderColor: '#E5F0E7',
+    borderColor: COLORS.cardBorder,
     alignItems: 'center',
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
     marginBottom: 6,
   },
   emptyText: {
     fontSize: 14,
-    color: '#5B6473',
+    color: COLORS.textSecondary,
     textAlign: 'center',
   },
 });

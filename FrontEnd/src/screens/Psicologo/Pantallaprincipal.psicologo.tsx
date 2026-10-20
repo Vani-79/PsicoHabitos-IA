@@ -1,8 +1,8 @@
+import React, { useState, useEffect } from 'react';
 import {
   PsychologistBottomNav,
   PsychologistTab,
 } from '../../components/PsychologistBottomNav';
-import React, { useState, useEffect } from 'react';
 import { PsychologistProfileScreen } from './PsychologistProfileScreen';
 import { PsychologistCalendarScreen } from './PsychologistCalendarScreen';
 import { MySqlPatientRecord } from '../../types/patient';
@@ -19,6 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { PSYCHOLOGIST_COLORS } from './psychologistColors';
 
 interface PsychologistDashboardScreenProps {
   doctorName: string;
@@ -37,7 +38,7 @@ const AVATAR_COLORS = [
   { bg: '#E6EEF8', fg: '#2F5A8A' }, // azul
   { bg: '#F5ECE4', fg: '#8A5A2F' }, // arena
   { bg: '#EEEAF6', fg: '#5A4A8A' }, // lavanda
-  { bg: '#E8F5EE', fg: '#0F613B' }, // verde
+  { bg: '#E8F5EE', fg: PSYCHOLOGIST_COLORS.primary }, // verde
   { bg: '#F8E8EC', fg: '#8A3A4F' }, // rosa
   { bg: '#E6F3F4', fg: '#2F6F75' }, // turquesa
 ];
@@ -255,7 +256,7 @@ const TodayAgendaRow: React.FC<TodayAgendaRowProps> = ({
       <Ionicons
         name={isSubscriptionActive ? 'chevron-forward' : 'lock-closed'}
         size={16}
-        color="#9CA3AF"
+        color={PSYCHOLOGIST_COLORS.textSubtle}
       />
     </TouchableOpacity>
   );
@@ -315,7 +316,7 @@ const PsychologistHomeTab: React.FC<PsychologistHomeTabProps> = ({
             <Ionicons
               name={isSubscriptionActive ? 'add' : 'lock-closed'}
               size={18}
-              color={isSubscriptionActive ? '#0F613B' : '#9CA3AF'}
+              color={isSubscriptionActive ? PSYCHOLOGIST_COLORS.primary : PSYCHOLOGIST_COLORS.textSubtle}
             />
           </View>
 
@@ -351,7 +352,7 @@ const PsychologistHomeTab: React.FC<PsychologistHomeTabProps> = ({
 
         {todayPatients.length === 0 ? (
           <View style={styles.agendaEmpty}>
-            <Ionicons name="calendar-outline" size={40} color="#9CA3AF" />
+            <Ionicons name="calendar-outline" size={40} color={PSYCHOLOGIST_COLORS.textSubtle} />
             <Text style={styles.emptyStateTitle}>Sin sesiones hoy</Text>
             <Text style={styles.emptyStateText}>
               No tienes consultas o citas programadas para el día de hoy.
@@ -449,7 +450,7 @@ const DirectoryPatientCard: React.FC<DirectoryPatientCardProps> = ({
         <Ionicons
           name={isSubscriptionActive ? 'chevron-forward' : 'lock-closed'}
           size={16}
-          color="#9CA3AF"
+          color={PSYCHOLOGIST_COLORS.textSubtle}
         />
       </TouchableOpacity>
     </React.Fragment>
@@ -493,7 +494,7 @@ const PatientDirectorySection: React.FC<PatientDirectorySectionProps> = ({
     if (filteredPatients.length === 0) {
       return (
         <View style={styles.directoryEmpty}>
-          <Ionicons name="search-outline" size={36} color="#9CA3AF" />
+          <Ionicons name="search-outline" size={36} color={PSYCHOLOGIST_COLORS.textSubtle} />
           <Text style={styles.emptyStateTitle}>Sin resultados para tu búsqueda</Text>
         </View>
       );
@@ -540,11 +541,11 @@ const PatientDirectorySection: React.FC<PatientDirectorySectionProps> = ({
       </View>
 
       <View style={styles.searchBox}>
-        <Ionicons name="search-outline" size={17} color="#9CA3AF" style={{ marginRight: 8 }} />
+        <Ionicons name="search-outline" size={17} color={PSYCHOLOGIST_COLORS.textSubtle} style={{ marginRight: 8 }} />
         <TextInput
           style={styles.searchInput}
           placeholder="Buscar por nombre o apellido"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={PSYCHOLOGIST_COLORS.textSubtle}
           value={searchTerm}
           onChangeText={onChangeSearchTerm}
           editable={isSubscriptionActive}
@@ -679,18 +680,19 @@ export const PsychologistDashboardScreen: React.FC<
 // Sombra suave compartida para las tarjetas grandes (saludo, agenda y pacientes).
 // En Android, elevation dibuja una sombra gris; si se ve muy marcada, se puede quitar.
 const softShadow = {
-  shadowColor: '#0F613B',
+  shadowColor: PSYCHOLOGIST_COLORS.primary,
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.05,
   shadowRadius: 8,
   elevation: 1,
 };
 
+// Estilos del panel de inicio y del directorio de pacientes.
 const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    backgroundColor: '#F8FAF9',
+    backgroundColor: PSYCHOLOGIST_COLORS.canvasSubtle,
   },
 
   /* =========================
@@ -699,7 +701,7 @@ const styles = StyleSheet.create({
 
   greetingCard: {
     ...softShadow,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderWidth: 1,
     borderColor: '#E7F0EA',
     borderRadius: 16,
@@ -733,7 +735,7 @@ const styles = StyleSheet.create({
     height: 40,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAF9',
+    backgroundColor: PSYCHOLOGIST_COLORS.canvasSubtle,
     borderWidth: 1,
     borderColor: '#E3EEE9',
     borderRadius: 10,
@@ -745,13 +747,13 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
     fontSize: 14,
-    color: '#1F2937',
+    color: PSYCHOLOGIST_COLORS.textPrimary,
   },
 
   doctorName: {
     fontSize: 19,
     fontWeight: '700',
-    color: '#1F2937',
+    color: PSYCHOLOGIST_COLORS.textPrimary,
     marginTop: 2,
   },
 
@@ -801,18 +803,18 @@ const styles = StyleSheet.create({
   },
 
   buttonIconWrapperDisabled: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: PSYCHOLOGIST_COLORS.border,
   },
 
   registerButtonTitle: {
     flex: 1,
-    color: '#0F613B',
+    color: PSYCHOLOGIST_COLORS.primary,
     fontSize: 15,
     fontWeight: '600',
   },
 
   registerButtonTitleDisabled: {
-    color: '#9CA3AF',
+    color: PSYCHOLOGIST_COLORS.textSubtle,
   },
 
   /* =========================
@@ -834,7 +836,7 @@ const styles = StyleSheet.create({
 
   agendaCard: {
     ...softShadow,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderWidth: 1,
     borderColor: '#E7F0EA',
     borderRadius: 16,
@@ -852,7 +854,7 @@ const styles = StyleSheet.create({
   agendaTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1F2937',
+    color: PSYCHOLOGIST_COLORS.textPrimary,
   },
 
   agendaLink: {
@@ -872,7 +874,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 10,
-    backgroundColor: '#F8FAF9', // mismo gris verdoso que la lista de pacientes
+    backgroundColor: PSYCHOLOGIST_COLORS.canvasSubtle, // mismo gris verdoso que la lista de pacientes
     borderWidth: 1,
     borderColor: '#D9E4DE',
     borderRadius: 12,
@@ -890,7 +892,7 @@ const styles = StyleSheet.create({
     width: 48,
     fontSize: 14,
     fontWeight: '600',
-    color: '#0F613B',
+    color: PSYCHOLOGIST_COLORS.primary,
   },
 
   agendaAvatar: {
@@ -916,7 +918,7 @@ const styles = StyleSheet.create({
   agendaName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: PSYCHOLOGIST_COLORS.textPrimary,
   },
 
   agendaMeta: {
@@ -940,7 +942,7 @@ const styles = StyleSheet.create({
   directoryTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#1F2937',
+    color: PSYCHOLOGIST_COLORS.textPrimary,
   },
 
   directoryCount: {
@@ -952,7 +954,7 @@ const styles = StyleSheet.create({
   directoryPanel: {
     ...softShadow,
     flex: 1, // ocupa todo el alto disponible aunque haya pocos pacientes
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderWidth: 1,
     borderColor: '#E7F0EA',
     borderRadius: 16,
@@ -988,14 +990,14 @@ const styles = StyleSheet.create({
   patientsHintTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#374151',
+    color: PSYCHOLOGIST_COLORS.textBody,
     textAlign: 'center',
   },
 
   patientsHintText: {
     marginTop: 4,
     fontSize: 13,
-    color: '#6B7280',
+    color: PSYCHOLOGIST_COLORS.textMuted,
     textAlign: 'center',
     lineHeight: 19,
     maxWidth: 260,
@@ -1014,12 +1016,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     fontSize: 12,
     fontWeight: '700',
-    color: '#9CA3AF',
+    color: PSYCHOLOGIST_COLORS.textSubtle,
   },
 
   // Cada paciente, en gris verdoso claro
   directoryCard: {
-    backgroundColor: '#F8FAF9',
+    backgroundColor: PSYCHOLOGIST_COLORS.canvasSubtle,
     borderWidth: 1,
     borderColor: '#D9E4DE',
     borderRadius: 12,
@@ -1056,7 +1058,7 @@ const styles = StyleSheet.create({
   directoryName: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1F2937',
+    color: PSYCHOLOGIST_COLORS.textPrimary,
   },
 
   directoryMeta: {
@@ -1077,7 +1079,7 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#374151',
+    color: PSYCHOLOGIST_COLORS.textBody,
     marginTop: 12,
     marginBottom: 6,
     textAlign: 'center',
@@ -1085,7 +1087,7 @@ const styles = StyleSheet.create({
 
   emptyStateText: {
     fontSize: 13,
-    color: '#6B7280',
+    color: PSYCHOLOGIST_COLORS.textMuted,
     textAlign: 'center',
     lineHeight: 18,
     maxWidth: 280,
@@ -1096,7 +1098,7 @@ const styles = StyleSheet.create({
   ========================= */
 
   subscriptionBanner: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: PSYCHOLOGIST_COLORS.dangerSurface,
     borderBottomWidth: 1.5,
     borderBottomColor: '#FCA5A5',
     paddingVertical: 12,
@@ -1125,14 +1127,14 @@ const styles = StyleSheet.create({
   },
 
   registerButtonDisabled: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: PSYCHOLOGIST_COLORS.surfaceMuted,
     borderColor: '#D1D5DB',
   },
 
   suplenteBadge: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: PSYCHOLOGIST_COLORS.infoSurface,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: PSYCHOLOGIST_COLORS.infoBorder,
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 1,
@@ -1140,7 +1142,7 @@ const styles = StyleSheet.create({
   suplenteBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#1D4ED8',
+    color: PSYCHOLOGIST_COLORS.info,
   },
   enSuplenciaBadge: {
     backgroundColor: '#FFFBEB',
@@ -1153,10 +1155,10 @@ const styles = StyleSheet.create({
   enSuplenciaBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#B45309',
+    color: PSYCHOLOGIST_COLORS.warning,
   },
   canceladaBadge: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: PSYCHOLOGIST_COLORS.dangerSurface,
     borderWidth: 1,
     borderColor: '#FECACA',
     borderRadius: 6,
@@ -1166,10 +1168,10 @@ const styles = StyleSheet.create({
   canceladaBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#DC2626',
+    color: PSYCHOLOGIST_COLORS.danger,
   },
   agendaNameCancelled: {
-    color: '#9CA3AF',
+    color: PSYCHOLOGIST_COLORS.textSubtle,
     textDecorationLine: 'line-through',
   },
 });

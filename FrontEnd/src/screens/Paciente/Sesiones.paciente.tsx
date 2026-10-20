@@ -16,11 +16,51 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   PatientBottomNav,
   PatientTab,
-} from '../../components/PatientBottomNav';
+} from '../../components/Iconosbarrapaciente';
 import { appointmentService } from '../../services/appointmentService';
 import { AppointmentSession } from '../../types/patient';
-
 import { formatToChileanDate } from '../../utils/date';
+
+const COLORS = {
+  // Base visual
+  primary: '#9099a3',
+  primaryBg: '#D1FAE5',
+  screenBg: '#EAF5EE',
+  white: '#FFFFFF',
+  emptyBg: '#ddf5e37a',
+
+  // Texto
+  textDark: '#1c2233',
+  textMain: '#D97706',
+  textSecondary: '#020203',
+  textHighlight: '#020203',
+
+  // Bordes
+  borderLight: '#dfe3e1',
+  borderCard: '#0b6d3744',
+  borderGray: '#ede9e9',
+  borderButton: '#D1D5DB',
+
+  // Especialistas y modalidad
+  titularText: '#3a3b3b',
+  suplenteText: '#1D4ED8',
+  anteriorText: '#475569',
+  modalityText: '#070404',
+  modalityIconOnline: '#316deeb8',
+  modalityIconPresencial: '#05966894',
+
+  // Estados y paginación
+  statusScheduledBg: '#E0F2FE',
+  statusScheduledText: '#0369A1',
+  statusCompletedBg: '#dcfce7',
+  statusCompletedText: '#15803D',
+  statusCancelledBg: '#FEE2E2',
+  statusCancelledText: '#B91C1C',
+  disabledBg: '#F3F4F6',
+  disabledText: '#9CA3AF',
+};
+
+const ITEMS_PER_PAGE = 3;
 
 interface PatientCalendarScreenProps {
   onNavigateTab: (tab: PatientTab) => void;
@@ -30,24 +70,24 @@ interface PatientCalendarScreenProps {
 const renderSpecialistBadge = (tipo?: string) => {
   if (tipo === 'suplente') {
     return (
-      <View style={styles.badgeSuplente}>
-        <Ionicons name="repeat" size={11} color="#1D4ED8" style={{ marginRight: 3 }} />
-        <Text style={styles.badgeSuplenteText}>Ps. Suplente</Text>
+      <View style={[styles.badgeBase,]}>
+        <Ionicons name="repeat" size={11} color={COLORS.suplenteText} style={{ marginRight: 3 }} />
+        <Text style={[styles.badgeTextBase, styles.badgeSuplenteText]}>Ps. Suplente</Text>
       </View>
     );
   }
   if (tipo === 'titular_anterior') {
     return (
-      <View style={styles.badgeAnterior}>
-        <Ionicons name="time-outline" size={11} color="#475569" style={{ marginRight: 3 }} />
-        <Text style={styles.badgeAnteriorText}>Ps. Titular Anterior</Text>
+      <View style={[styles.badgeBase,]}>
+        <Ionicons name="time-outline" size={11} color={COLORS.anteriorText} style={{ marginRight: 3 }} />
+        <Text style={[styles.badgeTextBase, styles.badgeAnteriorText]}>Ps. Titular Anterior</Text>
       </View>
     );
   }
   return (
-    <View style={styles.badgeTitular}>
-      <Ionicons name="shield-checkmark" size={11} color="#0F613B" style={{ marginRight: 3 }} />
-      <Text style={styles.badgeTitularText}>Ps. Titular Actual</Text>
+    <View style={[styles.badgeBase, styles.badgeTitular]}>
+      <Ionicons name="shield-checkmark" size={11} color={COLORS.primary} style={{ marginRight: 3 }} />
+      <Text style={[styles.badgeTextBase, styles.badgeTitularText]}>Ps. Titular Actual</Text>
     </View>
   );
 };
@@ -65,7 +105,6 @@ const getCardAccentStyle = (tipo?: string) => {
 export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
   onNavigateTab,
 }) => {
-  const ITEMS_PER_PAGE = 3; // Número de elementos por página
   const [currentPage, setCurrentPage] = useState(1);
   const insets = useSafeAreaInsets();
   const [proximas, setProximas] = useState<AppointmentSession[]>([]);
@@ -79,7 +118,7 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
       const data = await appointmentService.getMySessions();
       setProximas(data.proximas);
       setHistorial(data.historial);
-      setCurrentPage(1); // Reiniciar a página 1 al cargar
+      setCurrentPage(1);
     } catch (error) {
       console.error('Error al cargar sesiones:', error);
     } finally {
@@ -105,7 +144,7 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
     }
   };
 
-  // CÁLCULOS DE PAGINACIÓN DE HISTORIAL
+  // Paginación del Historial
   const totalPages = Math.ceil(historial.length / ITEMS_PER_PAGE);
   const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
   const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
@@ -134,12 +173,12 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
         ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0F613B']} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
         }
       >
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color="#0F613B" />
+            <ActivityIndicator size="small" color={COLORS.primary} />
             <Text style={styles.loadingText}>Cargando tus citas...</Text>
           </View>
         ) : (
@@ -158,7 +197,7 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
               {proximas.length === 0 ? (
                 <View style={styles.emptyState}>
                   <View style={styles.smallIconCircle}>
-                    <Ionicons name="calendar-outline" size={28} color="#0F613B" />
+                    <Ionicons name="calendar-outline" size={28} color={COLORS.primary} />
                   </View>
                   <Text style={styles.emptyTitle}>No tienes citas próximas</Text>
                   <Text style={styles.emptySubtitle}>
@@ -170,7 +209,7 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
                   <View key={item.id} style={[styles.upcomingCard, getCardAccentStyle(item.tipoEspecialista)]}>
                     <View style={styles.cardHeaderRow}>
                       <View style={styles.dateBadge}>
-                        <Ionicons name="calendar" size={14} color="#0F613B" style={{ marginRight: 5 }} />
+                        <Ionicons name="calendar" size={14} color={COLORS.primary} style={{ marginRight: 5 }} />
                         <Text style={styles.dateBadgeText}>{formatToChileanDate(item.fecha)}</Text>
                       </View>
 
@@ -183,48 +222,31 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
 
                     {item.doctorNombre ? (
                       <View style={styles.doctorRow}>
-                        <Ionicons name="person-outline" size={14} color="#4B5563" style={{ marginRight: 4 }} />
+                        <Ionicons name="person-outline" size={14} color={COLORS.textSecondary} style={{ marginRight: 4 }} />
                         <Text style={styles.doctorText}>
                           Especialista:{' '}
-                          <Text style={{ fontWeight: '700', color: '#1F2937' }}>{item.doctorNombre}</Text>
+                          <Text style={styles.doctorNameBold}>{item.doctorNombre}</Text>
                         </Text>
                       </View>
                     ) : null}
 
-                    {item.observaciones ? (
-                      <View style={styles.observationsBox}>
-                        <Ionicons name="document-text-outline" size={13} color="#4B5563" style={{ marginRight: 4, marginTop: 1 }} />
-                        <Text style={styles.observationsText}>
-                          {item.observaciones}
-                        </Text>
-                      </View>
-                    ) : null}
+
 
                     <View style={styles.cardFooter}>
-                      <View
-                        style={[
-                          styles.modalityPill,
-                          item.modalidad?.toLowerCase() === 'online' ? styles.modalityPillOnline : styles.modalityPillPresencial,
-                        ]}
-                      >
+                      <View style={styles.modalityPill}>
                         <Ionicons
                           name={item.modalidad?.toLowerCase() === 'online' ? 'videocam' : 'business'}
                           size={12}
-                          color={item.modalidad?.toLowerCase() === 'online' ? '#2563EB' : '#0F613B'}
+                          color={item.modalidad?.toLowerCase() === 'online' ? COLORS.modalityIconOnline : COLORS.modalityIconPresencial}
                           style={{ marginRight: 4 }}
                         />
-                        <Text
-                          style={[
-                            styles.modalityPillText,
-                            item.modalidad?.toLowerCase() === 'online' ? styles.modalityPillTextOnline : styles.modalityPillTextPresencial,
-                          ]}
-                        >
+                        <Text style={styles.modalityPillText}>
                           {item.modalidad?.toLowerCase() === 'online' ? 'Online' : 'Presencial'}
                         </Text>
                       </View>
 
-                      <View style={styles.statusBadgeUpcoming}>
-                        <Text style={styles.statusBadgeTextUpcoming}>Programada</Text>
+                      <View style={[styles.statusBadgeBase, styles.statusBadgeUpcoming]}>
+                        <Text style={[styles.statusBadgeTextBase, styles.statusBadgeTextUpcoming]}>Programada</Text>
                       </View>
                     </View>
                   </View>
@@ -246,7 +268,7 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
               {historial.length === 0 ? (
                 <View style={styles.emptyState}>
                   <View style={styles.smallIconCircle}>
-                    <Ionicons name="time-outline" size={28} color="#64748B" />
+                    <Ionicons name="time-outline" size={28} />
                   </View>
                   <Text style={styles.emptyTitle}>Sin sesiones registradas</Text>
                   <Text style={styles.emptySubtitle}>
@@ -255,77 +277,62 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
                 </View>
               ) : (
                 <>
-                  {/* Se mapean únicamente los elementos recortados por la página actual */}
                   {currentHistorial.map((item) => (
                     <View key={item.id} style={[styles.historyCard, getCardAccentStyle(item.tipoEspecialista)]}>
-                      <View style={styles.cardHeaderRow}>
-                        <View style={styles.dateBadge}>
-                          <Ionicons name="calendar" size={14} color="#0F613B" style={{ marginRight: 5 }} />
-                          <Text style={styles.dateBadgeText}>{formatToChileanDate(item.fecha)}</Text>
-                        </View>
 
-                        {renderSpecialistBadge(item.tipoEspecialista)}
-                      </View>
-
-                      <Text style={styles.cardTimeText}>
-                        Hora: {item.hora}{item.horaFin ? ` - ${item.horaFin}` : ''}
-                      </Text>
-
-                      {item.doctorNombre ? (
-                        <View style={styles.doctorRow}>
-                          <Ionicons name="person-outline" size={14} color="#4B5563" style={{ marginRight: 4 }} />
-                          <Text style={styles.doctorText}>
-                            Atendió:{' '}
-                            <Text style={{ fontWeight: '700', color: '#1F2937' }}>{item.doctorNombre}</Text>
-                          </Text>
-                        </View>
-                      ) : null}
-
-                      {item.observaciones ? (
-                        <View style={styles.observationsBox}>
-                          <Ionicons name="document-text-outline" size={13} color="#4B5563" style={{ marginRight: 4, marginTop: 1 }} />
-                          <Text style={styles.observationsText}>
-                            {item.observaciones}
-                          </Text>
-                        </View>
-                      ) : null}
-
-                      <View style={styles.historyFooterRow}>
-                        <View
-                          style={[
-                            styles.modalityPill,
-                            item.modalidad?.toLowerCase() === 'online' ? styles.modalityPillOnline : styles.modalityPillPresencial,
-                          ]}
-                        >
-                          <Ionicons
-                            name={item.modalidad?.toLowerCase() === 'online' ? 'videocam' : 'business'}
-                            size={12}
-                            color={item.modalidad?.toLowerCase() === 'online' ? '#2563EB' : '#0F613B'}
-                            style={{ marginRight: 4 }}
-                          />
-                          <Text
-                            style={[
-                              styles.modalityPillText,
-                              item.modalidad?.toLowerCase() === 'online' ? styles.modalityPillTextOnline : styles.modalityPillTextPresencial,
-                            ]}
-                          >
-                            {item.modalidad?.toLowerCase() === 'online' ? 'Online' : 'Presencial'}
+                      {/* ENCABEZADO: FECHA + ESTADO */}
+                      <View style={styles.historyCardHeader}>
+                        <View>
+                          <Text style={styles.historyDateText}>{formatToChileanDate(item.fecha)}</Text>
+                          <Text style={styles.historyTimeText}>
+                            {item.hora}{item.horaFin ? ` - ${item.horaFin}` : ''} hrs
                           </Text>
                         </View>
 
+                        {/* Estado claro y sin saturar */}
                         {item.estado === 'Cancelada' ? (
-                          <View style={styles.statusBadgeCancelled}>
-                            <Text style={styles.statusBadgeTextCancelled}>Cancelada</Text>
+                          <View style={[styles.statusBadgeBase, styles.statusBadgeCancelled]}>
+                            <Text style={[styles.statusBadgeTextBase, styles.statusBadgeTextCancelled]}>Cancelada</Text>
                           </View>
                         ) : (
-                          <View style={styles.statusBadgeCompleted}>
-                            <Text style={styles.statusBadgeTextCompleted}>Completada</Text>
+                          <View style={[styles.statusBadgeBase, styles.statusBadgeCompleted]}>
+                            <Text style={[styles.statusBadgeTextBase, styles.statusBadgeTextCompleted]}>Completada</Text>
                           </View>
                         )}
                       </View>
+
+                      {/* CUERPO: ESPECIALISTA Y TIPO */}
+                      {item.doctorNombre ? (
+                        <View style={styles.historyDoctorRow}>
+                          <Text style={styles.historyDoctorText}>
+                            Atendió: <Text style={styles.doctorNameBold}>{item.doctorNombre}</Text>
+                          </Text>
+                          {renderSpecialistBadge(item.tipoEspecialista)}
+                        </View>
+                      ) : null}
+
+
+                      {/* PIE: MODALIDAD */}
+                      <View style={styles.historyFooterRow}>
+                        <View style={styles.modalityPill}>
+                          <Ionicons
+                            name={item.modalidad?.toLowerCase() === 'online' ? 'videocam' : 'business'}
+                            size={13}
+                            color={
+                              item.modalidad?.toLowerCase() === 'online'
+                                ? COLORS.modalityIconOnline
+                                : COLORS.modalityIconPresencial
+                            }
+                            style={{ marginRight: 5 }}
+                          />
+                          <Text style={styles.modalityPillText}>
+                            Modalidad {item.modalidad?.toLowerCase() === 'online' ? 'Online' : 'Presencial'}
+                          </Text>
+                        </View>
+                      </View>
+
                     </View>
                   ))}
-
                   {/* CONTROLES DE PAGINACIÓN */}
                   {totalPages > 1 && (
                     <View style={styles.paginationContainer}>
@@ -334,7 +341,7 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
                         onPress={handlePrevPage}
                         disabled={currentPage === 1}
                       >
-                        <Ionicons name="chevron-back" size={18} color={currentPage === 1 ? '#9CA3AF' : '#0F613B'} />
+                        <Ionicons name="chevron-back" size={18} color={currentPage === 1 ? COLORS.disabledText : COLORS.primary} />
                         <Text style={[styles.paginationButtonText, currentPage === 1 && styles.paginationButtonTextDisabled]}>
                           Anterior
                         </Text>
@@ -352,7 +359,7 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
                         <Text style={[styles.paginationButtonText, currentPage === totalPages && styles.paginationButtonTextDisabled]}>
                           Siguiente
                         </Text>
-                        <Ionicons name="chevron-forward" size={18} color={currentPage === totalPages ? '#9CA3AF' : '#0F613B'} />
+                        <Ionicons name="chevron-forward" size={18} color={currentPage === totalPages ? COLORS.disabledText : COLORS.primary} />
                       </TouchableOpacity>
                     </View>
                   )}
@@ -364,19 +371,20 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
       </ScrollView>
 
       {/* BARRA DE NAVEGACIÓN INFERIOR */}
-      <PatientBottomNav
-        activeTab="calendar"
-        onNavigate={onNavigateTab}
-      />
+      <PatientBottomNav activeTab="calendar" onNavigate={onNavigateTab} />
     </SafeAreaView>
   );
 };
 
+// ============================================================================
+// HOJA DE ESTILOS
+// ============================================================================
 const styles = StyleSheet.create({
+  /* LAYOUT Y CONTENEDORES PRINCIPALES */
   container: {
     width: '100%',
     flex: 1,
-    backgroundColor: '#EAF5EE',
+    backgroundColor: COLORS.screenBg,
   },
   scrollContent: {
     flexGrow: 1,
@@ -390,16 +398,16 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 8,
     fontSize: 13,
-    color: '#6B7280',
   },
 
+  /* Secciones y contenedores */
   sectionCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     borderRadius: 20,
     padding: 18,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: '#e3e8e5',
+    borderColor: COLORS.borderLight,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 3,
@@ -414,24 +422,25 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16.5,
     fontWeight: '700',
-    color: '#40444f',
-    
+    color: COLORS.textDark,
+    marginBottom: 4,
   },
+
+  /* Contadores de sección */
   countBadgeUpcoming: {
-    backgroundColor: '#EAF5EE',
+    backgroundColor: COLORS.primaryBg,
     paddingHorizontal: 9,
     paddingVertical: 2,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#A7F3D0',
   },
   countBadgeTextUpcoming: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0F613B',
+    color: COLORS.primary,
   },
   countBadgeHistory: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.disabledBg,
     paddingHorizontal: 9,
     paddingVertical: 2,
     borderRadius: 12,
@@ -439,11 +448,12 @@ const styles = StyleSheet.create({
   countBadgeTextHistory: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
   },
+
+  /* Estado vacío */
   emptyState: {
     alignItems: 'center',
-    backgroundColor: '#F8FAF9',
+    backgroundColor: COLORS.emptyBg,
     borderRadius: 16,
     paddingVertical: 24,
     paddingHorizontal: 16,
@@ -452,7 +462,6 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#E4F0E7',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
@@ -460,128 +469,71 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#374151',
     marginBottom: 4,
     textAlign: 'center',
   },
   emptySubtitle: {
     fontSize: 12.5,
     lineHeight: 18,
-    color: '#6B7280',
     textAlign: 'center',
   },
+
+  /* Tarjetas de sesión */
+  historyCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderGray,
+  },
+  historyDateText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textDark,
+  },
+  historyTimeText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: COLORS.textMain,
+    marginTop: 2,
+  },
+  historyDoctorRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  historyDoctorText: {
+    fontSize: 12.5,
+    color: COLORS.textSecondary,
+  },
   upcomingCard: {
-    backgroundColor: '#F9FAFB',
     borderRadius: 14,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.borderCard,
   },
-
-  cardAccentTitular: {
-    borderLeftWidth: 6,
-    borderLeftColor: '#46c0af61',
-  },
-  cardAccentSuplente: {
-    borderLeftWidth: 4.5,
-    borderLeftColor: '#a5abb7',
-  },
-  cardAccentAnterior: {
-    borderLeftWidth: 4.5,
-    borderLeftColor: '#47a871',
-  },
-  badgeTitular: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  historyCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#cbc8c8',
-    paddingHorizontal: 6,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-  },
-  badgeTitularText: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: '#3a3b3b',
-  },
-  badgeSuplente: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 6,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-  },
-  badgeSuplenteText: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: '#1D4ED8',
-  },
-  badgeAnterior: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 6,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-  },
-  badgeAnteriorText: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: '#475569',
+    borderColor: COLORS.borderCard,
   },
   cardHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  dateBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  dateBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#3a3b3b',
-  },
-  modalityPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-  },
-  modalityPillPresencial: {
-    backgroundColor: '#7c7f8023',
-  },
-  modalityPillOnline: {
-    backgroundColor: '#EFF6FF',
-  },
-  modalityPillText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  modalityPillTextPresencial: {
-    color: '#4e5053',
-  },
-  modalityPillTextOnline: {
-    color: '#4e5053',
+    marginBottom: 10,
   },
   cardTimeText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: COLORS.textMain,
     marginBottom: 4,
   },
   doctorRow: {
@@ -591,23 +543,11 @@ const styles = StyleSheet.create({
   },
   doctorText: {
     fontSize: 12.5,
-    color: '#4B5563',
+    color: COLORS.textSecondary,
   },
-  observationsBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#FFFFFF',
-    padding: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginBottom: 6,
-  },
-  observationsText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#4B5563',
-    lineHeight: 16,
+  doctorNameBold: {
+    fontWeight: '700',
+    color: COLORS.textHighlight,
   },
   cardFooter: {
     flexDirection: 'row',
@@ -615,55 +555,111 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  statusBadgeUpcoming: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 8,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-  },
-  statusBadgeTextUpcoming: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: '#92400E',
-  },
-  historyCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
   historyFooterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 8,
   },
-  statusBadgeCompleted: {
-    backgroundColor: '#EAF5EE',
-    paddingHorizontal: 8,
-    paddingVertical: 2.5,
-    borderRadius: 6,
+
+  /* Acento lateral por tipo de especialista */
+  cardAccentTitular: {
+    borderLeftWidth: 6,
+
   },
-  statusBadgeTextCompleted: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: '#0F613B',
+  cardAccentSuplente: {
+    borderLeftWidth: 4.5,
+
   },
-  statusBadgeCancelled: {
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 8,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-  },
-  statusBadgeTextCancelled: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: '#DC2626',
+  cardAccentAnterior: {
+    borderLeftWidth: 4.5,
+
   },
 
-  /* ESTILOS DE PAGINACIÓN */
+  /* Distintivos de especialista */
+  badgeBase: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  badgeTextBase: {
+    fontSize: 10.5,
+    fontWeight: '700',
+  },
+  badgeTitular: {
+    borderColor: COLORS.borderGray,
+  },
+  badgeTitularText: {
+    color: COLORS.titularText,
+  },
+  badgeSuplenteText: {
+    color: COLORS.suplenteText,
+  },
+  badgeAnteriorText: {
+    color: COLORS.anteriorText,
+  },
+
+  /* Fecha y modalidad */
+  dateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.borderGray,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  dateBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.titularText,
+  },
+  modalityPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  modalityPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.modalityText,
+  },
+
+  /* Estado de las citas */
+  statusBadgeBase: {
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  statusBadgeTextBase: {
+    fontSize: 10.5,
+    fontWeight: '700',
+  },
+  statusBadgeUpcoming: {
+    backgroundColor: COLORS.statusScheduledBg,
+  },
+  statusBadgeTextUpcoming: {
+    color: COLORS.statusScheduledText,
+  },
+  statusBadgeCompleted: {
+    backgroundColor: COLORS.statusCompletedBg,
+  },
+  statusBadgeTextCompleted: {
+    color: COLORS.statusCompletedText,
+  },
+  statusBadgeCancelled: {
+    backgroundColor: COLORS.statusCancelledBg,
+  },
+  statusBadgeTextCancelled: {
+    color: COLORS.statusCancelledText,
+  },
+
+  /* Paginación del historial */
   paginationContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -671,7 +667,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.borderCard,
   },
   paginationButton: {
     flexDirection: 'row',
@@ -679,24 +675,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
-    borderColor: '#D1D5DB',
+    borderColor: COLORS.borderButton,
     borderWidth: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.white,
   },
   paginationButtonDisabled: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.disabledBg,
   },
   paginationButtonText: {
     fontSize: 12.5,
     fontWeight: '600',
-    color: '#181e1b',
+    color: COLORS.textDark,
   },
   paginationButtonTextDisabled: {
-    color: '#9CA3AF',
+    color: COLORS.disabledText,
   },
   paginationInfoText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#4B5563',
+    color: COLORS.textSecondary,
   },
 });

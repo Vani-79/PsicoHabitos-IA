@@ -8,6 +8,7 @@ import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { PsychologistProfileData } from '../../constants/auth';
 import { formatToChileanDate } from '../../utils/date';
+import { PSYCHOLOGIST_COLORS } from './psychologistColors';
 
 interface PsychologistProfileScreenProps {
   onNavigateTab: (tab: PsychologistTab) => void;
@@ -88,7 +89,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
     if (loading) {
       return (
         <View style={styles.loadingCard}>
-          <ActivityIndicator size="large" color="#0F613B" />
+          <ActivityIndicator size="large" color={PSYCHOLOGIST_COLORS.primary} />
           <Text style={styles.loadingText}>Cargando datos desde la base de datos...</Text>
         </View>
       );
@@ -111,7 +112,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
     return (
       <View style={styles.profileCard}>
         <View style={styles.avatarCircle}>
-          <Ionicons name="person" size={42} color="#0F613B" />
+          <Ionicons name="person" size={42} color={PSYCHOLOGIST_COLORS.primary} />
         </View>
         <Text style={styles.profileName}>{fullName}</Text>
         <View style={styles.roleTag}>
@@ -122,7 +123,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
           {/* Campo 1: Nombre */}
           <View style={styles.infoRow}>
             <View style={styles.infoIconWrapper}>
-              <Ionicons name="person-outline" size={18} color="#0F613B" />
+              <Ionicons name="person-outline" size={18} color={PSYCHOLOGIST_COLORS.primary} />
             </View>
             <View style={styles.infoTextWrapper}>
               <Text style={styles.infoLabel}>Nombre</Text>
@@ -133,7 +134,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
           {/* Campo 2: Correo */}
           <View style={styles.infoRow}>
             <View style={styles.infoIconWrapper}>
-              <Ionicons name="mail-outline" size={18} color="#0F613B" />
+              <Ionicons name="mail-outline" size={18} color={PSYCHOLOGIST_COLORS.primary} />
             </View>
             <View style={styles.infoTextWrapper}>
               <Text style={styles.infoLabel}>Correo</Text>
@@ -144,7 +145,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
           {/* Campo 3: Fecha de Ingreso */}
           <View style={styles.infoRow}>
             <View style={styles.infoIconWrapper}>
-              <Ionicons name="calendar-outline" size={18} color="#0F613B" />
+              <Ionicons name="calendar-outline" size={18} color={PSYCHOLOGIST_COLORS.primary} />
             </View>
             <View style={styles.infoTextWrapper}>
               <Text style={styles.infoLabel}>Fecha de Ingreso</Text>
@@ -158,7 +159,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
               <Ionicons
                 name="hourglass-outline"
                 size={18}
-                color={isActivo ? '#0F613B' : '#DC2626'}
+                color={isActivo ? PSYCHOLOGIST_COLORS.primary : PSYCHOLOGIST_COLORS.danger}
               />
             </View>
             <View style={styles.infoTextWrapper}>
@@ -180,7 +181,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
               <Ionicons
                 name={isActivo ? 'shield-checkmark-outline' : 'alert-circle-outline'}
                 size={18}
-                color={isActivo ? '#0F613B' : '#DC2626'}
+                color={isActivo ? PSYCHOLOGIST_COLORS.primary : PSYCHOLOGIST_COLORS.danger}
               />
             </View>
             <View style={styles.infoTextWrapper}>
@@ -232,7 +233,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
           activeOpacity={0.8}
           onPress={handleLogoutPress}
         >
-          <Ionicons name="log-out-outline" size={20} color="#FFFFFF" style={styles.logoutIcon} />
+          <Ionicons name="log-out-outline" size={20} color={PSYCHOLOGIST_COLORS.surface} style={styles.logoutIcon} />
           <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -243,19 +244,20 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
   );
 };
 
+// Estilos del perfil profesional, la suscripción y las acciones de cuenta.
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#EAF5EE' },
+  container: { flex: 1, backgroundColor: PSYCHOLOGIST_COLORS.canvas },
   scrollContent: {
     padding: 20,
     alignItems: 'center',
   },
   profileCard: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderRadius: 22,
     padding: 24,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: PSYCHOLOGIST_COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -263,12 +265,12 @@ const styles = StyleSheet.create({
   },
   loadingCard: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderRadius: 22,
     padding: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: PSYCHOLOGIST_COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -277,7 +279,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#6B7280',
+    color: PSYCHOLOGIST_COLORS.textMuted,
     fontWeight: '500',
   },
   avatarCircle: {
@@ -294,7 +296,7 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#1F2937',
+    color: PSYCHOLOGIST_COLORS.textPrimary,
     marginBottom: 6,
   },
   roleTag: {
@@ -307,13 +309,13 @@ const styles = StyleSheet.create({
   roleTagText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0F613B',
+    color: PSYCHOLOGIST_COLORS.primary,
     letterSpacing: 0.5,
   },
   infoSection: {
     width: '100%',
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: PSYCHOLOGIST_COLORS.surfaceMuted,
     paddingTop: 16,
   },
   infoRow: {
@@ -325,7 +327,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: PSYCHOLOGIST_COLORS.surfaceGreenSoft,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -335,13 +337,13 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: PSYCHOLOGIST_COLORS.textMuted,
     fontWeight: '500',
   },
   infoValue: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: PSYCHOLOGIST_COLORS.textPrimary,
     marginTop: 2,
   },
   statusBadgeRow: {
@@ -349,21 +351,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusActiveText: {
-    color: '#0F613B',
+    color: PSYCHOLOGIST_COLORS.primary,
   },
   statusInactiveText: {
-    color: '#DC2626',
+    color: PSYCHOLOGIST_COLORS.danger,
   },
   logoutButton: {
     width: '100%',
-    backgroundColor: '#DC2626',
+    backgroundColor: PSYCHOLOGIST_COLORS.danger,
     borderRadius: 16,
     paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 20,
-    shadowColor: '#DC2626',
+    shadowColor: PSYCHOLOGIST_COLORS.danger,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -373,7 +375,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   logoutButtonText: {
-    color: '#FFFFFF',
+    color: PSYCHOLOGIST_COLORS.surface,
     fontSize: 16,
     fontWeight: '700',
   },

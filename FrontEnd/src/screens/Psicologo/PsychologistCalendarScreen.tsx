@@ -20,6 +20,7 @@ import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { AppointmentSession } from '../../types/patient';
 import { formatToChileanDate } from '../../utils/date';
+import { PSYCHOLOGIST_COLORS } from './psychologistColors';
 
 interface PsychologistCalendarScreenProps {
   doctorName?: string;
@@ -283,7 +284,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
     if (loading) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#0F613B" />
+          <ActivityIndicator size="small" color={PSYCHOLOGIST_COLORS.primary} />
           <Text style={styles.loadingText}>Cargando agenda de la semana...</Text>
         </View>
       );
@@ -293,7 +294,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
       return (
         <View style={styles.emptyDayContainer}>
           <View style={styles.emptyIconCircle}>
-            <Ionicons name="time-outline" size={32} color="#0F613B" />
+            <Ionicons name="time-outline" size={32} color={PSYCHOLOGIST_COLORS.primary} />
           </View>
           <Text style={styles.emptyTitle}>Sin sesiones programadas</Text>
           <Text style={styles.emptySubtitle}>
@@ -340,7 +341,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
                       {/* Cabecera de la cita */}
                       <View style={styles.sessionHeaderRow}>
                         <View style={styles.timeDurationPill}>
-                          <Ionicons name="time" size={13} color="#0F613B" style={{ marginRight: 4 }} />
+                          <Ionicons name="time" size={13} color={PSYCHOLOGIST_COLORS.primary} style={{ marginRight: 4 }} />
                           <Text style={styles.timeDurationText}>
                             {apt.hora} {apt.horaFin ? `- ${apt.horaFin}` : ''} ({apt.duracion} min)
                           </Text>
@@ -355,7 +356,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
                           <Ionicons
                             name={apt.modalidad === 'online' ? 'videocam' : 'business'}
                             size={12}
-                            color={apt.modalidad === 'online' ? '#2563EB' : '#0F613B'}
+                            color={apt.modalidad === 'online' ? '#2563EB' : PSYCHOLOGIST_COLORS.primary}
                             style={{ marginRight: 4 }}
                           />
                           <Text
@@ -381,7 +382,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
                         </Text>
                         {apt.rol_psicologo === 'suplente' && (
                           <View style={styles.suplenteRoleBadge}>
-                            <Ionicons name="repeat" size={11} color="#1D4ED8" style={{ marginRight: 3 }} />
+                            <Ionicons name="repeat" size={11} color={PSYCHOLOGIST_COLORS.info} style={{ marginRight: 3 }} />
                             <Text style={styles.suplenteRoleBadgeText}>Suplencia</Text>
                           </View>
                         )}
@@ -389,7 +390,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
                           <Ionicons
                             name="chevron-forward"
                             size={15}
-                            color="#9CA3AF"
+                            color={PSYCHOLOGIST_COLORS.textSubtle}
                             style={{ marginLeft: 4 }}
                           />
                         )}
@@ -401,7 +402,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
                           <Ionicons
                             name="document-text-outline"
                             size={13}
-                            color="#4B5563"
+                            color={PSYCHOLOGIST_COLORS.textSecondary}
                             style={{ marginRight: 4, marginTop: 1 }}
                           />
                           <Text style={styles.notesText} numberOfLines={2}>
@@ -458,7 +459,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
               onPress={handleGoToToday}
               activeOpacity={0.8}
             >
-              <Ionicons name="today-outline" size={14} color="#0F613B" style={{ marginRight: 4 }} />
+              <Ionicons name="today-outline" size={14} color={PSYCHOLOGIST_COLORS.primary} style={{ marginRight: 4 }} />
               <Text style={styles.todayButtonText}>Hoy</Text>
             </TouchableOpacity>
           )}
@@ -472,7 +473,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
         ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0F613B']} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[PSYCHOLOGIST_COLORS.primary]} />
         }
       >
         {/* Selector de Mes Desplegable */}
@@ -482,11 +483,11 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
             onPress={() => setShowMonthPickerModal(true)}
             activeOpacity={0.8}
           >
-            <Ionicons name="calendar" size={17} color="#0F613B" style={{ marginRight: 6 }} />
+            <Ionicons name="calendar" size={17} color={PSYCHOLOGIST_COLORS.primary} style={{ marginRight: 6 }} />
             <Text style={styles.monthDropdownText}>
               {MONTH_NAMES[currentMonth]} {currentYear}
             </Text>
-            <Ionicons name="chevron-down" size={15} color="#4B5563" style={{ marginLeft: 6 }} />
+            <Ionicons name="chevron-down" size={15} color={PSYCHOLOGIST_COLORS.textSecondary} style={{ marginLeft: 6 }} />
           </TouchableOpacity>
         </View>
 
@@ -594,10 +595,11 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
   );
 };
 
+// Estilos de la navegación semanal, el calendario y la línea de tiempo.
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAF9',
+    backgroundColor: PSYCHOLOGIST_COLORS.canvasSubtle,
   },
   topBar: {
     flexDirection: 'row',
@@ -605,20 +607,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderBottomWidth: 1,
     borderBottomColor: '#EDF2F7',
   },
   topBarTag: {
     fontSize: 10.5,
     fontWeight: '700',
-    color: '#0F613B',
+    color: PSYCHOLOGIST_COLORS.primary,
     letterSpacing: 0.8,
   },
   topBarTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#111827',
+    color: PSYCHOLOGIST_COLORS.textStrong,
     marginTop: 2,
   },
   topBarActions: {
@@ -629,25 +631,17 @@ const styles = StyleSheet.create({
   todayButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EAF5EE',
+    backgroundColor: PSYCHOLOGIST_COLORS.canvas,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#A7F3D0',
+    borderColor: PSYCHOLOGIST_COLORS.borderGreen,
   },
   todayButtonText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0F613B',
-  },
-  iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
+    color: PSYCHOLOGIST_COLORS.primary,
   },
   scrollContent: {
     flexGrow: 1,
@@ -658,35 +652,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: PSYCHOLOGIST_COLORS.surfaceMuted,
   },
   dayCardDisabled: {
     opacity: 0.35,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: PSYCHOLOGIST_COLORS.surfaceMuted,
   },
   monthDropdownButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: PSYCHOLOGIST_COLORS.surfaceSubtle,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: PSYCHOLOGIST_COLORS.border,
   },
   monthDropdownText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#111827',
+    color: PSYCHOLOGIST_COLORS.textStrong,
   },
   weekStripContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderBottomWidth: 1,
     borderBottomColor: '#EDF2F7',
   },
@@ -695,51 +689,51 @@ const styles = StyleSheet.create({
     maxWidth: 48,
     height: 68,
     borderRadius: 13,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: PSYCHOLOGIST_COLORS.surfaceSubtle,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: PSYCHOLOGIST_COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 4,
     marginHorizontal: 2,
   },
   dayCardActive: {
-    backgroundColor: '#0F613B',
-    borderColor: '#0F613B',
-    shadowColor: '#0F613B',
+    backgroundColor: PSYCHOLOGIST_COLORS.primary,
+    borderColor: PSYCHOLOGIST_COLORS.primary,
+    shadowColor: PSYCHOLOGIST_COLORS.primary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 3,
   },
   dayCardToday: {
-    borderColor: '#0F613B',
+    borderColor: PSYCHOLOGIST_COLORS.primary,
     borderWidth: 1.5,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: PSYCHOLOGIST_COLORS.surfaceGreenSoft,
   },
   dayNameText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#6B7280',
+    color: PSYCHOLOGIST_COLORS.textMuted,
     marginBottom: 3,
   },
   dayNameTextActive: {
-    color: '#D1FAE5',
+    color: PSYCHOLOGIST_COLORS.textOnPrimaryMuted,
   },
   dayNameTextToday: {
-    color: '#0F613B',
+    color: PSYCHOLOGIST_COLORS.primary,
     fontWeight: '700',
   },
   dayNumText: {
     fontSize: 16.5,
     fontWeight: '700',
-    color: '#111827',
+    color: PSYCHOLOGIST_COLORS.textStrong,
   },
   dayNumTextActive: {
-    color: '#FFFFFF',
+    color: PSYCHOLOGIST_COLORS.surface,
   },
   dayNumTextToday: {
-    color: '#0F613B',
+    color: PSYCHOLOGIST_COLORS.primary,
   },
   indicatorsRow: {
     height: 6,
@@ -751,10 +745,10 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: '#0F613B',
+    backgroundColor: PSYCHOLOGIST_COLORS.primary,
   },
   dotIndicatorActive: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
   },
   todaySmallDot: {
     width: 4,
@@ -772,31 +766,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: PSYCHOLOGIST_COLORS.surfaceMuted,
   },
   daySummaryFullDate: {
     fontSize: 13.5,
     fontWeight: '700',
-    color: '#1F2937',
-  },
-  todayLabelText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#0F613B',
-    marginTop: 1,
+    color: PSYCHOLOGIST_COLORS.textPrimary,
   },
   daySummaryBadge: {
-    backgroundColor: '#EAF5EE',
+    backgroundColor: PSYCHOLOGIST_COLORS.canvas,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#A7F3D0',
+    borderColor: PSYCHOLOGIST_COLORS.borderGreen,
   },
   daySummaryBadgeText: {
     fontSize: 11.5,
     fontWeight: '700',
-    color: '#0F613B',
+    color: PSYCHOLOGIST_COLORS.primary,
   },
   loadingContainer: {
     paddingVertical: 40,
@@ -805,22 +793,22 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 8,
     fontSize: 13,
-    color: '#6B7280',
+    color: PSYCHOLOGIST_COLORS.textMuted,
   },
   emptyDayContainer: {
     margin: 20,
     padding: 28,
     borderRadius: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: PSYCHOLOGIST_COLORS.border,
   },
   emptyIconCircle: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#EAF5EE',
+    backgroundColor: PSYCHOLOGIST_COLORS.canvas,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
@@ -828,12 +816,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 15.5,
     fontWeight: '700',
-    color: '#111827',
+    color: PSYCHOLOGIST_COLORS.textStrong,
     marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: '#6B7280',
+    color: PSYCHOLOGIST_COLORS.textMuted,
     textAlign: 'center',
     lineHeight: 19,
   },
@@ -852,7 +840,7 @@ const styles = StyleSheet.create({
   hourText: {
     fontSize: 11.5,
     fontWeight: '600',
-    color: '#6B7280',
+    color: PSYCHOLOGIST_COLORS.textMuted,
   },
   eventsCol: {
     flex: 1,
@@ -860,29 +848,29 @@ const styles = StyleSheet.create({
   },
   hourDivider: {
     height: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: PSYCHOLOGIST_COLORS.border,
     marginBottom: 8,
   },
   sessionCard: {
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderLeftWidth: 4,
-    shadowColor: '#000',
+    shadowColor: PSYCHOLOGIST_COLORS.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 1,
   },
   sessionCardPresencial: {
-    borderLeftColor: '#0F613B',
-    borderColor: '#E5E7EB',
+    borderLeftColor: PSYCHOLOGIST_COLORS.primary,
+    borderColor: PSYCHOLOGIST_COLORS.border,
     borderWidth: 1,
   },
   sessionCardOnline: {
     borderLeftColor: '#2563EB',
-    borderColor: '#E5E7EB',
+    borderColor: PSYCHOLOGIST_COLORS.border,
     borderWidth: 1,
   },
   sessionHeaderRow: {
@@ -894,7 +882,7 @@ const styles = StyleSheet.create({
   timeDurationPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: PSYCHOLOGIST_COLORS.surfaceMuted,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -902,7 +890,7 @@ const styles = StyleSheet.create({
   timeDurationText: {
     fontSize: 11.5,
     fontWeight: '600',
-    color: '#374151',
+    color: PSYCHOLOGIST_COLORS.textBody,
   },
   modalityBadge: {
     flexDirection: 'row',
@@ -912,17 +900,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   modalityBadgePresencial: {
-    backgroundColor: '#EAF5EE',
+    backgroundColor: PSYCHOLOGIST_COLORS.canvas,
   },
   modalityBadgeOnline: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: PSYCHOLOGIST_COLORS.infoSurface,
   },
   modalityBadgeText: {
     fontSize: 11,
     fontWeight: '700',
   },
   modalityBadgeTextPresencial: {
-    color: '#0F613B',
+    color: PSYCHOLOGIST_COLORS.primary,
   },
   modalityBadgeTextOnline: {
     color: '#2563EB',
@@ -937,19 +925,19 @@ const styles = StyleSheet.create({
   patientNameText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#111827',
+    color: PSYCHOLOGIST_COLORS.textStrong,
     flex: 1,
   },
   patientNameCancelled: {
-    color: '#9CA3AF',
+    color: PSYCHOLOGIST_COLORS.textSubtle,
     textDecorationLine: 'line-through',
   },
   suplenteRoleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EFF6FF',
+    backgroundColor: PSYCHOLOGIST_COLORS.infoSurface,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: PSYCHOLOGIST_COLORS.infoBorder,
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
@@ -957,12 +945,12 @@ const styles = StyleSheet.create({
   suplenteRoleBadgeText: {
     fontSize: 10.5,
     fontWeight: '700',
-    color: '#1D4ED8',
+    color: PSYCHOLOGIST_COLORS.info,
   },
   notesRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: PSYCHOLOGIST_COLORS.surfaceSubtle,
     padding: 8,
     borderRadius: 8,
     marginTop: 4,
@@ -971,7 +959,7 @@ const styles = StyleSheet.create({
   notesText: {
     flex: 1,
     fontSize: 12,
-    color: '#4B5563',
+    color: PSYCHOLOGIST_COLORS.textSecondary,
     lineHeight: 16,
   },
   sessionFooterRow: {
@@ -985,13 +973,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   statusPillScheduled: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: PSYCHOLOGIST_COLORS.warningSurface,
   },
   statusPillCompleted: {
-    backgroundColor: '#EAF5EE',
+    backgroundColor: PSYCHOLOGIST_COLORS.canvas,
   },
   statusPillCancelled: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: PSYCHOLOGIST_COLORS.dangerSurface,
   },
   statusPillText: {
     fontSize: 10.5,
@@ -1001,9 +989,9 @@ const styles = StyleSheet.create({
     color: '#92400E',
   },
   statusPillTextCompleted: {
-    color: '#0F613B',
+    color: PSYCHOLOGIST_COLORS.primary,
   },
   statusPillTextCancelled: {
-    color: '#DC2626',
+    color: PSYCHOLOGIST_COLORS.danger,
   },
 });

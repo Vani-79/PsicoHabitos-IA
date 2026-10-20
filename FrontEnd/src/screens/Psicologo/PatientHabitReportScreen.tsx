@@ -22,6 +22,7 @@ import { appointmentService } from '../../services/appointmentService';
 import { HabitFilterModal } from '../../components/HabitFilterModal';
 import { formatToChileanDate } from '../../utils/date';
 import { getRatingLabel } from '../../constants/habits';
+import { PSYCHOLOGIST_COLORS } from './psychologistColors';
 
 type Props = NativeStackScreenProps<PsychologistStackParamList, 'PatientHabitReport'>;
 
@@ -31,7 +32,7 @@ const HABIT_CONFIG: Record<
   HabitKey,
   { label: string; color: string; areaColor: string; icon: keyof typeof Ionicons.glyphMap }
 > = {
-  comida: { label: 'Comida', color: '#D97706', areaColor: '#FEF3C7', icon: 'restaurant-outline' },
+  comida: { label: 'Comida', color: '#D97706', areaColor: PSYCHOLOGIST_COLORS.warningSurface, icon: 'restaurant-outline' },
   ejercicio: { label: 'Ejercicio', color: '#16A34A', areaColor: '#DCFCE7', icon: 'barbell-outline' },
   hidratacion: { label: 'Hidratación', color: '#0284C7', areaColor: '#E0F2FE', icon: 'water-outline' },
   sueno: { label: 'Sueño', color: '#7C3AED', areaColor: '#EDE9FE', icon: 'moon-outline' },
@@ -373,7 +374,7 @@ const generateChartData = (
 ) => {
   if (!chronologicalRecords.length) return [];
 
-  const baseColor = HABIT_CONFIG[activeChartHabit]?.color || '#1A7A54';
+  const baseColor = HABIT_CONFIG[activeChartHabit]?.color || PSYCHOLOGIST_COLORS.primaryAlt;
   const labelModulo = Math.max(1, Math.floor(chronologicalRecords.length / 6));
 
   return chronologicalRecords.map((r, index) => {
@@ -521,7 +522,7 @@ const AdherenceRing: React.FC<{ percentage: number }> = ({ percentage }) => {
       <Svg width={size} height={size}>
         <Defs>
           <LinearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor="#1A7A54" />
+            <Stop offset="0%" stopColor={PSYCHOLOGIST_COLORS.primaryAlt} />
             <Stop offset="100%" stopColor="#34D399" />
           </LinearGradient>
         </Defs>
@@ -529,7 +530,7 @@ const AdherenceRing: React.FC<{ percentage: number }> = ({ percentage }) => {
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#E2E8F0"
+          stroke={PSYCHOLOGIST_COLORS.borderSoft}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -565,7 +566,7 @@ const EmptyReportCard: React.FC<{
       El paciente no registró check-ins diarios en el rango seleccionado ({periodText}).
     </Text>
     <TouchableOpacity style={styles.emptyActionBtn} onPress={onOpenFilters}>
-      <Ionicons name="calendar" size={16} color="#FFFFFF" />
+      <Ionicons name="calendar" size={16} color={PSYCHOLOGIST_COLORS.surface} />
       <Text style={styles.emptyActionBtnText}>Cambiar período de búsqueda</Text>
     </TouchableOpacity>
   </View>
@@ -615,7 +616,7 @@ const ReportKpis: React.FC<ReportKpisProps> = ({ stats, selectedRecord }) => {
           {isSelected ? 'Hora de este día' : 'Hora del registro'}
         </Text>
         <View style={styles.kpiContentCenter}>
-          <Text style={[styles.kpiBigNumber, { color: isSelected ? '#1A7A54' : '#0284C7' }]}>
+          <Text style={[styles.kpiBigNumber, { color: isSelected ? PSYCHOLOGIST_COLORS.primaryAlt : '#0284C7' }]}>
             {timeText}
           </Text>
           <Text style={styles.kpiSublabel}>{timeSublabel}</Text>
@@ -624,7 +625,7 @@ const ReportKpis: React.FC<ReportKpisProps> = ({ stats, selectedRecord }) => {
           <Ionicons
             name={isSelected ? 'radio-button-on' : 'time-outline'}
             size={11}
-            color={isSelected ? '#1A7A54' : '#0284C7'}
+            color={isSelected ? PSYCHOLOGIST_COLORS.primaryAlt : '#0284C7'}
           />
           <Text style={isSelected ? styles.kpiBadgeGreenText : styles.kpiBadgeBlueText}>
             {badgeText}
@@ -642,7 +643,7 @@ const DayDetailCard: React.FC<{ record: MySqlDailyHabitRecord }> = ({ record }) 
     <View style={styles.dayDetailCard}>
       <View style={styles.dayDetailHeader}>
         <View style={styles.dayDetailIconWrap}>
-          <Ionicons name="checkmark-done-circle" size={28} color="#1A7A54" />
+          <Ionicons name="checkmark-done-circle" size={28} color={PSYCHOLOGIST_COLORS.primaryAlt} />
         </View>
         <View>
           <Text style={styles.dayDetailTitle}>
@@ -685,7 +686,7 @@ const InspectingBanner: React.FC<{
 
     <View style={styles.inspectingMainInfo}>
       <View style={styles.inspectingCalendarIconWrap}>
-        <Ionicons name="calendar" size={22} color="#1A7A54" />
+        <Ionicons name="calendar" size={22} color={PSYCHOLOGIST_COLORS.primaryAlt} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.inspectingDateText}>
@@ -937,7 +938,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
           onPress={() => setShowFilterModal(true)}
           activeOpacity={0.8}
         >
-          <Ionicons name="filter" size={17} color="#1A7A54" />
+          <Ionicons name="filter" size={17} color={PSYCHOLOGIST_COLORS.primaryAlt} />
           <Text style={styles.filterBtnText}>Filtros</Text>
         </TouchableOpacity>
       </View>
@@ -945,7 +946,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
       {/* Pill de Rango Activo */}
       <View style={styles.activeFilterBar}>
         <View style={styles.activeFilterPill}>
-          <Ionicons name="calendar-outline" size={14} color="#1A7A54" />
+          <Ionicons name="calendar-outline" size={14} color={PSYCHOLOGIST_COLORS.primaryAlt} />
           <Text style={styles.activeFilterPillText}>{periodPillText}</Text>
         </View>
         <Text style={styles.recordsCountText}>
@@ -955,7 +956,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
 
       {loading ? (
         <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color="#1A7A54" />
+          <ActivityIndicator size="large" color={PSYCHOLOGIST_COLORS.primaryAlt} />
           <Text style={styles.loadingText}>Procesando métricas clínicas...</Text>
         </View>
       ) : (
@@ -964,7 +965,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#1A7A54']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[PSYCHOLOGIST_COLORS.primaryAlt]} />
           }
         >
           {filteredRecords.length === 0 ? (
@@ -1023,7 +1024,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
                             <Text
                               style={[
                                 styles.chartPillText,
-                                isCurSelected && { color: '#FFFFFF', fontWeight: '700' },
+                                isCurSelected && { color: PSYCHOLOGIST_COLORS.surface, fontWeight: '700' },
                               ]}
                             >
                               {cfg.label}
@@ -1044,10 +1045,10 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
                         curved
                         areaChart
                         startFillColor={HABIT_CONFIG[activeChartHabit]?.areaColor || '#E8F5EE'}
-                        endFillColor="#FFFFFF"
+                        endFillColor={PSYCHOLOGIST_COLORS.surface}
                         startOpacity={0.65}
                         endOpacity={0.05}
-                        color={HABIT_CONFIG[activeChartHabit]?.color || '#1A7A54'}
+                        color={HABIT_CONFIG[activeChartHabit]?.color || PSYCHOLOGIST_COLORS.primaryAlt}
                         thickness={3}
                         maxValue={5}
                         noOfSections={5}
@@ -1065,11 +1066,11 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
                         showValuesAsDataPointsText={false}
                         textColor="transparent"
                         textFontSize={0}
-                        dataPointsColor={HABIT_CONFIG[activeChartHabit]?.color || '#1A7A54'}
+                        dataPointsColor={HABIT_CONFIG[activeChartHabit]?.color || PSYCHOLOGIST_COLORS.primaryAlt}
                         dataPointsRadius={8}
                         zIndex1={1}
-                        yAxisColor="#E2E8F0"
-                        xAxisColor="#E2E8F0"
+                        yAxisColor={PSYCHOLOGIST_COLORS.borderSoft}
+                        xAxisColor={PSYCHOLOGIST_COLORS.borderSoft}
                         rulesColor="#F1F5F9"
                         isAnimated={false}
                         animateOnDataChange={false}
@@ -1088,7 +1089,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
 
               {/* Desglose Individual por Hábito */}
               <View style={styles.sectionHeadingRow}>
-                <Ionicons name="list-circle" size={20} color="#1A7A54" />
+                <Ionicons name="list-circle" size={20} color={PSYCHOLOGIST_COLORS.primaryAlt} />
                 <Text style={styles.sectionHeading}>{headingText}</Text>
                 {selectedRecord && (
                   <TouchableOpacity
@@ -1096,7 +1097,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
                     onPress={() => setSelectedRecordDate(null)}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="refresh" size={12} color="#1A7A54" />
+                    <Ionicons name="refresh" size={12} color={PSYCHOLOGIST_COLORS.primaryAlt} />
                     <Text style={styles.headingResetPillText}>Ver promedios</Text>
                   </TouchableOpacity>
                 )}
@@ -1131,19 +1132,20 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
   );
 };
 
+// Estilos del informe, indicadores y visualizaciones de hábitos.
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8FAF9',
+    backgroundColor: PSYCHOLOGIST_COLORS.canvasSubtle,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: PSYCHOLOGIST_COLORS.borderSoft,
   },
   backBtn: {
     width: 38,
@@ -1179,7 +1181,7 @@ const styles = StyleSheet.create({
   filterBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#1A7A54',
+    color: PSYCHOLOGIST_COLORS.primaryAlt,
   },
   activeFilterBar: {
     flexDirection: 'row',
@@ -1187,7 +1189,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
@@ -1205,7 +1207,7 @@ const styles = StyleSheet.create({
   activeFilterPillText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#1A7A54',
+    color: PSYCHOLOGIST_COLORS.primaryAlt,
   },
   recordsCountText: {
     fontSize: 12,
@@ -1232,12 +1234,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   emptyCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
     marginTop: 20,
   },
   emptyIconCircle: {
@@ -1265,14 +1267,14 @@ const styles = StyleSheet.create({
   emptyActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1A7A54',
+    backgroundColor: PSYCHOLOGIST_COLORS.primaryAlt,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
     gap: 6,
   },
   emptyActionBtnText: {
-    color: '#FFFFFF',
+    color: PSYCHOLOGIST_COLORS.surface,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -1283,13 +1285,13 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderRadius: 16,
     padding: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#000',
+    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
+    shadowColor: PSYCHOLOGIST_COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -1334,7 +1336,7 @@ const styles = StyleSheet.create({
   kpiBadgeGreenText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#1A7A54',
+    color: PSYCHOLOGIST_COLORS.primaryAlt,
   },
   kpiBadgeBlue: {
     marginTop: 6,
@@ -1352,11 +1354,11 @@ const styles = StyleSheet.create({
     color: '#0284C7',
   },
   dayDetailCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
     marginBottom: 16,
   },
   dayDetailHeader: {
@@ -1393,13 +1395,13 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   chartCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: PSYCHOLOGIST_COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -1431,40 +1433,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  chartPillActive: {
-    backgroundColor: '#1A7A54',
-    borderColor: '#1A7A54',
+    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
   },
   chartPillText: {
     fontSize: 11,
     fontWeight: '600',
     color: '#475569',
-  },
-  chartPillTextActive: {
-    color: '#FFFFFF',
-  },
-  legendRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-    marginVertical: 8,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  legendText: {
-    fontSize: 11,
-    color: '#475569',
-    fontWeight: '500',
   },
   chartWrapper: {
     marginTop: 8,
@@ -1486,16 +1460,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 10,
-    backgroundColor: '#F8FAF9',
+    backgroundColor: PSYCHOLOGIST_COLORS.canvasSubtle,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
     alignItems: 'center',
     minWidth: 54,
   },
   dayChipSelected: {
-    backgroundColor: '#1A7A54',
-    borderColor: '#1A7A54',
-    shadowColor: '#1A7A54',
+    backgroundColor: PSYCHOLOGIST_COLORS.primaryAlt,
+    borderColor: PSYCHOLOGIST_COLORS.primaryAlt,
+    shadowColor: PSYCHOLOGIST_COLORS.primaryAlt,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
@@ -1508,7 +1482,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   dayChipDayNameSelected: {
-    color: '#D1FAE5',
+    color: PSYCHOLOGIST_COLORS.textOnPrimaryMuted,
     fontWeight: '700',
   },
   dayChipDate: {
@@ -1518,7 +1492,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   dayChipDateSelected: {
-    color: '#FFFFFF',
+    color: PSYCHOLOGIST_COLORS.surface,
   },
   sectionHeadingRow: {
     flexDirection: 'row',
@@ -1536,11 +1510,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   habitCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
   },
   habitCardTop: {
     flexDirection: 'row',
@@ -1593,17 +1567,17 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   kpiCardInspecting: {
-    borderColor: '#1A7A54',
+    borderColor: PSYCHOLOGIST_COLORS.primaryAlt,
     borderWidth: 1.5,
   },
   inspectingBannerTop: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: PSYCHOLOGIST_COLORS.surface,
     borderRadius: 16,
     padding: 14,
     marginBottom: 14,
     borderWidth: 1.5,
-    borderColor: '#1A7A54',
-    shadowColor: '#1A7A54',
+    borderColor: PSYCHOLOGIST_COLORS.primaryAlt,
+    shadowColor: PSYCHOLOGIST_COLORS.primaryAlt,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -1645,7 +1619,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
   },
   deselectBtnText: {
     fontSize: 12,
@@ -1709,7 +1683,7 @@ const styles = StyleSheet.create({
   headingResetPillText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#1A7A54',
+    color: PSYCHOLOGIST_COLORS.primaryAlt,
   },
   habitCardSelectedMode: {
     borderColor: '#CBD5E1',

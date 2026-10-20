@@ -7,8 +7,11 @@ import { PatientExercisesScreen } from '../screens/Paciente/Ejercicios.paciente'
 import { HabitDetailScreen } from '../screens/Paciente/Ejerciciosvideos.paciente';
 import { PatientChatbotScreen } from '../screens/Paciente/Chathope.paciente';
 import { PatientProfileScreen } from '../screens/Paciente/Perfil.paciente';
-import { PatientTab } from '../components/PatientBottomNav';
+import { PatientTab } from '../components/Iconosbarrapaciente';
 import { useAuth } from '../context/AuthContext';
+
+
+
 
 const Stack = createNativeStackNavigator<PatientStackParamList>();
 
@@ -96,7 +99,10 @@ export const PatientNavigator: React.FC = () => {
             onNavigateTab={getTabHandler(navigation)}
           />
         )}
+        
       </Stack.Screen>
+
+      
 
       <Stack.Screen name="PatientProfile">
         {({ navigation }) => (

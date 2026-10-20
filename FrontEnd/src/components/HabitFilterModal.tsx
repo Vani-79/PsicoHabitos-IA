@@ -564,17 +564,6 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     flex: 1,
   },
-  changeDatePill: {
-    backgroundColor: '#E8F5EE',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  changeDatePillText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#1A7A54',
-  },
   selectAllBtn: {
     paddingHorizontal: 10,
     paddingVertical: 4,

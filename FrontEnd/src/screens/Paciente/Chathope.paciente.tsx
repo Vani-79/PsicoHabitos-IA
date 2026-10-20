@@ -1,7 +1,24 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, Image } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
+import { PatientBottomNav, PatientTab } from '../../components/Iconosbarrapaciente';
+
+const COLORS = {
+  // Superficies
+  screenBackground: '#EAF5EE',
+  cardBackground: '#FFFFFF',
+  neutralSurface: '#F3F4F6',
+  greenSurface: '#E8F5E9',
+  greenSoft: '#E4EDE7',
+  greenBorder: '#C8E6C9',
+
+  // Texto e indicadores
+  greenPrimary: '#0F613B',
+  success: '#10B981',
+  textPrimary: '#374151',
+  textSecondary: '#4B5563',
+  shadow: '#000000',
+};
 
 interface PatientChatbotScreenProps {
   onNavigateTab: (tab: PatientTab) => void;
@@ -16,7 +33,6 @@ export const PatientChatbotScreen: React.FC<PatientChatbotScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -56,21 +72,21 @@ export const PatientChatbotScreen: React.FC<PatientChatbotScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#EAF5EE' },
+  container: { flex: 1, backgroundColor: COLORS.screenBackground },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 40, // <-- Brolla la tarjeta bajándola un poco desde la parte superior
+    paddingTop: 40,
     alignItems: 'center',
   },
   chatCard: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.cardBackground,
     borderRadius: 20,
     padding: 28,
-    width: "100%",  // Nuevo ancho fijo
-    height: 600, // Nuevo alto fijo
-    shadowColor: '#000',
+    width: '100%',
+    height: 600,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -80,12 +96,12 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.greenSurface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
     borderWidth: 2,
-    borderColor: '#C8E6C9',
+    borderColor: COLORS.greenBorder,
     overflow: 'hidden',
   },
   avatarImage: {
@@ -95,36 +111,36 @@ const styles = StyleSheet.create({
   botGreeting: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#0F613B',
+    color: COLORS.greenPrimary,
     marginBottom: 8,
     textAlign: 'center',
   },
   botDescription: {
     fontSize: 14.5,
-    color: '#4B5563',
+    color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 20,
   },
   chatBubble: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.neutralSurface,
     borderRadius: 16,
     padding: 16,
     width: '100%',
     marginBottom: 18,
     borderLeftWidth: 4,
-    borderLeftColor: '#0F613B',
+    borderLeftColor: COLORS.greenPrimary,
   },
   bubbleText: {
     fontSize: 13.5,
-    color: '#374151',
+    color: COLORS.textPrimary,
     lineHeight: 20,
     fontStyle: 'italic',
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E4EDE7',
+    backgroundColor: COLORS.greenSoft,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -134,11 +150,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#10B981',
+    backgroundColor: COLORS.success,
   },
   statusText: {
     fontSize: 12,
-    color: '#0F613B',
+    color: COLORS.greenPrimary,
     fontWeight: '600',
   },
 });

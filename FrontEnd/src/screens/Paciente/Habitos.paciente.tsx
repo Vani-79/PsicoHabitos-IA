@@ -24,8 +24,8 @@ import {
   INITIAL_HABITS_STATE,
   getRatingLabel,
 } from '../../constants/habits';
-import { PatientBottomNav, PatientTab } from '../../components/PatientBottomNav';
-import { formatToMySqlDate, formatToMySqlDateTime, } from '../../utils/date';
+import { PatientBottomNav, PatientTab } from '../../components/Iconosbarrapaciente';
+import { formatToChileanDate, formatToMySqlDate, formatToMySqlDateTime, } from '../../utils/date';
 import { habitService } from '../../services';
 import { s, vs, ms } from '../../utils/responsive';
 
@@ -53,6 +53,33 @@ const HABIT_CARD_BORDER_COLORS: Record<HabitKey, string> = {
   sueno: '#8962B8',
   estres: '#4B83C4',
 };
+
+const COLORS = {
+  screenBackground: '#EAF5EE',
+  surface: '#FFFFFF',
+  surfaceSubtle: '#F8FAFC',
+  border: '#E9EEF0',
+  borderSoft: '#D9ECDC',
+  textPrimary: '#1F2937',
+  textBody: '#374151',
+  textSecondary: '#475569',
+  textMuted: '#64748B',
+  greenPrimary: '#0F613B',
+  greenAction: '#5ab081',
+  greenSuccess: '#67bd8e',
+  greenSoft: '#E8F5E9',
+  greenBorder: '#BBF7D0',
+  greenOutline: '#A7F3D0',
+  disabledBackground: '#F3F4F6',
+  disabledBorder: '#E1E5E9',
+  blueSoft: '#EFF6FF',
+  blueBorder: '#BFDBFE',
+  blueInputBorder: '#93C5FD',
+  blueText: '#1E3A8A',
+  slateBorder: '#CBD5E1',
+  overlay: 'rgba(0, 0, 0, 0.45)',
+  shadow: '#000000',
+} as const;
 
 export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   onSaveRecord,
@@ -96,8 +123,9 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
       if (status.serverDate) setServerDate(status.serverDate);
 
       if (status.completedToday && status.record) {
-        setIsLockedToday(false);
-        setIsConfirmed(false);
+        // Activar bloqueo y confirmación si ya completó el día
+        setIsLockedToday(true);
+        setIsConfirmed(true);
         setHabits({
           comida: status.record.comida ?? null,
           ejercicio: status.record.ejercicio ?? null,
@@ -108,6 +136,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
           estres: status.record.estres ?? null,
         });
       } else {
+        // Si no ha registrado hoy, mantener desbloqueado
         setIsLockedToday(false);
         setIsConfirmed(false);
       }
@@ -121,7 +150,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   }, [loadTodayStatus]);
 
   const openHabitModal = (key: HabitKey) => {
-    /*
+
     if (isLockedToday) {
       Alert.alert(
         'Check-in completado',
@@ -129,7 +158,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
       );
       return;
     }
-    */
+
     setActiveHabit(key);
     const currentVal = habits[key];
 
@@ -211,7 +240,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   });
 
   const handleConfirm = async () => {
-   /*
+
     if (isLockedToday) {
       Alert.alert(
         'Check-in completado',
@@ -219,7 +248,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
       );
       return;
     }
-      */
+
 
     if (registeredCount < 6) {
       Alert.alert(
@@ -442,15 +471,9 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
           { paddingBottom: Math.max(insets.bottom + 85, 110) },
         ]}
       >
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <View style={styles.greetingRow}>
-              <View>
-                <Text style={styles.greeting}>Hola, {userName}!</Text>
-                <Text style={styles.welcomeText}>Qué bueno verte hoy</Text>
-              </View>
-            </View>
-          </View>
+
+        <View style={styles.headerSpacer}>
+          <Text style={styles.greeting}>Hola, {userName}!</Text>
         </View>
 
         {isLoadingStatus && (
@@ -533,7 +556,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
               </TouchableOpacity>
             );
           })}
-        
+
 
         {/* Sección inferior: Bloqueado vs Botón de Confirmación */}
         {isLockedToday ? (
@@ -631,60 +654,52 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   );
 };
 
-
-
+// Estilos agrupados por estructura, controles y secciones del modal.
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#EAF5EE' },
+  container: { flex: 1, backgroundColor: COLORS.screenBackground },
   scrollContent: { paddingHorizontal: s(16), paddingTop: vs(14) },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#d0ebd5',
-    borderRadius: ms(24),
-    borderBottomLeftRadius: ms(6),
-    paddingVertical: vs(16),
-    paddingHorizontal: s(20),
+
+  // Encabezado y resumen de progreso
+  headerSpacer: {
     marginTop: 30,
     marginBottom: vs(32),
+    paddingHorizontal: s(4),
+    justifyContent: 'center',
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center' },
-  greetingRow: { flexDirection: 'row', alignItems: 'center' },
   greeting: { fontSize: ms(21), fontWeight: '600', color: '#48534e' },
-  welcomeText: { fontSize: ms(13), color: '#66756a', marginTop: vs(2), fontWeight: '500' },
-
 
   progressCard: {
     width:'100%',
     flexDirection: 'row',
     borderWidth: 1,
-    borderColor: '#D9ECDC',
+    borderColor: COLORS.borderSoft,
     borderRadius: ms(18),
     paddingVertical: vs(12),
     paddingHorizontal: s(14),
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
     gap: s(10),
     marginBottom: vs(16),
     marginTop: vs(10),
   },
-  progressNumber: { fontSize: ms(26), fontWeight: '800', color: '#64748B' },
+  progressNumber: { fontSize: ms(26), fontWeight: '800', color: COLORS.textMuted },
   progressEmoji: { fontSize: ms(20) },
   progressTextGroup: { alignItems: 'center' },
-  progressText: { fontSize: ms(13.5), color: '#374151', marginTop: 0, fontWeight: '600' },
-  progressHelpText: { fontSize: ms(11), color: '#64748B', marginTop: vs(3) },
+  progressText: { fontSize: ms(13.5), color: COLORS.textBody, marginTop: 0, fontWeight: '600' },
+  progressHelpText: { fontSize: ms(11), color: COLORS.textMuted, marginTop: vs(3) },
 
+  // Cuadrícula y tarjetas de hábitos
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderRadius: ms(20),
     padding: s(12),
     paddingTop: vs(16),
     borderWidth: 1,
-    borderColor: '#E9EEF0',
+    borderColor: COLORS.border,
     rowGap: vs(14),
   },
   card: {
@@ -693,19 +708,19 @@ const styles = StyleSheet.create({
     borderRadius: ms(18),
     padding: s(12),
     justifyContent: 'space-between',
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 2,
   },
-  cardLocked: { opacity: 0.95, borderColor: '#BBF7D0' },
+  cardLocked: { opacity: 0.95, borderColor: COLORS.greenBorder },
   imageFrame: {
     width: '100%',
     height: vs(78),
     borderRadius: ms(12),
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -717,7 +732,7 @@ const styles = StyleSheet.create({
     width: s(22),
     height: s(22),
     borderRadius: s(11),
-    backgroundColor: '#67bd8e',
+    backgroundColor: COLORS.greenSuccess,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -725,26 +740,26 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: s(6),
     right: s(6),
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.greenSoft,
     padding: s(4),
     borderRadius: ms(8),
   },
   emoji: { fontSize: ms(44) },
   cardImage: { width: '100%', height: '100%' },
-  cardTitle: { fontSize: ms(15.5), fontWeight: '700', color: '#1F2937' },
-  cardSubtitle: { fontSize: ms(11.5), color: '#475569', marginTop: vs(4) },
+  cardTitle: { fontSize: ms(15.5), fontWeight: '700', color: COLORS.textPrimary },
+  cardSubtitle: { fontSize: ms(11.5), color: COLORS.textSecondary, marginTop: vs(4) },
 
-  confirmationSection:
-   { 
+  // Confirmación de la evaluación
+  confirmationSection: {
     width: '100%',
     marginTop: vs(16),
     paddingTop: vs(14),
     borderTopColor: '#F1F5F9',
-    alignItems: 'center' 
-    },
-    
+    alignItems: 'center',
+  },
+
   globalConfirmButton: {
-    backgroundColor: '#5ab081',
+    backgroundColor: COLORS.greenAction,
     width: '85%',
     maxWidth: s(320),
     alignSelf: 'center',
@@ -752,19 +767,23 @@ const styles = StyleSheet.create({
     paddingVertical: vs(12),
     borderRadius: ms(14),
     borderWidth: 1,
-    borderColor: '#5ab081',
+    borderColor: COLORS.greenAction,
     alignItems: 'center',
     justifyContent: 'center',
     shadowOpacity: 0,
     elevation: 1,
   },
-  globalConfirmDisabled: { backgroundColor: '#F3F4F6', borderColor: '#E1E5E9', shadowOpacity: 0 },
+  globalConfirmDisabled: {
+    backgroundColor: COLORS.disabledBackground,
+    borderColor: COLORS.disabledBorder,
+    shadowOpacity: 0,
+  },
   confirmButtonContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   confirmIcon: { marginRight: s(6) },
-  globalConfirmText: { color: '#FFFFFF', fontSize: ms(16), fontWeight: 'bold' },
-  globalConfirmDisabledText: { color: '#64748B', fontSize: ms(14), fontWeight: '600' },
+  globalConfirmText: { color: COLORS.surface, fontSize: ms(16), fontWeight: 'bold' },
+  globalConfirmDisabledText: { color: COLORS.textMuted, fontSize: ms(14), fontWeight: '600' },
 
-  // Sección inferior bloqueada
+  // Estado de evaluación ya completada
   lockedBottomContainer: {
     marginTop: vs(10),
     alignItems: 'center',
@@ -773,16 +792,16 @@ const styles = StyleSheet.create({
   lockedBottomBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.greenSoft,
     paddingVertical: vs(10),
     paddingHorizontal: s(20),
     borderRadius: ms(25),
     borderWidth: 1,
-    borderColor: '#A7F3D0',
+    borderColor: COLORS.greenOutline,
     marginBottom: vs(6),
   },
   lockedBottomBadgeText: {
-    color: '#0F613B',
+    color: COLORS.greenPrimary,
     fontSize: ms(14),
     fontWeight: '700',
   },
@@ -795,11 +814,17 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.45)', justifyContent: 'center', alignItems: 'center' },
+  // Modal de calificación
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: COLORS.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   modalContent: {
     width: '90%',
     maxWidth: 400,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderRadius: ms(20),
     padding: s(18),
     alignItems: 'center',
@@ -817,14 +842,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: vs(14),
   },
-  waterModalIconArea: { borderColor: '#93C5FD', backgroundColor: '#EFF6FF' },
+  waterModalIconArea: { borderColor: COLORS.blueInputBorder, backgroundColor: COLORS.blueSoft },
   modalEmoji: { fontSize: ms(44) },
   modalHabitImage: { width: s(60), height: s(60) },
   questionText: { fontSize: ms(15), fontWeight: '600', color: '#4b5563', marginBottom: vs(16), textAlign: 'center' },
 
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: COLORS.disabledBackground,
     borderRadius: ms(25),
     padding: s(4),
     width: '100%',
@@ -838,7 +863,7 @@ const styles = StyleSheet.create({
     left: s(4),
     width: '20%',
     borderRadius: ms(20),
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 3,
@@ -849,25 +874,25 @@ const styles = StyleSheet.create({
   segmentLabelActive: { color: '#334155' },
 
   registerButton: {
-    backgroundColor: '#5ab081',
+    backgroundColor: COLORS.greenAction,
     paddingVertical: vs(11),
     paddingHorizontal: s(44),
     borderRadius: ms(25),
     marginTop: vs(4),
   },
   registerButtonDisabled: { backgroundColor: '#9ca3af' },
-  registerButtonText: { color: '#FFFFFF', fontSize: ms(15), fontWeight: 'bold' },
+  registerButtonText: { color: COLORS.surface, fontSize: ms(15), fontWeight: 'bold' },
 
-  // Estilos de Agua
+  // Controles de hidratación
   waterModalContainer: { width: '100%', alignItems: 'center', paddingVertical: vs(6) },
   waterCounterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: vs(16) },
   waterStepBtn: {
     width: s(46),
     height: s(46),
     borderRadius: s(23),
-    backgroundColor: '#EFF6FF',
+    backgroundColor: COLORS.blueSoft,
     borderWidth: 1.5,
-    borderColor: '#BFDBFE',
+    borderColor: COLORS.blueBorder,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -876,22 +901,22 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     justifyContent: 'center',
     marginHorizontal: s(12),
-    backgroundColor: '#F8FAFC',
+    backgroundColor: COLORS.surfaceSubtle,
     borderWidth: 1.5,
-    borderColor: '#93C5FD',
+    borderColor: COLORS.blueInputBorder,
     borderRadius: ms(14),
     paddingHorizontal: s(16),
     paddingVertical: vs(8),
     minWidth: s(130),
   },
-  waterInput: { fontSize: ms(26), fontWeight: '800', color: '#1E3A8A', textAlign: 'center', minWidth: s(46) },
+  waterInput: { fontSize: ms(26), fontWeight: '800', color: COLORS.blueText, textAlign: 'center', minWidth: s(46) },
   waterUnitText: { fontSize: ms(15), fontWeight: '600', color: '#3B82F6', marginLeft: s(6) },
   waterSaveButton: {
-    backgroundColor: '#67bd8e',
+    backgroundColor: COLORS.greenSuccess,
     paddingVertical: vs(12),
     paddingHorizontal: s(50),
     borderRadius: ms(25),
-    shadowColor: '#67bd8e',
+    shadowColor: COLORS.greenSuccess,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -899,7 +924,7 @@ const styles = StyleSheet.create({
     marginTop: vs(8),
   },
 
-  // Estilos de Sueño
+  // Controles de sueño
   sectionSubtitle: { fontSize: ms(13), fontWeight: '700', color: '#475569', alignSelf: 'flex-start', marginBottom: vs(8), marginTop: vs(4) },
   sleepSection: { width: '100%', alignItems: 'center', marginTop: vs(2), marginBottom: vs(12) },
   sleepCounterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: vs(6) },
@@ -909,7 +934,7 @@ const styles = StyleSheet.create({
     borderRadius: s(21),
     backgroundColor: '#F1F5F9',
     borderWidth: 1.5,
-    borderColor: '#CBD5E1',
+    borderColor: COLORS.slateBorder,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -918,9 +943,9 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     justifyContent: 'center',
     marginHorizontal: s(12),
-    backgroundColor: '#F8FAFC',
+    backgroundColor: COLORS.surfaceSubtle,
     borderWidth: 1.5,
-    borderColor: '#CBD5E1',
+    borderColor: COLORS.slateBorder,
     borderRadius: ms(14),
     paddingHorizontal: s(14),
     paddingVertical: vs(6),
@@ -929,4 +954,3 @@ const styles = StyleSheet.create({
   sleepInput: { fontSize: ms(22), fontWeight: '800', color: '#1E293B', textAlign: 'center', minWidth: s(40) },
   sleepUnitText: { fontSize: ms(13.5), fontWeight: '600', color: '#64748B', marginLeft: s(6) },
 });
-
