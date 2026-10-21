@@ -19,17 +19,19 @@ const COLORS = {
   // Superficies
   screenBg: '#EAF5EE',
   cardBg: '#FFFFFF',
-  divider: '#F3F4F6',
+  divider: '#E9EEF0',
+  border: '#0b6d370e',
 
   // Perfil
-  roleTagBg: '#9bbae075',
-  avatarBg: '#9bbae01e',
-  avatarIcon: '#9bbae0',
-  textDark: '#4d5260',
+  roleTagBg: '#0b6d3787', //tarjeta paciente registrado o no 
+  avatarBg: '#0b6d3741', //icono de perfil
+  avatarIcon: '#0b6d379b', //icono
+  textDark: '#25362d9b',
+  registerText: '#ffffff',
   textMuted: '#6B7280',
   textWhite: '#FFFFFF',
-  infoIconBg: '#9bbae01e',
-  infoIconColor: '#9bbae0',
+  infoIconBg: '#beefd6a7',
+  infoIconColor: '#0b6d37',
 
   // Suplencia
   suplenteBg: '#EFF6FF',
@@ -272,10 +274,12 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: 500,
     backgroundColor: COLORS.cardBg,
+    borderColor: COLORS.border,
+    borderWidth: 1,
     borderRadius: 22,
     padding: 24,
     alignItems: 'center',
-    elevation: 3,
+    elevation: 1,
   },
 
   // Cabecera del perfil
@@ -313,7 +317,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignSelf: 'flex-start',
   },
-  roleTagText: { fontSize: 11, fontWeight: '700', color: COLORS.textDark },
+  roleTagText: { fontSize: 11, fontWeight: '500', color: COLORS.registerText },
 
   // Datos y detalles de suplencia
   infoSection: {
