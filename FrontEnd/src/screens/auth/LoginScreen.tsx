@@ -19,6 +19,7 @@ import {
   ForgotResetPasswordCard,
   ActivationCodeCard,
 } from './components';
+import { AUTH_COLORS } from './components/authStyles';
 
 export type AuthViewMode =
   | 'login'
@@ -210,7 +211,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: AUTH_COLORS.white,
   },
   flexContainer: {
     flex: 1,
@@ -237,15 +238,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   titlePsico: {
-    color: '#0E5C3A',
+    color: AUTH_COLORS.greenDark,
   },
   titleHabitos: {
-    color: '#268D77',
+    color: AUTH_COLORS.greenLight,
   },
   sloganText: {
     fontSize: 14.5,
     fontWeight: '700',
-    color: '#0E5C3A',
+    color: AUTH_COLORS.greenDark,
     marginTop: 4,
     textAlign: 'center',
   },

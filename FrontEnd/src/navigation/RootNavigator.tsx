@@ -5,6 +5,11 @@ import { AuthNavigator } from './AuthNavigator';
 import { PatientNavigator } from './PatientNavigator';
 import { PsychologistNavigator } from './PsychologistNavigator';
 
+const COLORS = {
+  primary: '#0F613B',
+  surface: '#FFFFFF',
+} as const;
+
 export const RootNavigator: React.FC = () => {
   const { user, isLoading } = useAuth();
 
@@ -16,7 +21,7 @@ export const RootNavigator: React.FC = () => {
           style={styles.logo}
           resizeMode="contain"
         />
-        <ActivityIndicator size="large" color="#0F613B" style={styles.spinner} />
+        <ActivityIndicator size="large" color={COLORS.primary} style={styles.spinner} />
       </View>
     );
   }
@@ -37,7 +42,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
   },
   logo: {
     width: 80,

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '../../../services';
-import { authStyles } from './authStyles';
+import { AUTH_COLORS, authStyles } from './authStyles';
 
 interface ForgotEmailCardProps {
   initialEmail?: string;
@@ -69,7 +69,7 @@ export const ForgotEmailCard: React.FC<ForgotEmailCardProps> = ({
   return (
     <View style={authStyles.card}>
       <View style={authStyles.welcomeBadge}>
-        <Ionicons name="mail-unread-outline" size={20} color="#0F613B" />
+        <Ionicons name="mail-unread-outline" size={20} color={AUTH_COLORS.green} />
         <Text style={authStyles.welcomeBadgeText}>RECUPERACIÓN DE CUENTA</Text>
       </View>
 
@@ -84,7 +84,7 @@ export const ForgotEmailCard: React.FC<ForgotEmailCardProps> = ({
         <TextInput
           style={authStyles.input}
           placeholder="ejemplo@email.com"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={AUTH_COLORS.gray400}
           value={forgotEmail}
           onChangeText={setForgotEmail}
           keyboardType="email-address"
@@ -101,7 +101,7 @@ export const ForgotEmailCard: React.FC<ForgotEmailCardProps> = ({
         disabled={isLoading}
       >
         {isLoading ? (
-          <ActivityIndicator color="#FFFFFF" />
+          <ActivityIndicator color={AUTH_COLORS.white} />
         ) : (
           <Text style={authStyles.submitButtonText}>Enviar Código</Text>
         )}

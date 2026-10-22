@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '../../../services';
-import { authStyles } from './authStyles';
+import { AUTH_COLORS, authStyles } from './authStyles';
 
 interface ForgotCodeCardProps {
   email: string;
@@ -99,14 +99,14 @@ export const ForgotCodeCard: React.FC<ForgotCodeCardProps> = ({
   return (
     <View style={authStyles.card}>
       <View style={authStyles.welcomeBadge}>
-        <Ionicons name="shield-checkmark-outline" size={20} color="#0F613B" />
+        <Ionicons name="shield-checkmark-outline" size={20} color={AUTH_COLORS.green} />
         <Text style={authStyles.welcomeBadgeText}>VERIFICAR CÓDIGO</Text>
       </View>
 
       <Text style={authStyles.cardTitle}>Código de 6 Dígitos</Text>
       <Text style={authStyles.cardSubtitle}>
         Hemos enviado un código a{'\n'}
-        <Text style={{ fontWeight: '700', color: '#0F613B' }}>{email}</Text>
+        <Text style={{ fontWeight: '700', color: AUTH_COLORS.green }}>{email}</Text>
       </Text>
 
       {/* Input de Código */}
@@ -116,7 +116,7 @@ export const ForgotCodeCard: React.FC<ForgotCodeCardProps> = ({
           <TextInput
             style={authStyles.codeInput}
             placeholder="------"
-            placeholderTextColor="#A7F3D0"
+            placeholderTextColor={AUTH_COLORS.mint}
             value={recoveryCode}
             onChangeText={(text) =>
               setRecoveryCode(text.replace(/\D/g, '').slice(0, 6))
@@ -142,7 +142,7 @@ export const ForgotCodeCard: React.FC<ForgotCodeCardProps> = ({
         disabled={isSubmitDisabled}
       >
         {isLoading ? (
-          <ActivityIndicator color="#FFFFFF" />
+          <ActivityIndicator color={AUTH_COLORS.white} />
         ) : (
           <Text style={authStyles.submitButtonText}>Verificar Código</Text>
         )}
@@ -159,7 +159,7 @@ export const ForgotCodeCard: React.FC<ForgotCodeCardProps> = ({
           {isResending ? (
             <ActivityIndicator
               size="small"
-              color="#0F613B"
+              color={AUTH_COLORS.green}
               style={{ marginLeft: 6 }}
             />
           ) : (

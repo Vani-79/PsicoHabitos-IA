@@ -10,6 +10,20 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+const COLORS = {
+  overlay: 'rgba(0, 0, 0, 0.45)',
+  white: '#FFFFFF',
+  black: '#000',
+  gray500: '#6B7280',
+  green: '#0F613B',
+  gray100: '#F3F4F6',
+  charcoal: '#111827',
+  gray50: '#F9FAFB',
+  greenSoft: '#EAF5EE',
+  gray700: '#374151',
+  gray400: '#9CA3AF',
+} as const;
+
 const generateTimeSlots = (): string[] => {
   const slots: string[] = [];
   for (let hour = 8; hour <= 21; hour++) {
@@ -91,7 +105,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
           <View style={styles.headerRow}>
             <Text style={styles.modalTitle}>{title}</Text>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="close" size={22} color="#6B7280" />
+              <Ionicons name="close" size={22} color={COLORS.gray500} />
             </TouchableOpacity>
           </View>
 
@@ -118,7 +132,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                   <Text style={[styles.timeOptionText, isSelected && styles.timeOptionTextActive]}>
                     {slot} hrs
                   </Text>
-                  {isSelected && <Ionicons name="checkmark-circle" size={18} color="#0F613B" />}
+                  {isSelected && <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />}
                 </TouchableOpacity>
               );
             })}
@@ -132,19 +146,19 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: COLORS.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     borderRadius: 20,
     padding: 20,
     width: '100%',
     maxWidth: 340,
     maxHeight: 460,
-    shadowColor: '#000',
+    shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 10,
@@ -157,12 +171,12 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: COLORS.gray100,
   },
   modalTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: COLORS.charcoal,
   },
   scrollList: {
     maxHeight: 340,
@@ -175,26 +189,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 10,
     marginBottom: 4,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: COLORS.gray50,
   },
   timeOptionActive: {
-    backgroundColor: '#EAF5EE',
+    backgroundColor: COLORS.greenSoft,
     borderWidth: 1,
-    borderColor: '#0F613B',
+    borderColor: COLORS.green,
   },
   timeOptionText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#374151',
+    color: COLORS.gray700,
   },
   timeOptionTextActive: {
-    color: '#0F613B',
+    color: COLORS.green,
     fontWeight: '700',
   },
 
   noSlotsText: {
     fontSize: 13.5,
-    color: '#9CA3AF',
+    color: COLORS.gray400,
     textAlign: 'center',
     paddingVertical: 20,
   },

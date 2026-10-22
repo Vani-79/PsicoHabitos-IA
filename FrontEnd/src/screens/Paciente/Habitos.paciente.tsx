@@ -45,9 +45,9 @@ const COLORS = {
   surfaceSubtle: '#F8FAFC',
 
   // Texto
-  textHeading: '#1F2937',
-  textQuestion: '#4b5563',
-  textPrimary: '#6B7280',
+  textHeading: '#4d5566',
+  textQuestion: '#4d5566',
+  textPrimary: '#4d5566',
   textSecondary: '#6B7280',
   textSubdued: '#475569',
   textMuted: '#64748B',
@@ -61,13 +61,14 @@ const COLORS = {
 
   // Estados y acciones
   greenPrimary: '#0F613B',
-  greenAction: '#e2f5e498',
+  greenAction: '#347e5b9e', // Boton guardar en habitos 
   greenSuccess: '#67bd8e',
   greenSoft: '#e2f5e498',
-  greenBorder: '#BBF7D0',
+  greenBorder: '#87989660', //Borde imagen en guardar habitos
   greenBadge: '#D1FAE5',
   greenOutline: '#A7F3D0',
-  disabledBackground: '#F3F4F6',
+  disabledBackground: '#e1eee6', //fondo boton registrar
+  registerButton: '#347e5be7', //registrar habitos boton 
 
   // Colores de las tarjetas por hábito
   habitComidaBackground: '#fff1d8',
@@ -76,28 +77,22 @@ const COLORS = {
   habitAnsiedadBackground: '#FDE2E4',
   habitSuenoBackground: '#F0E7FF',
   habitEstresBackground: '#E3F0FF',
-  habitComidaBorder: '#e3a72fb3',
-  habitEjercicioBorder: '#5e8b5cbe',
-  habitHidratacionBorder: '#2596b5be',
-  habitAnsiedadBorder: '#d97786b7',
-  habitSuenoBorder: '#8962b8be',
-  habitEstresBorder: '#4b84c4b6',
 
   // Controles de hidratación
-  blueSoft: '#EFF6FF',
-  blueBorder: '#BFDBFE',
-  blueInputBorder: '#93C5FD',
-  blueText: '#1E3A8A',
+  blueSoft: '#ffffff',
+  blueBorder: '#3e445248',
+  blueInputBorder: '#3e445248',
+  blueText: '#6B7280',
+  waterAction: '#3e4452',
+  waterUnit: '#6B7280',
 
   // Escala y modal
   ratingLabel: '#9ca3af',
   ratingLabelActive: '#334155',
-  waterAction: '#2563EB',
-  waterUnit: '#3B82F6',
+  
   sleepControlBackground: '#F1F5F9',
   sleepUnit: '#64748B',
   dividerSoft: '#F1F5F9',
-  modalIconBorder: '#C6E3D1',
   closeIcon: '#888',
   overlay: 'rgba(0, 0, 0, 0.45)',
   white: '#FFFFFF',
@@ -113,15 +108,6 @@ const HABIT_CARD_COLORS: Record<HabitKey, string> = {
   estres: COLORS.habitEstresBackground,
 };
 
-const HABIT_CARD_BORDER_COLORS: Record<HabitKey, string> = {
-  comida: COLORS.habitComidaBorder,
-  ejercicio: COLORS.habitEjercicioBorder,
-  hidratacion: COLORS.habitHidratacionBorder,
-  ansiedad: COLORS.habitAnsiedadBorder,
-  sueno: COLORS.habitSuenoBorder,
-  estres: COLORS.habitEstresBorder,
-};
-
 export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   onSaveRecord,
   userName = 'Carlos',
@@ -129,7 +115,6 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   onNavigateTab,
 }) => {
   const insets = useSafeAreaInsets();
-
 
   // Fecha estipulada en formato estándar MySQL 'YYYY-MM-DD'
   const recordDate = useMemo(() => formatToMySqlDate(), []);
@@ -191,7 +176,6 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   }, [loadTodayStatus]);
 
   const openHabitModal = (key: HabitKey) => {
-
     if (isLockedToday) {
       Alert.alert(
         'Check-in completado',
@@ -281,7 +265,6 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   });
 
   const handleConfirm = async () => {
-
     if (isLockedToday) {
       Alert.alert(
         'Check-in completado',
@@ -289,7 +272,6 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
       );
       return;
     }
-
 
     if (registeredCount < 6) {
       Alert.alert(
@@ -431,7 +413,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
           </View>
 
           <TouchableOpacity
-            style={styles.waterSaveButton}
+            style={styles.registerButton}
             onPress={saveHabitResponse}
             activeOpacity={0.8}
           >
@@ -444,7 +426,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
     if (activeHabit === 'sueno') {
       return (
         <View style={styles.sleepSection}>
-          <Text style={styles.sectionSubtitle}>Horas dormidas anoche:</Text>
+          <Text style={styles.sectionSubtitle}>Horas dormidas:</Text>
           <View style={styles.sleepCounterRow}>
             <TouchableOpacity
               style={styles.sleepStepBtn}
@@ -496,7 +478,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
     return renderRatingSection();
   };
 
- return (
+  return (
     <SafeAreaView style={styles.container}>
       <ScrollView
         refreshControl={
@@ -514,6 +496,8 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
       >
         <View style={styles.headerSpacer}>
           <Text style={styles.greeting}>Hola, {userName}!</Text>
+          <Text style={styles.subGreeting}>Comienza tus hábitos de hoy</Text>
+          
         </View>
 
         {isLoadingStatus && (
@@ -523,174 +507,164 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
         )}
 
         <View style={styles.gridContainer}>
-        {/* Encabezado interno con ícono, título y la badge con el nro de hábitos */}
-        <View style={styles.sectionHeader}>
-          <View style={styles.titleGroup}>
-            <View style={styles.iconBadge}>
-              <Ionicons name="leaf-outline" size={ms(18)} color={COLORS.primary} />
+          {/* Encabezado interno con ícono, título y la badge con el nro de hábitos */}
+          <View style={styles.sectionHeader}>
+            <View style={styles.titleGroup}>
+              <View style={styles.iconBadge}>
+                <Ionicons name="leaf-outline" size={ms(18)} color={COLORS.primary} />
+              </View>
+              <View>
+                <Text style={styles.sectionTitle}>Hábitos diarios</Text>
+                <Text style={styles.sectionSubText}>
+                  {isLockedToday
+                    ? 'Registro completado por hoy'
+                    : !isLockedToday && registeredCount < 6
+                    ? `Te faltan ${6 - registeredCount} por completar`
+                    : 'Todos los hábitos evaluados'}
+                </Text>
+              </View>
             </View>
-            <View>
-              <Text style={styles.sectionTitle}>Hábitos diarios</Text>
-              <Text style={styles.sectionSubText}>
-                {isLockedToday
-                  ? 'Registro completado por hoy'
-                  : !isLockedToday && registeredCount < 6
-                  ? `Te faltan ${6 - registeredCount} por completar`
-                  : 'Todos los hábitos evaluados'}
-              </Text>
+
+            {/* Badge con el nro de hábitos completados */}
+            <View style={[styles.countBadge, isLockedToday && styles.countBadgeSuccess]}>
+              <Text style={styles.countText}>{registeredCount}/6 completados</Text>
             </View>
           </View>
 
-          {/* Badge con el nro de hábitos completados */}
-          <View style={[styles.countBadge, isLockedToday && styles.countBadgeSuccess]}>
-            <Text style={styles.countText}>{registeredCount}/6 completados</Text>
-          </View>
-        </View>
+          {/* Separador */}
+          <View style={styles.divider} />
 
-        {/* Separador */}
-        <View style={styles.divider} />
+          {/* Sub-grid con las 6 tarjetas de hábitos */}
+          <View style={styles.gridInner}>
+            {HABIT_KEYS.map((key) => {
+              const item = HABIT_CATALOG[key];
+              const currentVal = habits[key];
 
-        {/* Sub-grid con las 6 tarjetas de hábitos */}
-        <View style={styles.gridInner}>
-          {HABIT_KEYS.map((key) => {
-            const item = HABIT_CATALOG[key];
-            const currentVal = habits[key];
+              return (
+                <TouchableOpacity
+                  key={key}
+                  style={[
+                    styles.card,
+                    { backgroundColor: HABIT_CARD_COLORS[key] },
+                    isLockedToday && styles.cardLocked,
+                    currentVal !== null && styles.cardActiveBorder,
+                  ]}
+                  onPress={() => openHabitModal(key)}
+                  activeOpacity={isLockedToday ? 0.9 : 0.7}
+                >
+                  <View style={styles.imageFrame}>
+                    {item.image ? (
+                      <Image source={item.image} style={styles.cardImage} resizeMode="contain" />
+                    ) : (
+                      <Text style={styles.emoji}>{item.emoji}</Text>
+                    )}
+                    {currentVal !== null && (
+                      <View style={styles.cardCheckBadge}>
+                        <Ionicons name="checkmark" size={12} color={COLORS.white} />
+                      </View>
+                    )}
+                  </View>
 
-            let labelText = item.label;
-            if (key === 'hidratacion' && currentVal !== null) {
-              labelText = currentVal === 1 ? '1 Litro' : `${currentVal} Litros`;
-            } else if (key === 'sueno' && currentVal !== null) {
-              const qualityLabel = getRatingLabel(currentVal, 'sueno');
-              const hours = habits.sueno_horas;
-              labelText = hours !== null && hours !== undefined ? `${qualityLabel} • ${hours}h` : qualityLabel;
-            } else if (currentVal !== null) {
-              labelText = getRatingLabel(currentVal, key);
-            }
+                  <Text style={styles.cardTitle}>{item.label}</Text>
 
-            return (
-              <TouchableOpacity
-                key={key}
-                style={[
-                  styles.card,
-                  { backgroundColor: HABIT_CARD_COLORS[key] },
-                  isLockedToday && styles.cardLocked,
-                  currentVal !== null && {
-                    borderWidth: 2,
-                    borderColor: HABIT_CARD_BORDER_COLORS[key],
-                  },
-                ]}
-                onPress={() => openHabitModal(key)}
-                activeOpacity={isLockedToday ? 0.9 : 0.7}
-              >
-                <View style={styles.imageFrame}>
-                  {item.image ? (
-                    <Image source={item.image} style={styles.cardImage} resizeMode="contain" />
-                  ) : (
-                    <Text style={styles.emoji}>{item.emoji}</Text>
-                  )}
-                  {currentVal !== null && (
-                    <View style={styles.cardCheckBadge}>
-                      <Ionicons name="checkmark" size={12} color={COLORS.white} />
+                  {currentVal === null && (
+                    <View style={styles.iconContainer}>
+                      <Ionicons name="arrow-forward" size={ms(14)} color={COLORS.primary} />
                     </View>
                   )}
-                </View>
-                <Text style={styles.cardTitle}>{item.label}</Text>
-                <View style={styles.iconContainer}>
-                  <Ionicons name="arrow-forward" size={ms(14)} color={COLORS.primary} />
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Sección inferior: Estado bloqueado o Botón de confirmación */}
+          {isLockedToday ? (
+            <View style={styles.lockedBottomContainer}>
+              <View style={styles.lockedBottomBadge}>
+                <Ionicons name="happy-outline" size={18} color={COLORS.primary} style={styles.lockedBottomHappyIcon} />
+                <Ionicons name="lock-closed" size={16} color={COLORS.primary} style={styles.lockedBottomLockIcon} />
+                <Text style={styles.lockedBottomBadgeText}>Evaluación completada por hoy</Text>
+              </View>
+              <Text style={styles.lockedBottomHelpText}>
+                Próximo check-in habilitado mañana.
+              </Text>
+            </View>
+          ) : (
+            !isConfirmed && (
+              <View style={styles.confirmationSection}>
+                <TouchableOpacity
+                  style={[
+                    styles.globalConfirmButton,
+                    registeredCount < 6 && styles.globalConfirmDisabled,
+                  ]}
+                  disabled={registeredCount < 6}
+                  onPress={handleConfirm}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.confirmButtonContent}>
+                    {registeredCount === 6 && (
+                      <Ionicons name="checkmark-circle" size={16} color={COLORS.white} style={styles.confirmIcon} />
+                    )}
+                    <Text
+                      style={[
+                        styles.globalConfirmText,
+                        registeredCount < 6 && styles.globalConfirmDisabledText,
+                      ]}
+                    >
+                      {registeredCount === 6 ? 'Registrar hábitos' : 'Registrar'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            )
+          )}
         </View>
 
-        {/* Sección inferior: Estado bloqueado o Botón de confirmación */}
-        {isLockedToday ? (
-          <View style={styles.lockedBottomContainer}>
-            <View style={styles.lockedBottomBadge}>
-              <Ionicons name="happy-outline" size={18} color={COLORS.primary} style={styles.lockedBottomHappyIcon} />
-              <Ionicons name="lock-closed" size={16} color={COLORS.primary} style={styles.lockedBottomLockIcon} />
-              <Text style={styles.lockedBottomBadgeText}>Evaluación completada por hoy</Text>
-            </View>
-            <Text style={styles.lockedBottomHelpText}>
-              Próximo check-in habilitado mañana.
-            </Text>
-          </View>
-        ) : (
-          !isConfirmed && (
-            <View style={styles.confirmationSection}>
+        {/* Modal de calificación */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
+            <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
               <TouchableOpacity
-                style={[
-                  styles.globalConfirmButton,
-                  registeredCount < 6 && styles.globalConfirmDisabled,
-                ]}
-                disabled={registeredCount < 6}
-                onPress={handleConfirm}
-                activeOpacity={0.8}
+                style={styles.modalCloseButton}
+                onPress={() => setModalVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <View style={styles.confirmButtonContent}>
-                  {registeredCount === 6 && (
-                    <Ionicons name="checkmark-circle" size={16} color={COLORS.white} style={styles.confirmIcon} />
-                  )}
-                  <Text
-                    style={[
-                      styles.globalConfirmText,
-                      registeredCount < 6 && styles.globalConfirmDisabledText,
-                    ]}
-                  >
-                    {registeredCount === 6 ? 'Registrar Hábitos' : 'Registrar'}
-                  </Text>
-                </View>
+                <Ionicons name="close" size={22} color={COLORS.closeIcon} />
               </TouchableOpacity>
-            </View>
-          )
-        )}
-      </View>
 
-      {/* Modal de calificación */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
-          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setModalVisible(false)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="close" size={22} color={COLORS.closeIcon} />
-            </TouchableOpacity>
+              {activeHabit && (
+                <View
+                  style={[
+                    styles.modalIconArea,
+                    activeHabit === 'hidratacion' && styles.waterModalIconArea,
+                  ]}
+                >
+                  {HABIT_CATALOG[activeHabit].image ? (
+                    <Image
+                      source={HABIT_CATALOG[activeHabit].image}
+                      style={styles.modalHabitImage}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <Text style={styles.modalEmoji}>{HABIT_CATALOG[activeHabit].emoji}</Text>
+                  )}
+                </View>
+              )}
 
-            {activeHabit && (
-              <View
-                style={[
-                  styles.modalIconArea,
-                  activeHabit === 'hidratacion' && styles.waterModalIconArea,
-                ]}
-              >
-                {HABIT_CATALOG[activeHabit].image ? (
-                  <Image
-                    source={HABIT_CATALOG[activeHabit].image}
-                    style={styles.modalHabitImage}
-                    resizeMode="contain"
-                  />
-                ) : (
-                  <Text style={styles.modalEmoji}>{HABIT_CATALOG[activeHabit].emoji}</Text>
-                )}
-              </View>
-            )}
+              <Text style={styles.questionText}>
+                {activeHabit ? HABIT_CATALOG[activeHabit].question : '¿Cómo evalúas este concepto hoy?'}
+              </Text>
 
-            <Text style={styles.questionText}>
-              {activeHabit ? HABIT_CATALOG[activeHabit].question : '¿Cómo evalúas este concepto hoy?'}
-            </Text>
-
-            {renderModalContent()}
+              {renderModalContent()}
+            </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
-</ScrollView>
+        </Modal>
+      </ScrollView>
       {onNavigateTab && (
         <PatientBottomNav activeTab="habits" onNavigate={onNavigateTab} />
       )}
@@ -698,7 +672,8 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
   );
 };
 
-// Estilos agrupados por estructura, controles y secciones del modal.
+// Estilos 
+
 const styles = StyleSheet.create({
   // Estructura principal de la pantalla
   container: { flex: 1, backgroundColor: COLORS.screenBackground },
@@ -708,12 +683,13 @@ const styles = StyleSheet.create({
 
   // Encabezado y resumen de progreso de hábitos
   headerSpacer: {
-    marginTop: 30,
+    marginTop: 40,
     marginBottom: vs(32),
     paddingHorizontal: s(4),
     justifyContent: 'center',
   },
   greeting: { fontSize: ms(21), fontWeight: '600', color: COLORS.textPrimary },
+  subGreeting: { fontSize: ms(14), fontWeight: '500', color: COLORS.textSecondary, marginLeft: vs(5), marginTop: vs(6)},
 
   // Tarjeta principal y encabezado de la cuadrícula
   gridContainer: {
@@ -773,8 +749,8 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: COLORS.border,
-    marginTop: vs(-2),
-    marginBottom: vs(2),
+    marginTop: vs(5),
+    marginBottom: vs(20),
   },
 
   // Cuadrícula y tarjetas individuales
@@ -782,7 +758,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: vs(12),
+    rowGap: vs(20),
   },
 
   iconContainer: {
@@ -790,11 +766,16 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '30%',
-    minHeight: '15%',
+    minHeight: vs(120),
     borderRadius: ms(18),
-    padding: s(12),
+    padding: s(8),
     justifyContent: 'space-between',
+    alignItems: 'center',
     elevation: 1,
+  },
+  cardActiveBorder: {
+    borderWidth: 2,
+    borderColor: COLORS.greenBorder,
   },
   cardLocked: { opacity: 0.95, borderColor: COLORS.greenBorder },
   imageFrame: {
@@ -818,20 +799,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cardLockIconBadge: {
-    position: 'absolute',
-    bottom: s(20),
-    right: s(4),
-    backgroundColor: COLORS.greenSoft,
-    padding: s(4),
-    borderRadius: ms(8),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   emoji: { fontSize: ms(40) },
   cardImage: { width: '100%', height: '100%' },
-  cardTitle: { fontSize: ms(13), fontWeight: '500', color: COLORS.textPrimary, alignSelf: 'center', marginTop: vs(8) },
-  cardSubtitle: { fontSize: ms(11), color: COLORS.textSecondary, marginTop: vs(4), alignSelf: 'center', textAlign: 'center'},
+  cardTitle: { fontSize: ms(12), fontWeight: '500', color: COLORS.textPrimary, alignSelf: 'center', marginTop: vs(4) },
 
   // Confirmación de la evaluación diaria
   confirmationSection: {
@@ -842,18 +812,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+
+  //registrar habitos boton
   globalConfirmButton: {
-    backgroundColor: COLORS.greenAction,
+    backgroundColor: COLORS.registerButton,
     width: '50%',
     alignSelf: 'center',
     height: vs(45),
     paddingVertical: vs(12),
     borderRadius: ms(14),
     borderWidth: 1,
-    borderColor: COLORS.greenAction,
+    borderColor: COLORS.registerButton,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowOpacity: 0,
     elevation: 1,
   },
   globalConfirmDisabled: {
@@ -863,8 +834,8 @@ const styles = StyleSheet.create({
   },
   confirmButtonContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   confirmIcon: { marginRight: s(6) },
-  globalConfirmText: { color: COLORS.surface, fontSize: ms(16), fontWeight: 'bold', alignSelf: 'center' },
-  globalConfirmDisabledText: { color: COLORS.textMuted, fontSize: ms(14), fontWeight: '600' },
+  globalConfirmText: { color: COLORS.surface, fontSize: ms(14), fontWeight: 'bold', alignSelf: 'center' },
+  globalConfirmDisabledText: { color: COLORS.textMuted, fontSize: ms(14), fontWeight: '700' },
 
   // Estado visible cuando la evaluación diaria ya está bloqueada
   lockedBottomContainer: {
@@ -920,13 +891,13 @@ const styles = StyleSheet.create({
     width: s(88),
     height: s(88),
     borderWidth: 2,
-    borderColor: COLORS.modalIconBorder,
+    borderColor: COLORS.greenBorder,
     borderRadius: ms(20),
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: vs(14),
   },
-  waterModalIconArea: { borderColor: COLORS.blueInputBorder, backgroundColor: COLORS.blueSoft },
+  waterModalIconArea: { borderColor: COLORS.greenBorder, backgroundColor: COLORS.blueSoft },
   modalEmoji: { fontSize: ms(44) },
   modalHabitImage: { width: s(60), height: s(60) },
   questionText: { fontSize: ms(15), fontWeight: '600', color: COLORS.textQuestion, marginBottom: vs(16), textAlign: 'center' },
@@ -968,11 +939,11 @@ const styles = StyleSheet.create({
   registerButtonText: { color: COLORS.surface, fontSize: ms(15), fontWeight: 'bold' },
 
   // Controles específicos para registrar hidratación
-  waterModalContainer: { width: '100%', alignItems: 'center', paddingVertical: vs(6) },
+  waterModalContainer: { width: '90%', alignItems: 'center', paddingVertical: vs(6)},
   waterCounterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: vs(16) },
   waterStepBtn: {
-    width: s(46),
-    height: s(46),
+    width: s(30),
+    height: s(30),
     borderRadius: s(23),
     backgroundColor: COLORS.blueSoft,
     borderWidth: 1.5,
@@ -984,29 +955,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'center',
-    marginHorizontal: s(12),
+    marginHorizontal: s(9),
     backgroundColor: COLORS.surfaceSubtle,
     borderWidth: 1.5,
     borderColor: COLORS.blueInputBorder,
     borderRadius: ms(14),
     paddingHorizontal: s(16),
     paddingVertical: vs(8),
-    minWidth: s(130),
+   
   },
-  waterInput: { fontSize: ms(26), fontWeight: '800', color: COLORS.blueText, textAlign: 'center', minWidth: s(46) },
+  waterInput: { fontSize: ms(25), fontWeight: '600', color: COLORS.blueText, textAlign: 'center', minWidth: s(25) },
   waterUnitText: { fontSize: ms(15), fontWeight: '600', color: COLORS.waterUnit, marginLeft: s(6) },
-  waterSaveButton: {
-    backgroundColor: COLORS.greenSuccess,
-    paddingVertical: vs(12),
-    paddingHorizontal: s(50),
-    borderRadius: ms(25),
-    shadowColor: COLORS.greenSuccess,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
-    marginTop: vs(8),
-  },
 
   // Controles específicos para registrar horas y calidad del sueño
   sectionSubtitle: { fontSize: ms(13), fontWeight: '700', color: COLORS.textSubdued, alignSelf: 'flex-start', marginBottom: vs(8), marginTop: vs(4) },

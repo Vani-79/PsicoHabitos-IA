@@ -19,6 +19,15 @@ interface PatientBottomNavProps {
 // Configuración de hitSlop estática para evitar re-creación de objetos en cada render
 const HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 };
 
+const COLORS = {
+  activeIcon: '#0f613b77',
+  inactiveIcon: '#727376',
+  surface: '#ffffff',
+  border: '#ffffff',
+  shadow: '#000',
+
+} as const;
+
 // Estructura de datos para definir los elementos de la barra de navegación
 interface NavItemConfig {
   key: PatientTab;
@@ -27,44 +36,41 @@ interface NavItemConfig {
   inactiveIcon?: keyof typeof Ionicons.glyphMap;
   size?: number;
   imageSource?: any;
+ 
 }
 
-// Lista de ítems para renderizar dinámicamente
+// Ítems de navegación mostrados en la barra
 const NAV_ITEMS: NavItemConfig[] = [
-  //Icono de sesiones
   {
     key: 'calendar',
     iconType: 'ionicons',
     activeIcon: 'calendar',
     inactiveIcon: 'calendar-outline',
-    size: 26,
+    size: 27,
   },
-
-  //Icono de ejercicios
   {
     key: 'exercises',
     iconType: 'ionicons',
-    activeIcon: 'fitness',
-    inactiveIcon: 'fitness-outline',
+    activeIcon: 'play-circle',
+    inactiveIcon: 'play-circle-outline',
     size: 27,
   },
-
-  //Icono de registro de hábitos
   {
     key: 'habits',
-    iconType: 'image',
-    imageSource: require('../../assets/habitos-nav.png'),
+    iconType: 'ionicons',
+    activeIcon: 'checkmark-done-circle',
+    inactiveIcon: 'checkmark-done-circle-outline',
+    size: 37,
+  
+    
   },
-
-  //Icono de chat IA
   {
     key: 'chatbot',
-    iconType: 'image',
-    imageSource: require('../../assets/bot-de-voz.png'),
-    size: 28,
+    iconType: 'ionicons',
+    activeIcon: 'chatbubble-ellipses',
+    inactiveIcon: 'chatbubble-ellipses-outline',
+    size: 27,
   },
-
-  //Icono de perfil paciente
   {
     key: 'profile',
     iconType: 'ionicons',
@@ -101,13 +107,13 @@ export const PatientBottomNav: React.FC<PatientBottomNavProps> = ({
             {item.iconType === 'ionicons' ? (
               <Ionicons
                 name={(isActive ? item.activeIcon : item.inactiveIcon)!}
-                size={item.size}
-                color="#10331dad"
+                size={item.size || 26}
+                color={isActive ? COLORS.activeIcon : COLORS.inactiveIcon}
               />
             ) : (
               <Image
                 source={item.imageSource}
-                style={{ width: item.size || 40, height: item.size || 40 }}
+                style={{ width: item.size || 35, height: item.size || 35 }}
                 resizeMode="contain"
               />
             )}
@@ -119,6 +125,7 @@ export const PatientBottomNav: React.FC<PatientBottomNavProps> = ({
 };
 
 const styles = StyleSheet.create({
+  // Contenedor y disposición
   bottomNavContainer: {
     position: 'absolute',
     bottom: 0,
@@ -128,24 +135,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#F8FBF9',
+    backgroundColor: COLORS.surface,
     borderTopWidth: 1,
-    borderColor: '#E5EEE8',
-    paddingTop: 6,
-    elevation: 8,
-    shadowColor: '#000',
+    borderColor: COLORS.border,
+    paddingTop: 8,
+
+    // Mantiene la barra interactiva por encima del contenido de la pantalla.
+    zIndex: 999,
+    elevation: 10,
+    shadowColor: COLORS.shadow,
     shadowOffset: {
       width: 0,
       height: -2,
     },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
   },
+
+  // Área táctil de cada pestaña
   navButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 3,
-    minHeight: 40,
+    paddingVertical: 6,
+    minHeight: 44,
   },
 });

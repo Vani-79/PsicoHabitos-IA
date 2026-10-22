@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { UserRole } from '../../../constants/auth';
 import { authService } from '../../../services';
 import { validatePasswordComplexity } from '../../../utils/validators';
-import { authStyles } from './authStyles';
+import { AUTH_COLORS, authStyles } from './authStyles';
 import { PasswordRequirements } from './PasswordRequirements';
 
 interface CreateInitialPasswordCardProps {
@@ -135,13 +135,13 @@ export const CreateInitialPasswordCard: React.FC<CreateInitialPasswordCardProps>
   return (
     <View style={authStyles.card}>
       <View style={authStyles.welcomeBadge}>
-        <Ionicons name="key-outline" size={22} color="#0F613B" />
+        <Ionicons name="key-outline" size={22} color={AUTH_COLORS.green} />
         <Text style={authStyles.welcomeBadgeText}>PRIMER ACCESO AL SISTEMA</Text>
       </View>
 
       <Text style={authStyles.cardTitle}>Crear Contraseña</Text>
       <Text style={authStyles.cardSubtitle}>
-        ¡Hola <Text style={{ fontWeight: '700', color: '#0F613B' }}>{userName}</Text>! Tu cuenta ha sido dada de alta. Define tu contraseña personal para acceder.
+        ¡Hola <Text style={{ fontWeight: '700', color: AUTH_COLORS.green }}>{userName}</Text>! Tu cuenta ha sido dada de alta. Define tu contraseña personal para acceder.
       </Text>
 
       {/* Email (solo lectura) */}
@@ -159,7 +159,7 @@ export const CreateInitialPasswordCard: React.FC<CreateInitialPasswordCardProps>
           <TextInput
             style={authStyles.passwordInput}
             placeholder="Mínimo 8 caracteres"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={AUTH_COLORS.gray400}
             value={newPassword}
             onChangeText={setNewPassword}
             secureTextEntry={!showNewPassword}
@@ -174,7 +174,7 @@ export const CreateInitialPasswordCard: React.FC<CreateInitialPasswordCardProps>
             <Ionicons
               name={showNewPassword ? 'eye-off-outline' : 'eye-outline'}
               size={20}
-              color="#6B7280"
+              color={AUTH_COLORS.gray600}
             />
           </TouchableOpacity>
         </View>
@@ -187,7 +187,7 @@ export const CreateInitialPasswordCard: React.FC<CreateInitialPasswordCardProps>
           <TextInput
             style={authStyles.passwordInput}
             placeholder="Repite tu contraseña"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={AUTH_COLORS.gray400}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry={!showConfirmPassword}
@@ -202,7 +202,7 @@ export const CreateInitialPasswordCard: React.FC<CreateInitialPasswordCardProps>
             <Ionicons
               name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
               size={20}
-              color="#6B7280"
+              color={AUTH_COLORS.gray600}
             />
           </TouchableOpacity>
         </View>
@@ -227,7 +227,7 @@ export const CreateInitialPasswordCard: React.FC<CreateInitialPasswordCardProps>
               acceptedTerms && authStyles.termsCheckboxChecked,
             ]}
           >
-            {acceptedTerms && <Ionicons name="checkmark" size={15} color="#FFFFFF" />}
+            {acceptedTerms && <Ionicons name="checkmark" size={15} color={AUTH_COLORS.white} />}
           </View>
           <View style={authStyles.termsTextContainer}>
             <Text style={authStyles.termsAgreementText}>
@@ -245,7 +245,7 @@ export const CreateInitialPasswordCard: React.FC<CreateInitialPasswordCardProps>
           onPress={onOpenTermsModal}
           activeOpacity={0.7}
         >
-          <Ionicons name="shield-checkmark-outline" size={15} color="#0F613B" />
+          <Ionicons name="shield-checkmark-outline" size={15} color={AUTH_COLORS.green} />
           <Text style={authStyles.termsInfoButtonText}>
             Ver términos legales y resguardo de confidencialidad
           </Text>
@@ -263,7 +263,7 @@ export const CreateInitialPasswordCard: React.FC<CreateInitialPasswordCardProps>
         disabled={isSubmitDisabled}
       >
         {isLoading ? (
-          <ActivityIndicator color="#FFFFFF" />
+          <ActivityIndicator color={AUTH_COLORS.white} />
         ) : (
           <Text style={authStyles.submitButtonText}>
             Guardar Contraseña e Ingresar

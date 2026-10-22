@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { authStyles } from './authStyles';
+import { AUTH_COLORS, authStyles } from './authStyles';
 
 export interface PasswordRulesState {
   reqLength: boolean;
@@ -56,7 +56,7 @@ const RequirementItem: React.FC<RequirementItemProps> = ({ label, isValid }) => 
     <Ionicons
       name={isValid ? 'checkmark-circle' : 'ellipse-outline'}
       size={16}
-      color={isValid ? '#0F613B' : '#9CA3AF'}
+      color={isValid ? AUTH_COLORS.green : AUTH_COLORS.gray400}
     />
     <Text style={[authStyles.reqText, isValid && authStyles.reqTextActive]}>
       {label}
@@ -73,12 +73,12 @@ const PasswordMatchItem: React.FC<PasswordMatchItemProps> = ({ isMatch }) => (
     <Ionicons
       name={isMatch ? 'checkmark-circle' : 'close-circle-outline'}
       size={16}
-      color={isMatch ? '#0F613B' : '#DC2626'}
+      color={isMatch ? AUTH_COLORS.green : AUTH_COLORS.red}
     />
     <Text
       style={[
         authStyles.reqText,
-        isMatch ? authStyles.reqTextActive : { color: '#DC2626' },
+        isMatch ? authStyles.reqTextActive : { color: AUTH_COLORS.red },
       ]}
     >
       {isMatch ? 'Las contraseñas coinciden' : 'Las contraseñas no coinciden'}

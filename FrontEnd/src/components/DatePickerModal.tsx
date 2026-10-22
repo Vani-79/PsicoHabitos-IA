@@ -10,6 +10,29 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+const COLORS = {
+  white: '#FFFFFF',
+  black: '#000',
+  overlay: 'rgba(0, 0, 0, 0.45)',
+  border: '#F0F0F0',
+  green: '#0F613B',
+  greenDark: '#0E5C3A',
+  greenSoft: '#E4EDE7',
+  greenBorder: '#C6E3D1',
+  gray100: '#F3F4F6',
+  gray50: '#F8FAFC',
+  grayLight: '#F9FAFB',
+  grayBorder: '#E5E7EB',
+  gray200: '#E2E8F0',
+  gray300: '#CBD5E1',
+  gray400: '#9CA3AF',
+  gray500: '#6B7280',
+  gray600: '#94A3B8',
+  gray700: '#374151',
+  charcoal: '#1F2937',
+  slate100: '#F1F5F9',
+} as const;
+
 interface DatePickerModalProps {
   visible: boolean;
   initialDate?: string; // Formato 'YYYY-MM-DD'
@@ -314,7 +337,7 @@ const handleSelectYear = (year: number) => {
                 <Ionicons
                   name={viewMode === 'year' ? 'chevron-up' : 'chevron-down'}
                   size={16}
-                  color={viewMode === 'year' ? '#FFFFFF' : '#0F613B'}
+                  color={viewMode === 'year' ? COLORS.white : COLORS.green}
                   style={{ marginLeft: 4 }}
                 />
               </TouchableOpacity>
@@ -339,7 +362,7 @@ const handleSelectYear = (year: number) => {
                 <Ionicons
                   name={viewMode === 'month' ? 'chevron-up' : 'chevron-down'}
                   size={16}
-                  color={viewMode === 'month' ? '#FFFFFF' : '#0F613B'}
+                  color={viewMode === 'month' ? COLORS.white : COLORS.green}
                   style={{ marginLeft: 4 }}
                 />
               </TouchableOpacity>
@@ -357,7 +380,7 @@ const handleSelectYear = (year: number) => {
                   <Ionicons
                     name="chevron-back"
                     size={20}
-                    color={isPrevMonthDisabled ? '#CBD5E1' : '#0F613B'}
+                    color={isPrevMonthDisabled ? COLORS.gray300 : COLORS.green}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -369,7 +392,7 @@ const handleSelectYear = (year: number) => {
                   <Ionicons
                     name="chevron-forward"
                     size={20}
-                    color={isNextMonthDisabled ? '#CBD5E1' : '#0F613B'}
+                    color={isNextMonthDisabled ? COLORS.gray300 : COLORS.green}
                   />
                 </TouchableOpacity>
               </View>
@@ -537,7 +560,7 @@ const handleSelectYear = (year: number) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: COLORS.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -545,10 +568,10 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 360,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     borderRadius: 24,
     padding: 20,
-    shadowColor: '#000',
+    shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -557,20 +580,20 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: COLORS.border,
     paddingBottom: 10,
   },
   modalTitle: {
     fontSize: 13.5,
     fontWeight: '700',
-    color: '#6B7280',
+    color: COLORS.gray500,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   selectedDateHeadline: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#0E5C3A',
+    color: COLORS.greenDark,
     marginTop: 4,
   },
   selectorBar: {
@@ -586,25 +609,25 @@ const styles = StyleSheet.create({
   selectorPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E4EDE7',
+    backgroundColor: COLORS.greenSoft,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#C6E3D1',
+    borderColor: COLORS.greenBorder,
   },
   selectorPillActive: {
-    backgroundColor: '#0F613B',
-    borderColor: '#0F613B',
+    backgroundColor: COLORS.green,
+    borderColor: COLORS.green,
   },
   selectorPillText: {
     fontSize: 13.5,
     fontWeight: '700',
-    color: '#0F613B',
+    color: COLORS.green,
   },
   selectorPillTextActive: {
-    color: '#FFFFFF',
+    color: COLORS.white,
   },
   arrowsRow: {
     flexDirection: 'row',
@@ -614,13 +637,13 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.gray100,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 6,
   },
   arrowButtonDisabled: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: COLORS.gray50,
     opacity: 0.4,
   },
   calendarContainer: {
@@ -636,7 +659,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 12.5,
     fontWeight: '700',
-    color: '#9CA3AF',
+    color: COLORS.gray400,
   },
   daysGrid: {
     flexDirection: 'row',
@@ -656,10 +679,10 @@ const styles = StyleSheet.create({
   },
   dayCellToday: {
     borderWidth: 1.5,
-    borderColor: '#0F613B',
+    borderColor: COLORS.green,
   },
   dayCellSelected: {
-    backgroundColor: '#0F613B',
+    backgroundColor: COLORS.green,
   },
   dayCellDisabled: {
     opacity: 0.25,
@@ -667,18 +690,18 @@ const styles = StyleSheet.create({
   dayText: {
     fontSize: 14.5,
     fontWeight: '600',
-    color: '#1F2937',
+    color: COLORS.charcoal,
   },
   dayTextToday: {
-    color: '#0F613B',
+    color: COLORS.green,
     fontWeight: '800',
   },
   dayTextSelected: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontWeight: '800',
   },
   dayTextDisabled: {
-    color: '#94A3B8',
+    color: COLORS.gray600,
     textDecorationLine: 'line-through',
   },
   yearViewContainer: {
@@ -689,7 +712,7 @@ const styles = StyleSheet.create({
   },
   subviewHint: {
     fontSize: 12.5,
-    color: '#6B7280',
+    color: COLORS.gray500,
     marginBottom: 8,
     textAlign: 'center',
   },
@@ -707,23 +730,23 @@ const styles = StyleSheet.create({
     minWidth: 90,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: COLORS.grayLight,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.grayBorder,
   },
   yearChipActive: {
-    backgroundColor: '#0F613B',
-    borderColor: '#0F613B',
+    backgroundColor: COLORS.green,
+    borderColor: COLORS.green,
   },
   yearChipText: {
     fontSize: 14.5,
     fontWeight: '600',
-    color: '#374151',
+    color: COLORS.gray700,
   },
   yearChipTextActive: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontWeight: '800',
   },
   monthGrid: {
@@ -734,33 +757,33 @@ const styles = StyleSheet.create({
   monthChip: {
     width: '31%',
     paddingVertical: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: COLORS.grayLight,
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.grayBorder,
   },
   monthChipActive: {
-    backgroundColor: '#0F613B',
-    borderColor: '#0F613B',
+    backgroundColor: COLORS.green,
+    borderColor: COLORS.green,
   },
   monthChipDisabled: {
-    backgroundColor: '#F1F5F9',
-    borderColor: '#E2E8F0',
+    backgroundColor: COLORS.slate100,
+    borderColor: COLORS.gray200,
     opacity: 0.4,
   },
   monthChipText: {
     fontSize: 13.5,
     fontWeight: '600',
-    color: '#374151',
+    color: COLORS.gray700,
   },
   monthChipTextActive: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontWeight: '800',
   },
   monthChipTextDisabled: {
-    color: '#94A3B8',
+    color: COLORS.gray600,
   },
   footer: {
     flexDirection: 'row',
@@ -769,7 +792,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    borderTopColor: COLORS.border,
   },
   actionButtonsRow: {
     flexDirection: 'row',
@@ -782,18 +805,18 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: COLORS.gray500,
     fontWeight: '600',
   },
   confirmButton: {
-    backgroundColor: '#0F613B',
+    backgroundColor: COLORS.green,
     paddingVertical: 8,
     paddingHorizontal: 18,
     borderRadius: 10,
   },
   confirmButtonText: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontWeight: '700',
   },
 });

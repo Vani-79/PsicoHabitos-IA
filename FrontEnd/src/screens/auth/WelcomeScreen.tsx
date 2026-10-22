@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LegalConsentModal } from '../../components/LegalConsentModal';
+import { AUTH_COLORS } from './components/authStyles';
 
 interface WelcomeScreenProps {
   onStartLogin: () => void;
@@ -65,7 +66,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartLogin }) =>
           {/* Tarjeta 2: Hábitos */}
           <View style={styles.featureCard}>
             <View style={styles.featureIconContainer}>
-              <Ionicons name="sparkles" size={20} color="#0F613B" />
+              <Ionicons name="sparkles" size={20} color={AUTH_COLORS.green} />
             </View>
             <View style={styles.featureTextContainer}>
               <Text style={styles.featureTitle}>Monitoreo de Hábitos</Text>
@@ -78,7 +79,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartLogin }) =>
           {/* Tarjeta 3: Conexión Terapéutica */}
           <View style={styles.featureCard}>
             <View style={styles.featureIconContainer}>
-              <Ionicons name="shield-checkmark" size={20} color="#0F613B" />
+              <Ionicons name="shield-checkmark" size={20} color={AUTH_COLORS.green} />
             </View>
             <View style={styles.featureTextContainer}>
               <Text style={styles.featureTitle}>Conexión Terapéutica</Text>
@@ -100,7 +101,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartLogin }) =>
             <Ionicons
               name="arrow-forward"
               size={22}
-              color="#FFFFFF"
+              color={AUTH_COLORS.white}
               style={styles.buttonIcon}
             />
           </TouchableOpacity>
@@ -114,7 +115,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartLogin }) =>
             <Ionicons
               name="shield-checkmark"
               size={15}
-              color="#10B981"
+              color={AUTH_COLORS.greenBright}
             />
             <Text style={styles.securityText}>
               Espacio seguro y confidencial (Ley N° 21.719)
@@ -140,7 +141,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartLogin }) =>
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: AUTH_COLORS.white,
   },
   scrollContent: {
     flexGrow: 1,
@@ -167,15 +168,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   titlePsico: {
-    color: '#0E5C3A',
+    color: AUTH_COLORS.greenDark,
   },
   titleHabitos: {
-    color: '#268D77',
+    color: AUTH_COLORS.greenLight,
   },
   sloganText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#0E5C3A',
+    color: AUTH_COLORS.greenDark,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -186,14 +187,14 @@ const styles = StyleSheet.create({
   featureCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F7FAF8',
+    backgroundColor: AUTH_COLORS.welcomeBackground,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E2EBE5',
+    borderColor: AUTH_COLORS.welcomeBorder,
     paddingVertical: 11,
     paddingHorizontal: 14,
     marginBottom: 10,
-    shadowColor: '#000',
+    shadowColor: AUTH_COLORS.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 3,
@@ -203,7 +204,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: AUTH_COLORS.greenSoft,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -218,12 +219,12 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0F613B',
+    color: AUTH_COLORS.green,
     marginBottom: 2,
   },
   featureDescription: {
     fontSize: 12,
-    color: '#526058',
+    color: AUTH_COLORS.greenMutedText,
     lineHeight: 16,
   },
   buttonSection: {
@@ -232,21 +233,21 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   loginButton: {
-    backgroundColor: '#0F613B',
+    backgroundColor: AUTH_COLORS.green,
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 14,
-    shadowColor: '#0F613B',
+    shadowColor: AUTH_COLORS.green,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 5,
     elevation: 3,
   },
   loginButtonText: {
-    color: '#FFFFFF',
+    color: AUTH_COLORS.white,
     fontSize: 17,
     fontWeight: '700',
     marginRight: 8,
@@ -270,7 +271,7 @@ const styles = StyleSheet.create({
   },
   termsHintText: {
     fontSize: 11,
-    color: '#8E9E96',
+    color: AUTH_COLORS.grayGreen,
     marginTop: 4,
     textAlign: 'center',
   },

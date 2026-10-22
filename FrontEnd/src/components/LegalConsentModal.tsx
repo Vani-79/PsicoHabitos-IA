@@ -9,6 +9,20 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+const COLORS = {
+  green: '#0F613B',
+  white: '#FFFFFF',
+  overlay: 'rgba(0, 0, 0, 0.45)',
+  black: '#000',
+  greenSoft: '#E8F5E9',
+  greenMuted: '#E4EDE7',
+  background: '#F7FAF8',
+  border: '#E2EBE5',
+  gray700: '#374151',
+  greenSubtle: '#EBF5F0',
+  gray500: '#6B7280',
+} as const;
+
 interface LegalConsentModalProps {
   visible: boolean;
   onClose: () => void;
@@ -32,13 +46,13 @@ export const LegalConsentModal: React.FC<LegalConsentModalProps> = ({
       <View style={styles.modalOverlay}>
         <View style={styles.modalCard}>
           <View style={styles.modalIconCircle}>
-            <Ionicons name="shield-checkmark" size={32} color="#0F613B" />
+            <Ionicons name="shield-checkmark" size={32} color={COLORS.green} />
           </View>
 
           <Text style={styles.modalTitle}>Protección de Datos y Privacidad</Text>
 
           <View style={styles.modalLawBadge}>
-            <Ionicons name="document-text-outline" size={13} color="#0F613B" />
+            <Ionicons name="document-text-outline" size={13} color={COLORS.green} />
             <Text style={styles.modalLawBadgeText}>Ley N° 21.719</Text>
           </View>
 
@@ -66,7 +80,7 @@ export const LegalConsentModal: React.FC<LegalConsentModalProps> = ({
               </Text>
 
               <View style={styles.legalNoticeBox}>
-                <Ionicons name="information-circle-outline" size={16} color="#0F613B" style={{ marginRight: 6 }} />
+                <Ionicons name="information-circle-outline" size={16} color={COLORS.green} style={{ marginRight: 6 }} />
                 <Text style={styles.legalNoticeText}>
                   Conforme a la Ley N° 21.719, al aceptar se registra de manera segura la fecha, hora y dirección IP desde donde se otorga este consentimiento con fines probatorios de auditoría y seguridad.
                 </Text>
@@ -83,7 +97,7 @@ export const LegalConsentModal: React.FC<LegalConsentModalProps> = ({
               }}
               activeOpacity={0.85}
             >
-              <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <Ionicons name="checkmark-circle" size={20} color={COLORS.white} style={{ marginRight: 6 }} />
               <Text style={styles.modalAcceptButtonText}>Acepto los términos y condiciones</Text>
             </TouchableOpacity>
           )}
@@ -106,20 +120,20 @@ export const LegalConsentModal: React.FC<LegalConsentModalProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: COLORS.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
   modalCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     width: '100%',
     maxWidth: 360,
     maxHeight: '85%',
     borderRadius: 22,
     padding: 22,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 10,
@@ -129,7 +143,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.greenSoft,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
@@ -137,14 +151,14 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#0F613B',
+    color: COLORS.green,
     textAlign: 'center',
     marginBottom: 6,
   },
   modalLawBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E4EDE7',
+    backgroundColor: COLORS.greenMuted,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 12,
@@ -154,7 +168,7 @@ const styles = StyleSheet.create({
   modalLawBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0F613B',
+    color: COLORS.green,
   },
   scrollContainer: {
     width: '100%',
@@ -162,26 +176,26 @@ const styles = StyleSheet.create({
   },
   modalContentBox: {
     width: '100%',
-    backgroundColor: '#F7FAF8',
+    backgroundColor: COLORS.background,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E2EBE5',
+    borderColor: COLORS.border,
   },
   modalParagraph: {
     fontSize: 12.5,
-    color: '#374151',
+    color: COLORS.gray700,
     lineHeight: 18,
     marginBottom: 8,
   },
   modalBoldText: {
     fontWeight: '700',
-    color: '#0F613B',
+    color: COLORS.green,
   },
   legalNoticeBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#EBF5F0',
+    backgroundColor: COLORS.greenSubtle,
     padding: 10,
     borderRadius: 8,
     marginTop: 6,
@@ -189,11 +203,11 @@ const styles = StyleSheet.create({
   legalNoticeText: {
     flex: 1,
     fontSize: 11.5,
-    color: '#0F613B',
+    color: COLORS.green,
     lineHeight: 16,
   },
   modalAcceptButton: {
-    backgroundColor: '#0F613B',
+    backgroundColor: COLORS.green,
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
@@ -203,7 +217,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   modalAcceptButtonText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 14.5,
     fontWeight: '700',
   },
@@ -212,12 +226,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   modalCloseButtonText: {
-    color: '#6B7280',
+    color: COLORS.gray500,
     fontSize: 13,
     fontWeight: '600',
   },
   modalPrimaryCloseButton: {
-    backgroundColor: '#0F613B',
+    backgroundColor: COLORS.green,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
@@ -225,7 +239,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   modalPrimaryCloseButtonText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 14.5,
     fontWeight: '700',
   },

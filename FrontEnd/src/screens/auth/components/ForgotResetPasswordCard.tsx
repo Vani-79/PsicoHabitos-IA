@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { UserRole } from '../../../constants/auth';
 import { authService } from '../../../services';
 import { validatePasswordComplexity } from '../../../utils/validators';
-import { authStyles } from './authStyles';
+import { AUTH_COLORS, authStyles } from './authStyles';
 import {
   PasswordRequirements,
   checkPasswordRequirements,
@@ -131,7 +131,7 @@ export const ForgotResetPasswordCard: React.FC<ForgotResetPasswordCardProps> = (
   return (
     <View style={authStyles.card}>
       <View style={authStyles.welcomeBadge}>
-        <Ionicons name="lock-closed-outline" size={20} color="#0F613B" />
+        <Ionicons name="lock-closed-outline" size={20} color={AUTH_COLORS.green} />
         <Text style={authStyles.welcomeBadgeText}>NUEVA CONTRASEÑA</Text>
       </View>
 
@@ -155,7 +155,7 @@ export const ForgotResetPasswordCard: React.FC<ForgotResetPasswordCardProps> = (
           <TextInput
             style={authStyles.passwordInput}
             placeholder="Mínimo 8 caracteres"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={AUTH_COLORS.gray400}
             value={resetNewPassword}
             onChangeText={setResetNewPassword}
             secureTextEntry={!showResetNewPassword}
@@ -170,7 +170,7 @@ export const ForgotResetPasswordCard: React.FC<ForgotResetPasswordCardProps> = (
             <Ionicons
               name={showResetNewPassword ? 'eye-off-outline' : 'eye-outline'}
               size={20}
-              color="#6B7280"
+              color={AUTH_COLORS.gray600}
             />
           </TouchableOpacity>
         </View>
@@ -183,7 +183,7 @@ export const ForgotResetPasswordCard: React.FC<ForgotResetPasswordCardProps> = (
           <TextInput
             style={authStyles.passwordInput}
             placeholder="Repite tu nueva contraseña"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={AUTH_COLORS.gray400}
             value={resetConfirmPassword}
             onChangeText={setResetConfirmPassword}
             secureTextEntry={!showResetConfirmPassword}
@@ -200,7 +200,7 @@ export const ForgotResetPasswordCard: React.FC<ForgotResetPasswordCardProps> = (
             <Ionicons
               name={showResetConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
               size={20}
-              color="#6B7280"
+              color={AUTH_COLORS.gray600}
             />
           </TouchableOpacity>
         </View>
@@ -223,7 +223,7 @@ export const ForgotResetPasswordCard: React.FC<ForgotResetPasswordCardProps> = (
         disabled={isSubmitDisabled}
       >
         {isLoading ? (
-          <ActivityIndicator color="#FFFFFF" />
+          <ActivityIndicator color={AUTH_COLORS.white} />
         ) : (
           <Text style={authStyles.submitButtonText}>
             Guardar Contraseña e Ingresar

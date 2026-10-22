@@ -10,6 +10,18 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { UserRole } from '../constants/auth';
 
+const COLORS = {
+  charcoal: '#1F2937',
+  white: '#FFFFFF',
+  green: '#0F613B',
+  borderSoft: '#E5EEE8',
+  background: '#F8FBF9',
+  overlay: 'rgba(0, 0, 0, 0.15)',
+  black: '#000',
+  border: '#E5E7EB',
+  gray700: '#374151',
+} as const;
+
 interface ProfileRoleHeaderProps {
   title?: string;
   currentRole: UserRole;
@@ -56,7 +68,7 @@ export const ProfileRoleHeader: React.FC<ProfileRoleHeaderProps> = ({
           <Ionicons
             name={isOpen ? 'chevron-up' : 'chevron-down'}
             size={18}
-            color="#1F2937"
+            color={COLORS.charcoal}
             style={styles.chevronIcon}
           />
         )}
@@ -90,7 +102,7 @@ export const ProfileRoleHeader: React.FC<ProfileRoleHeaderProps> = ({
                   <Ionicons
                     name="medical"
                     size={17}
-                    color={currentRole === 'psicologo' ? '#FFFFFF' : '#0F613B'}
+                    color={currentRole === 'psicologo' ? COLORS.white : COLORS.green}
                     style={styles.roleIcon}
                   />
                   <Text
@@ -105,7 +117,7 @@ export const ProfileRoleHeader: React.FC<ProfileRoleHeaderProps> = ({
                   </Text>
                 </View>
                 {currentRole === 'psicologo' && (
-                  <Ionicons name="checkmark-circle" size={17} color="#FFFFFF" />
+                  <Ionicons name="checkmark-circle" size={17} color={COLORS.white} />
                 )}
               </TouchableOpacity>
 
@@ -124,7 +136,7 @@ export const ProfileRoleHeader: React.FC<ProfileRoleHeaderProps> = ({
                   <Ionicons
                     name="person"
                     size={17}
-                    color={currentRole === 'paciente' ? '#FFFFFF' : '#0F613B'}
+                    color={currentRole === 'paciente' ? COLORS.white : COLORS.green}
                     style={styles.roleIcon}
                   />
                   <Text
@@ -139,7 +151,7 @@ export const ProfileRoleHeader: React.FC<ProfileRoleHeaderProps> = ({
                   </Text>
                 </View>
                 {currentRole === 'paciente' && (
-                  <Ionicons name="checkmark-circle" size={17} color="#FFFFFF" />
+                  <Ionicons name="checkmark-circle" size={17} color={COLORS.white} />
                 )}
               </TouchableOpacity>
             </View>
@@ -159,8 +171,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5EEE8',
-    backgroundColor: '#F8FBF9',
+    borderBottomColor: COLORS.borderSoft,
+    backgroundColor: COLORS.background,
     zIndex: 999,
   },
   titleContainer: {
@@ -174,7 +186,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937',
+    color: COLORS.charcoal,
   },
   chevronIcon: {
     marginLeft: 6,
@@ -186,7 +198,7 @@ const styles = StyleSheet.create({
     right: -1000,
     bottom: -2000,
     height: 4000,
-    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    backgroundColor: COLORS.overlay,
     zIndex: 1000,
   },
   popoverContainer: {
@@ -195,7 +207,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
     zIndex: 1001,
-    shadowColor: '#000',
+    shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -204,21 +216,21 @@ const styles = StyleSheet.create({
   popoverArrow: {
     width: 12,
     height: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     transform: [{ rotate: '45deg' }],
     marginBottom: -6,
     zIndex: 1002,
     borderTopWidth: 1,
     borderLeftWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
   },
   popoverCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 8,
     width: 190,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
     gap: 6,
   },
   roleOption: {
@@ -230,12 +242,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   roleActiveGreen: {
-    backgroundColor: '#0F613B',
+    backgroundColor: COLORS.green,
   },
   roleInactiveWhite: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
   },
   roleOptionLeft: {
     flexDirection: 'row',
@@ -249,9 +261,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   roleTextActive: {
-    color: '#FFFFFF',
+    color: COLORS.white,
   },
   roleTextInactive: {
-    color: '#374151',
+    color: COLORS.gray700,
   },
 });

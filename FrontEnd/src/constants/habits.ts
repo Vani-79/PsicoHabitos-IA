@@ -76,7 +76,7 @@ export const HABIT_CATALOG: Record<HabitKey, HabitDefinition> = {
     key: 'sueno',
     label: 'Sueño',
     category: 'lifestyle',
-    question: '¿Cómo evalúas tu descanso?                         ¿Cuántas horas dormiste?',
+    question: '¿Cómo evalúas tu descanso?',                    
     image: require('../../assets/sueno.png'),
   },
   estres: {

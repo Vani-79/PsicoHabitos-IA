@@ -10,7 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { UserRole } from '../../../constants/auth';
 import { authService, storageService } from '../../../services';
-import { authStyles } from './authStyles';
+import { AUTH_COLORS, authStyles } from './authStyles';
 
 type LoginStep = 'email' | 'password' | 'role_selection';
 
@@ -283,7 +283,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   return (
     <View style={authStyles.card}>
       <View style={authStyles.welcomeBadge}>
-        <Ionicons name="shield-checkmark" size={16} color="#0F613B" />
+        <Ionicons name="shield-checkmark" size={16} color={AUTH_COLORS.green} />
         <Text style={authStyles.welcomeBadgeText}>
           {getBadgeText(loginStep)}
         </Text>
@@ -304,7 +304,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             <TextInput
               style={authStyles.input}
               placeholder="Usuario@email.com"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={AUTH_COLORS.gray400}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -322,7 +322,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             disabled={isLoading}
           >
             {isLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={AUTH_COLORS.white} />
             ) : (
               <Text style={authStyles.submitButtonText}>Continuar</Text>
             )}
@@ -336,7 +336,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           {/* Chip de correo seleccionado con opción de cambiar */}
           <View style={authStyles.emailChipContainer}>
             <View style={authStyles.emailChipLeft}>
-              <Ionicons name="mail-outline" size={18} color="#0F613B" />
+              <Ionicons name="mail-outline" size={18} color={AUTH_COLORS.green} />
               <Text style={authStyles.emailChipText} numberOfLines={1} ellipsizeMode="middle">
                 {email}
               </Text>
@@ -353,7 +353,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               <TextInput
                 style={authStyles.passwordInput}
                 placeholder="••••••••••••••••"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={AUTH_COLORS.gray400}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -371,7 +371,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color="#6B7280"
+                  color={AUTH_COLORS.gray600}
                 />
               </TouchableOpacity>
             </View>
@@ -384,7 +384,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             activeOpacity={0.8}
           >
             <View style={[authStyles.checkbox, rememberMe && authStyles.checkboxChecked]}>
-              {rememberMe && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+              {rememberMe && <Ionicons name="checkmark" size={14} color={AUTH_COLORS.white} />}
             </View>
             <Text style={authStyles.rememberText}>Recuérdame</Text>
           </TouchableOpacity>
@@ -397,7 +397,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             disabled={isLoading}
           >
             {isLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={AUTH_COLORS.white} />
             ) : (
               <Text style={authStyles.submitButtonText}>Iniciar Sesión</Text>
             )}
@@ -423,7 +423,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             disabled={isLoading}
           >
             <View style={authStyles.portalIconCircle}>
-              <Ionicons name="medkit" size={24} color="#0F613B" />
+              <Ionicons name="medkit" size={24} color={AUTH_COLORS.green} />
             </View>
             <View style={authStyles.portalInfo}>
               <View style={authStyles.portalBadge}>
@@ -434,7 +434,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 Atención clínica, gestión de pacientes, agenda y fichas
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#0F613B" />
+            <Ionicons name="chevron-forward" size={20} color={AUTH_COLORS.green} />
           </TouchableOpacity>
 
           {/* Opción Portal Paciente */}
@@ -445,7 +445,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             disabled={isLoading}
           >
             <View style={[authStyles.portalIconCircle, authStyles.portalIconCirclePac]}>
-              <Ionicons name="heart" size={24} color="#0369A1" />
+              <Ionicons name="heart" size={24} color={AUTH_COLORS.blue} />
             </View>
             <View style={authStyles.portalInfo}>
               <View style={[authStyles.portalBadge, authStyles.portalBadgePac]}>
@@ -456,11 +456,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 Registro de hábitos, recursos terapéuticos y charlas con Hope
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#0369A1" />
+            <Ionicons name="chevron-forward" size={20} color={AUTH_COLORS.blue} />
           </TouchableOpacity>
 
           {isLoading && (
-            <ActivityIndicator size="small" color="#0F613B" style={{ marginVertical: 12 }} />
+            <ActivityIndicator size="small" color={AUTH_COLORS.green} style={{ marginVertical: 12 }} />
           )}
 
           {/* Enlace para volver */}
