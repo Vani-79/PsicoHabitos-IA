@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  StyleSheet,
   Text,
   View,
   TextInput,
@@ -11,6 +12,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { UserRole } from '../../../constants/auth';
 import { authService, storageService } from '../../../services';
 import { AUTH_COLORS, authStyles } from './authStyles';
+
+const LOGIN_FORM_COLORS = {
+  surface: '#FFFFFF',
+  shadow: '#b3b3b3', 
+  border: '#E2E8F0',
+  green: '#0F613B',
+  greenIconBackground: '#E8F5E9',
+  greenSoft: '#F0FDF4',
+  greenBadge: '#DCFCE7',
+  blue: '#0369A1',
+  blueSoft: '#E0F2FE',
+  charcoal: '#1F2937',
+  gray: '#6B7280',
+} as const;
 
 type LoginStep = 'email' | 'password' | 'role_selection';
 
@@ -281,7 +296,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <View style={authStyles.card}>
+    <View style={styles.card}>
       <View style={authStyles.welcomeBadge}>
         <Ionicons name="shield-checkmark" size={16} color={AUTH_COLORS.green} />
         <Text style={authStyles.welcomeBadgeText}>
@@ -414,53 +429,53 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
       {/* PASO 3: SELECCIÓN DE PORTAL (MULTI-ROL) */}
       {loginStep === 'role_selection' && (
-        <View style={authStyles.portalContainer}>
+        <View style={styles.portalContainer}>
           {/* Opción Portal Psicólogo / Especialista */}
           <TouchableOpacity
-            style={[authStyles.portalCard, authStyles.portalCardActive]}
+            style={[styles.portalCard, styles.portalCardActive]}
             onPress={() => handleSelectPortalAndLogin('psicologo')}
             activeOpacity={0.85}
             disabled={isLoading}
           >
-            <View style={authStyles.portalIconCircle}>
-              <Ionicons name="medkit" size={24} color={AUTH_COLORS.green} />
+            <View style={styles.portalIconCircle}>
+              <Ionicons name="medkit" size={24} color={LOGIN_FORM_COLORS.green} />
             </View>
-            <View style={authStyles.portalInfo}>
-              <View style={authStyles.portalBadge}>
-                <Text style={authStyles.portalBadgeText}>Modo Especialista</Text>
+            <View style={styles.portalInfo}>
+              <View style={styles.portalBadge}>
+                <Text style={styles.portalBadgeText}>Modo Especialista</Text>
               </View>
-              <Text style={authStyles.portalTitle}>Portal Psicólogo</Text>
-              <Text style={authStyles.portalSubtitle}>
+              <Text style={styles.portalTitle}>Portal Psicólogo</Text>
+              <Text style={styles.portalSubtitle}>
                 Atención clínica, gestión de pacientes, agenda y fichas
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={AUTH_COLORS.green} />
+            <Ionicons name="chevron-forward" size={20} color={LOGIN_FORM_COLORS.green} />
           </TouchableOpacity>
 
           {/* Opción Portal Paciente */}
           <TouchableOpacity
-            style={authStyles.portalCard}
+            style={styles.portalCard}
             onPress={() => handleSelectPortalAndLogin('paciente')}
             activeOpacity={0.85}
             disabled={isLoading}
           >
-            <View style={[authStyles.portalIconCircle, authStyles.portalIconCirclePac]}>
-              <Ionicons name="heart" size={24} color={AUTH_COLORS.blue} />
+            <View style={[styles.portalIconCircle, styles.portalIconCirclePac]}>
+              <Ionicons name="heart" size={24} color={LOGIN_FORM_COLORS.blue} />
             </View>
-            <View style={authStyles.portalInfo}>
-              <View style={[authStyles.portalBadge, authStyles.portalBadgePac]}>
-                <Text style={[authStyles.portalBadgeText, authStyles.portalBadgeTextPac]}>Modo Paciente</Text>
+            <View style={styles.portalInfo}>
+              <View style={[styles.portalBadge, styles.portalBadgePac]}>
+                <Text style={[styles.portalBadgeText, styles.portalBadgeTextPac]}>Modo Paciente</Text>
               </View>
-              <Text style={authStyles.portalTitle}>Portal Paciente</Text>
-              <Text style={authStyles.portalSubtitle}>
+              <Text style={styles.portalTitle}>Portal Paciente</Text>
+              <Text style={styles.portalSubtitle}>
                 Registro de hábitos, recursos terapéuticos y charlas con Hope
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={AUTH_COLORS.blue} />
+            <Ionicons name="chevron-forward" size={20} color={LOGIN_FORM_COLORS.blue} />
           </TouchableOpacity>
 
           {isLoading && (
-            <ActivityIndicator size="small" color={AUTH_COLORS.green} style={{ marginVertical: 12 }} />
+            <ActivityIndicator size="small" color={LOGIN_FORM_COLORS.green} style={{ marginVertical: 12 }} />
           )}
 
           {/* Enlace para volver */}
@@ -476,3 +491,87 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: LOGIN_FORM_COLORS.surface,
+    borderRadius: 28,
+    padding: 24,
+    shadowColor: LOGIN_FORM_COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: LOGIN_FORM_COLORS.border,
+  },
+  portalContainer: {
+    marginVertical: 12,
+  },
+  portalCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: LOGIN_FORM_COLORS.surface,
+    borderWidth: 1.5,
+    borderColor: LOGIN_FORM_COLORS.border,
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 14,
+    shadowColor: LOGIN_FORM_COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  portalCardActive: {
+    borderColor: LOGIN_FORM_COLORS.green,
+    backgroundColor: LOGIN_FORM_COLORS.greenSoft,
+  },
+  portalIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: LOGIN_FORM_COLORS.greenIconBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  portalIconCirclePac: {
+    backgroundColor: LOGIN_FORM_COLORS.blueSoft,
+  },
+  portalInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  portalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: LOGIN_FORM_COLORS.charcoal,
+    marginBottom: 3,
+  },
+  portalSubtitle: {
+    fontSize: 12.5,
+    color: LOGIN_FORM_COLORS.gray,
+    lineHeight: 17,
+  },
+  portalBadge: {
+    backgroundColor: LOGIN_FORM_COLORS.greenBadge,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  portalBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: LOGIN_FORM_COLORS.green,
+    textTransform: 'uppercase',
+  },
+  portalBadgePac: {
+    backgroundColor: LOGIN_FORM_COLORS.blueSoft,
+  },
+  portalBadgeTextPac: {
+    color: LOGIN_FORM_COLORS.blue,
+  },
+});

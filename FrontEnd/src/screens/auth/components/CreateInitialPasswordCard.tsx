@@ -224,7 +224,7 @@ export const CreateInitialPasswordCard: React.FC<CreateInitialPasswordCardProps>
           <View
             style={[
               authStyles.termsCheckbox,
-              acceptedTerms && authStyles.termsCheckboxChecked,
+              acceptedTerms && authStyles.checkboxChecked,
             ]}
           >
             {acceptedTerms && <Ionicons name="checkmark" size={15} color={AUTH_COLORS.white} />}

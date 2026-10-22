@@ -2,9 +2,9 @@ import { StyleSheet } from 'react-native';
 
 export const AUTH_COLORS = {
   // Texto: títulos, contenido y etiquetas.
-  greenDark: '#0E5C3A',
-  greenLight: '#268D77',
-  greenMutedText: '#526058',
+  greenDark: '#218757ce',//nombre
+  greenLight: '#2c9189a5', //nombre
+  greenMutedText: '#555e59',
   grayGreen: '#8E9E96',
   gray400: '#9CA3AF',
   gray500: '#718096',
@@ -14,24 +14,22 @@ export const AUTH_COLORS = {
   gray900: '#374151',
   charcoal: '#1F2937',
   heading: '#2D3748',
+  greenCheck: '#a0a29ecc', // COLOR CHECKBOX
 
   // Fondos: superficies, campos e insignias.
   white: '#FFFFFF',
   greenSoft: '#E8F5E9',
   greenSubtle: '#F2F8F4',
   greenMuted: '#9FB8AA',
-  welcomeBackground: '#F7FAF8',
+  welcomeBackground: '#ffffff',
   greenPale: '#F0FDF4',
   background: '#F8FAF9',
   disabledBackground: '#F3F4F6',
-  blueSoft: '#E0F2FE',
-  greenBadge: '#DCFCE7',
-
   // Bordes y separadores.
   greenBorder: '#D3E6DC',
   greenBorderStrong: '#168A54',
   greenBorderSoft: '#DEEBE3',
-  welcomeBorder: '#E2EBE5',
+  welcomeBorder: '#edefede8',
   greenPaleBorder: '#BBF7D0',
   gray100: '#F0F0F0',
   gray200: '#E2E8F0',
@@ -39,17 +37,31 @@ export const AUTH_COLORS = {
   disabledBorder: '#E5E7EB',
 
   // Marca y estados.
-  green: '#0F613B',
-  greenBright: '#10B981',
+  green: '#0f613b', //boton iniciar sesion
+  greenBright: '#218757eb',
   mint: '#A7F3D0',
   blue: '#0369A1',
   red: '#DC2626',
 
   // Sombras.
-  black: '#000',
+  black: '#989595',
+} as const;
+
+const INPUT_SURFACE_STYLE = {
+  backgroundColor: AUTH_COLORS.white,
+  borderWidth: 1.5,
+  borderColor: AUTH_COLORS.gray200,
+  borderRadius: 12,
+} as const;
+
+const INPUT_TEXT_STYLE = {
+  paddingVertical: 12,
+  fontSize: 15,
+  color: AUTH_COLORS.charcoal,
 } as const;
 
 export const authStyles = StyleSheet.create({
+  // Tarjetas y encabezados.
   card: {
     backgroundColor: AUTH_COLORS.white,
     borderRadius: 28,
@@ -67,33 +79,34 @@ export const authStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: AUTH_COLORS.greenSoft,
-    paddingVertical: 6,
+    paddingVertical: 4,
     paddingHorizontal: 12,
     borderRadius: 20,
-    marginBottom: 14,
+    marginBottom: 16,
     alignSelf: 'center',
   },
   welcomeBadgeText: {
     color: AUTH_COLORS.green,
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '700',
     marginLeft: 6,
-    letterSpacing: 0.5,
   },
   cardTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '600',
     color: AUTH_COLORS.heading,
     textAlign: 'center',
   },
   cardSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: AUTH_COLORS.gray500,
     textAlign: 'center',
     marginTop: 4,
-    marginBottom: 20,
+    marginBottom: 40,
     lineHeight: 20,
   },
+
+  // Campos de texto.
   inputGroup: {
     marginBottom: 16,
   },
@@ -104,14 +117,9 @@ export const authStyles = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
-    backgroundColor: AUTH_COLORS.white,
-    borderWidth: 1.5,
-    borderColor: AUTH_COLORS.gray200,
-    borderRadius: 12,
+    ...INPUT_SURFACE_STYLE,
+    ...INPUT_TEXT_STYLE,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: AUTH_COLORS.charcoal,
   },
   inputDisabled: {
     backgroundColor: AUTH_COLORS.disabledBackground,
@@ -122,23 +130,20 @@ export const authStyles = StyleSheet.create({
     fontWeight: '600',
   },
   passwordInputWrapper: {
+    ...INPUT_SURFACE_STYLE,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: AUTH_COLORS.white,
-    borderWidth: 1.5,
-    borderColor: AUTH_COLORS.gray200,
-    borderRadius: 12,
     paddingHorizontal: 14,
   },
   passwordInput: {
     flex: 1,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: AUTH_COLORS.charcoal,
+    ...INPUT_TEXT_STYLE,
   },
   eyeIconButton: {
     padding: 6,
   },
+
+  // Requisitos de contraseña.
   requirementsBox: {
     backgroundColor: AUTH_COLORS.background,
     borderRadius: 12,
@@ -167,14 +172,16 @@ export const authStyles = StyleSheet.create({
     color: AUTH_COLORS.green,
     fontWeight: '600',
   },
+
+  // Acciones de acceso.
   rememberRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
   },
   checkbox: {
-    width: 20,
-    height: 20,
+    width: 15,
+    height: 15,
     borderWidth: 1.5,
     borderColor: AUTH_COLORS.gray300,
     borderRadius: 4,
@@ -184,30 +191,51 @@ export const authStyles = StyleSheet.create({
     backgroundColor: AUTH_COLORS.white,
   },
   checkboxChecked: {
-    backgroundColor: AUTH_COLORS.green,
-    borderColor: AUTH_COLORS.green,
+    backgroundColor: AUTH_COLORS.greenCheck,
+    borderColor: AUTH_COLORS.greenCheck,
   },
   rememberText: {
-    fontSize: 13.5,
+    fontSize: 12,
     color: AUTH_COLORS.gray700,
     fontWeight: '500',
   },
   submitButton: {
     backgroundColor: AUTH_COLORS.green,
+    width: '40%',
+    paddingVertical: 10,
+    alignSelf: 'center',
     borderRadius: 14,
-    paddingVertical: 15,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
     marginBottom: 14,
     shadowColor: AUTH_COLORS.green,
-    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 1,
   },
   submitButtonText: {
     color: AUTH_COLORS.white,
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  submitButtonDisabled: {
+    backgroundColor: AUTH_COLORS.greenMuted,
+    shadowOpacity: 0.05,
+    elevation: 0,
+  },
+
+  // Enlaces de navegación.
+  bottomLinksRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  forgotPasswordText: {
+    fontSize: 13.5,
+    color: AUTH_COLORS.greenDark,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   cancelLink: {
     alignItems: 'center',
@@ -218,16 +246,17 @@ export const authStyles = StyleSheet.create({
     color: AUTH_COLORS.gray700,
     fontWeight: '600',
   },
-  bottomLinksRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  modifyEmailLink: {
     alignItems: 'center',
+    marginBottom: 12,
   },
-  submitButtonDisabled: {
-    backgroundColor: AUTH_COLORS.greenMuted,
-    shadowOpacity: 0.05,
-    elevation: 0,
+  modifyEmailText: {
+    fontSize: 13,
+    color: AUTH_COLORS.gray700,
+    fontWeight: '600',
   },
+
+  // Consentimiento y términos.
   termsAgreementBox: {
     backgroundColor: AUTH_COLORS.greenSubtle,
     borderRadius: 14,
@@ -251,10 +280,6 @@ export const authStyles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 10,
     marginTop: 2,
-  },
-  termsCheckboxChecked: {
-    backgroundColor: AUTH_COLORS.green,
-    borderColor: AUTH_COLORS.green,
   },
   termsTextContainer: {
     flex: 1,
@@ -283,12 +308,8 @@ export const authStyles = StyleSheet.create({
     color: AUTH_COLORS.green,
     fontWeight: '600',
   },
-  forgotPasswordText: {
-    fontSize: 13.5,
-    color: AUTH_COLORS.greenDark,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
+
+  // Verificación y recuperación de contraseña.
   codeInputWrapper: {
     backgroundColor: AUTH_COLORS.greenPale,
     borderWidth: 2,
@@ -332,15 +353,8 @@ export const authStyles = StyleSheet.create({
     textDecorationLine: 'underline',
     marginLeft: 4,
   },
-  modifyEmailLink: {
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  modifyEmailText: {
-    fontSize: 13,
-    color: AUTH_COLORS.gray700,
-    fontWeight: '600',
-  },
+
+  // Correo seleccionado durante el acceso.
   emailChipContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -370,74 +384,5 @@ export const authStyles = StyleSheet.create({
     color: AUTH_COLORS.green,
     fontWeight: '700',
     textDecorationLine: 'underline',
-  },
-  portalContainer: {
-    marginVertical: 12,
-  },
-  portalCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: AUTH_COLORS.white,
-    borderWidth: 1.5,
-    borderColor: AUTH_COLORS.gray200,
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 14,
-    shadowColor: AUTH_COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  portalCardActive: {
-    borderColor: AUTH_COLORS.green,
-    backgroundColor: AUTH_COLORS.greenPale,
-  },
-  portalIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: AUTH_COLORS.greenSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
-  portalIconCirclePac: {
-    backgroundColor: AUTH_COLORS.blueSoft,
-  },
-  portalInfo: {
-    flex: 1,
-    marginRight: 8,
-  },
-  portalTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: AUTH_COLORS.charcoal,
-    marginBottom: 3,
-  },
-  portalSubtitle: {
-    fontSize: 12.5,
-    color: AUTH_COLORS.gray600,
-    lineHeight: 17,
-  },
-  portalBadge: {
-    backgroundColor: AUTH_COLORS.greenBadge,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginBottom: 4,
-  },
-  portalBadgeText: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: AUTH_COLORS.green,
-    textTransform: 'uppercase',
-  },
-  portalBadgePac: {
-    backgroundColor: AUTH_COLORS.blueSoft,
-  },
-  portalBadgeTextPac: {
-    color: AUTH_COLORS.blue,
   },
 });
