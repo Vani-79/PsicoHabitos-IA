@@ -24,6 +24,8 @@ import { PsychologistNavigationProp, HabitReportFilters } from '../../navigation
 import { HabitFilterModal } from '../../components/HabitFilterModal';
 import { PSYCHOLOGIST_COLORS } from './psychologistColors';
 
+const PATIENTS_COLORS = PSYCHOLOGIST_COLORS.pacientes;
+
 type Duracion = '30' | '45' | '60' | '75' | '90';
 type Modalidad = 'presencial' | 'online';
 
@@ -178,7 +180,7 @@ const PatientRoleBanners: React.FC<{ patient: MySqlPatientRecord }> = ({ patient
       {patient.tipo_relacion === 'suplente' && (
         <View style={styles.suplenteBanner}>
           <View style={styles.suplenteBannerHeader}>
-            <Ionicons name="shield-checkmark" size={18} color="#1E40AF" />
+            <Ionicons name="shield-checkmark" size={18} color={PATIENTS_COLORS.textInfoStrong} />
             <Text style={styles.suplenteBannerTitle}>Atendiendo como Psicólogo Suplente</Text>
           </View>
           <Text style={styles.suplenteBannerText}>
@@ -196,7 +198,7 @@ const PatientRoleBanners: React.FC<{ patient: MySqlPatientRecord }> = ({ patient
       {patient.tipo_relacion === 'titular' && patient.suplente_activo && (
         <View style={styles.titularSuplenciaBanner}>
           <View style={styles.suplenteBannerHeader}>
-            <Ionicons name="information-circle" size={18} color="#92400E" />
+            <Ionicons name="information-circle" size={18} color={PATIENTS_COLORS.textWarningStrong} />
             <Text style={styles.titularBannerTitle}>Cobertura de Suplencia Activa</Text>
           </View>
           <Text style={styles.titularBannerText}>
@@ -211,7 +213,7 @@ const PatientRoleBanners: React.FC<{ patient: MySqlPatientRecord }> = ({ patient
           <Text
             style={[
               styles.titularBannerText,
-              { marginTop: 4, fontStyle: 'italic', color: '#78350F' },
+              { marginTop: 4, fontStyle: 'italic', color: PATIENTS_COLORS.textWarningDark },
             ]}
           >
             Nota: La revocación o término anticipado de la suplencia es una decisión exclusiva del
@@ -259,7 +261,7 @@ const SessionItemCard: React.FC<SessionItemCardProps> = ({ session, onEdit }) =>
             <Ionicons
               name="shield-checkmark-outline"
               size={12}
-              color={PSYCHOLOGIST_COLORS.textMuted}
+              color={PATIENTS_COLORS.textMuted}
               style={{ marginRight: 4 }}
             />
             <Text style={styles.doctorBadgeText}>
@@ -274,7 +276,7 @@ const SessionItemCard: React.FC<SessionItemCardProps> = ({ session, onEdit }) =>
             {session.observaciones}
           </Text>
         ) : (
-          <Text style={[styles.sessionMotivo, { fontStyle: 'italic', color: PSYCHOLOGIST_COLORS.textSubtle }]}>
+          <Text style={[styles.sessionMotivo, { fontStyle: 'italic', color: PATIENTS_COLORS.textSubtle }]}>
             Sin observaciones registradas
           </Text>
         )}
@@ -309,7 +311,7 @@ const SessionItemCard: React.FC<SessionItemCardProps> = ({ session, onEdit }) =>
               <Ionicons
                 name="create-outline"
                 size={13}
-                color={PSYCHOLOGIST_COLORS.primary}
+                color={PATIENTS_COLORS.primary}
                 style={{ marginRight: 3 }}
               />
               <Text style={styles.manageButtonText}>Modificar</Text>
@@ -319,7 +321,7 @@ const SessionItemCard: React.FC<SessionItemCardProps> = ({ session, onEdit }) =>
               <Ionicons
                 name="lock-closed"
                 size={11}
-                color={PSYCHOLOGIST_COLORS.textMuted}
+                color={PATIENTS_COLORS.textMuted}
                 style={{ marginRight: 3 }}
               />
               <Text style={styles.readOnlyBadgeText}>Solo lectura</Text>
@@ -355,7 +357,7 @@ const SessionPagination: React.FC<SessionPaginationProps> = ({
         <Ionicons
           name="chevron-back"
           size={18}
-          color={currentPage === 0 ? '#CBD5E1' : PSYCHOLOGIST_COLORS.primary}
+          color={currentPage === 0 ? PATIENTS_COLORS.borderSlate : PATIENTS_COLORS.primary}
         />
         <Text style={[styles.pageButtonText, currentPage === 0 && styles.pageButtonTextDisabled]}>
           Anterior
@@ -386,7 +388,7 @@ const SessionPagination: React.FC<SessionPaginationProps> = ({
         <Ionicons
           name="chevron-forward"
           size={18}
-          color={currentPage >= totalPages - 1 ? '#CBD5E1' : PSYCHOLOGIST_COLORS.primary}
+          color={currentPage >= totalPages - 1 ? PATIENTS_COLORS.borderSlate : PATIENTS_COLORS.primary}
         />
       </TouchableOpacity>
     </View>
@@ -419,8 +421,8 @@ const SessionsHistorySection: React.FC<SessionsHistorySectionProps> = ({
     if (loading) {
       return (
         <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-          <ActivityIndicator size="small" color={PSYCHOLOGIST_COLORS.primary} />
-          <Text style={{ marginTop: 8, color: PSYCHOLOGIST_COLORS.textMuted, fontSize: 13 }}>
+          <ActivityIndicator size="small" color={PATIENTS_COLORS.primary} />
+          <Text style={{ marginTop: 8, color: PATIENTS_COLORS.textMuted, fontSize: 13 }}>
             Cargando sesiones...
           </Text>
         </View>
@@ -430,7 +432,7 @@ const SessionsHistorySection: React.FC<SessionsHistorySectionProps> = ({
     if (sessions.length === 0) {
       return (
         <View style={styles.emptyHistoryCard}>
-          <Ionicons name="calendar-outline" size={36} color={PSYCHOLOGIST_COLORS.textSubtle} />
+          <Ionicons name="calendar-outline" size={36} color={PATIENTS_COLORS.textSubtle} />
           <Text style={styles.emptyHistoryText}>
             Aún no hay sesiones agendadas para este paciente.
           </Text>
@@ -666,7 +668,7 @@ const ScheduleSessionModal: React.FC<ScheduleSessionModalProps> = ({
                   <Ionicons
                     name="information-circle"
                     size={17}
-                    color="#92400E"
+                    color={PATIENTS_COLORS.textWarningStrong}
                     style={{ marginRight: 6 }}
                   />
                   <Text style={styles.substitutionScheduleNoticeText}>
@@ -686,11 +688,11 @@ const ScheduleSessionModal: React.FC<ScheduleSessionModalProps> = ({
                 onPress={() => setShowDatePicker(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="calendar" size={18} color={PSYCHOLOGIST_COLORS.primary} style={styles.pickerIcon} />
+                <Ionicons name="calendar" size={18} color={PATIENTS_COLORS.primary} style={styles.pickerIcon} />
                 <Text style={[styles.pickerValueText, !fecha && styles.pickerPlaceholder]}>
                   {fecha ? formatToChileanDate(fecha) : 'Seleccionar fecha'}
                 </Text>
-                <Ionicons name="chevron-down" size={16} color={PSYCHOLOGIST_COLORS.textMuted} />
+                <Ionicons name="chevron-down" size={16} color={PATIENTS_COLORS.textMuted} />
               </TouchableOpacity>
 
               {/* Hora */}
@@ -703,13 +705,13 @@ const ScheduleSessionModal: React.FC<ScheduleSessionModalProps> = ({
                 <Ionicons
                   name="time"
                   size={18}
-                  color={fecha ? PSYCHOLOGIST_COLORS.primary : PSYCHOLOGIST_COLORS.textSubtle}
+                  color={fecha ? PATIENTS_COLORS.primary : PATIENTS_COLORS.textSubtle}
                   style={styles.pickerIcon}
                 />
                 <Text style={[styles.pickerValueText, !hora && styles.pickerPlaceholder]}>
                   {hora || (fecha ? 'Seleccionar hora' : 'Primero elige la fecha')}
                 </Text>
-                <Ionicons name="chevron-down" size={16} color={PSYCHOLOGIST_COLORS.textMuted} />
+                <Ionicons name="chevron-down" size={16} color={PATIENTS_COLORS.textMuted} />
               </TouchableOpacity>
 
               {/* Duración */}
@@ -770,7 +772,7 @@ const ScheduleSessionModal: React.FC<ScheduleSessionModalProps> = ({
                   { minHeight: 64, textAlignVertical: 'top', paddingTop: 10 },
                 ]}
                 placeholder="Ej. Seguimiento de ansiedad, evaluación inicial, acuerdos previos..."
-                placeholderTextColor={PSYCHOLOGIST_COLORS.textSubtle}
+                placeholderTextColor={PATIENTS_COLORS.textSubtle}
                 value={observaciones}
                 onChangeText={setObservaciones}
                 multiline
@@ -783,7 +785,7 @@ const ScheduleSessionModal: React.FC<ScheduleSessionModalProps> = ({
                 disabled={isSaving}
               >
                 {isSaving ? (
-                  <ActivityIndicator size="small" color={PSYCHOLOGIST_COLORS.surface} />
+                  <ActivityIndicator size="small" color={PATIENTS_COLORS.surface} />
                 ) : (
                   <Text style={styles.saveButtonText}>Agendar</Text>
                 )}
@@ -1057,7 +1059,7 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                   onPress={handleClose}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Ionicons name="close" size={22} color={PSYCHOLOGIST_COLORS.textMuted} />
+                  <Ionicons name="close" size={22} color={PATIENTS_COLORS.textMuted} />
                 </TouchableOpacity>
               </View>
 
@@ -1080,11 +1082,11 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                 <Ionicons
                   name="calendar-outline"
                   size={18}
-                  color={PSYCHOLOGIST_COLORS.primary}
+                  color={PATIENTS_COLORS.primary}
                   style={styles.pickerIcon}
                 />
                 <Text style={styles.pickerValueText}>{formatToChileanDate(editFecha)}</Text>
-                <Ionicons name="chevron-down" size={16} color={PSYCHOLOGIST_COLORS.textMuted} />
+                <Ionicons name="chevron-down" size={16} color={PATIENTS_COLORS.textMuted} />
               </TouchableOpacity>
 
               {/* Hora */}
@@ -1097,11 +1099,11 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                 <Ionicons
                   name="time-outline"
                   size={18}
-                  color={PSYCHOLOGIST_COLORS.primary}
+                  color={PATIENTS_COLORS.primary}
                   style={styles.pickerIcon}
                 />
                 <Text style={styles.pickerValueText}>{editHora} hrs</Text>
-                <Ionicons name="chevron-down" size={16} color={PSYCHOLOGIST_COLORS.textMuted} />
+                <Ionicons name="chevron-down" size={16} color={PATIENTS_COLORS.textMuted} />
               </TouchableOpacity>
 
               {/* Duración */}
@@ -1140,7 +1142,7 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                   <Ionicons
                     name="business-outline"
                     size={16}
-                    color={editModalidad === 'presencial' ? PSYCHOLOGIST_COLORS.primary : PSYCHOLOGIST_COLORS.textMuted}
+                    color={editModalidad === 'presencial' ? PATIENTS_COLORS.primary : PATIENTS_COLORS.textMuted}
                   />
                   <Text
                     style={[
@@ -1160,7 +1162,7 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                   <Ionicons
                     name="videocam-outline"
                     size={16}
-                    color={editModalidad === 'online' ? PSYCHOLOGIST_COLORS.primary : PSYCHOLOGIST_COLORS.textMuted}
+                    color={editModalidad === 'online' ? PATIENTS_COLORS.primary : PATIENTS_COLORS.textMuted}
                   />
                   <Text
                     style={[
@@ -1181,7 +1183,7 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                   { minHeight: 64, textAlignVertical: 'top', paddingTop: 10 },
                 ]}
                 placeholder="Observaciones de la sesión..."
-                placeholderTextColor={PSYCHOLOGIST_COLORS.textSubtle}
+                placeholderTextColor={PATIENTS_COLORS.textSubtle}
                 value={editObservaciones}
                 onChangeText={setEditObservaciones}
                 multiline
@@ -1198,7 +1200,7 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                 disabled={isUpdating || isDeleting}
               >
                 {isUpdating ? (
-                  <ActivityIndicator size="small" color={PSYCHOLOGIST_COLORS.surface} />
+                  <ActivityIndicator size="small" color={PATIENTS_COLORS.surface} />
                 ) : (
                   <Text style={styles.saveButtonText}>Guardar modificaciones</Text>
                 )}
@@ -1215,7 +1217,7 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                 disabled={isUpdating || isDeleting}
               >
                 {isDeleting ? (
-                  <ActivityIndicator size="small" color={PSYCHOLOGIST_COLORS.danger} />
+                  <ActivityIndicator size="small" color={PATIENTS_COLORS.danger} />
                 ) : (
                   <View
                     style={{
@@ -1225,7 +1227,7 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                       gap: 6,
                     }}
                   >
-                    <Ionicons name="trash-outline" size={17} color={PSYCHOLOGIST_COLORS.danger} />
+                    <Ionicons name="trash-outline" size={17} color={PATIENTS_COLORS.danger} />
                     <Text style={styles.deleteButtonText}>Cancelar y eliminar cita</Text>
                   </View>
                 )}
@@ -1348,7 +1350,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
     <SafeAreaView style={styles.container}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={onBack} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="arrow-back" size={22} color={PSYCHOLOGIST_COLORS.textBody} />
+          <Ionicons name="arrow-back" size={22} color={PATIENTS_COLORS.textBody} />
         </TouchableOpacity>
         <View style={{ marginLeft: 10 }}>
           <Text style={styles.tag}>FICHA DEL PACIENTE</Text>
@@ -1371,7 +1373,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
           activeOpacity={0.85}
         >
           <View style={styles.habitsReportIconWrapper}>
-            <Ionicons name="analytics" size={22} color={PSYCHOLOGIST_COLORS.surface} />
+            <Ionicons name="analytics" size={22} color={PATIENTS_COLORS.surface} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.habitsReportTitle}>Registro de Hábitos</Text>
@@ -1379,13 +1381,13 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
               Consultar informe visual con gráficas y promedios
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={22} color={PSYCHOLOGIST_COLORS.primaryAlt} />
+          <Ionicons name="chevron-forward" size={22} color={PATIENTS_COLORS.primaryAlt} />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[
             styles.scheduleButton,
-            !isSubscriptionActive && { backgroundColor: PSYCHOLOGIST_COLORS.textSubtle },
+            !isSubscriptionActive && { backgroundColor: PATIENTS_COLORS.textSubtle },
           ]}
           onPress={openScheduleModal}
           activeOpacity={isSubscriptionActive ? 0.85 : 0.6}
@@ -1394,7 +1396,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
             <Ionicons
               name={isSubscriptionActive ? 'calendar' : 'lock-closed'}
               size={22}
-              color={PSYCHOLOGIST_COLORS.surface}
+              color={PATIENTS_COLORS.surface}
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -1410,7 +1412,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
           <Ionicons
             name="chevron-forward"
             size={22}
-            color={isSubscriptionActive ? '#A8DED3' : '#FCA5A5'}
+            color={isSubscriptionActive ? PATIENTS_COLORS.successMint : PATIENTS_COLORS.borderDanger}
           />
         </TouchableOpacity>
 
@@ -1460,39 +1462,39 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
 
 // Estilos del resumen del paciente, sus sesiones y acciones relacionadas.
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: PSYCHOLOGIST_COLORS.canvasSubtle },
+  container: { flex: 1, backgroundColor: PATIENTS_COLORS.canvasSubtle },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#EDF2F7',
+    borderBottomColor: PATIENTS_COLORS.borderPale,
   },
-  tag: { fontSize: 11, fontWeight: '800', color: PSYCHOLOGIST_COLORS.accent, letterSpacing: 0.8 },
-  patientName: { fontSize: 17, fontWeight: '700', color: PSYCHOLOGIST_COLORS.textPrimary, marginTop: 2 },
+  tag: { fontSize: 11, fontWeight: '800', color: PATIENTS_COLORS.accent, letterSpacing: 0.8 },
+  patientName: { fontSize: 17, fontWeight: '700', color: PATIENTS_COLORS.textPrimary, marginTop: 2 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 },
   infoCard: {
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E7F0EA',
+    borderColor: PATIENTS_COLORS.borderGreenSoft,
     borderLeftWidth: 8,
-    borderLeftColor: '#3FB889',
+    borderLeftColor: PATIENTS_COLORS.brandAccent,
     padding: 16,
     marginBottom: 18,
   },
-  infoText: { fontSize: 13, color: '#60756D', marginBottom: 6 },
+  infoText: { fontSize: 13, color: PATIENTS_COLORS.textGreenMuted, marginBottom: 6 },
   habitsReportButton: {
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderRadius: 18,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#C6E7D6',
-    shadowColor: PSYCHOLOGIST_COLORS.primaryAlt,
+    borderColor: PATIENTS_COLORS.borderMint,
+    shadowColor: PATIENTS_COLORS.primaryAlt,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -1503,7 +1505,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: PSYCHOLOGIST_COLORS.primaryAlt,
+    backgroundColor: PATIENTS_COLORS.primaryAlt,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -1511,20 +1513,20 @@ const styles = StyleSheet.create({
   habitsReportTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.textPrimary,
+    color: PATIENTS_COLORS.textPrimary,
   },
   habitsReportSubtitle: {
     fontSize: 12,
-    color: '#60756D',
+    color: PATIENTS_COLORS.textGreenMuted,
     marginTop: 2,
   },
   scheduleButton: {
-    backgroundColor: PSYCHOLOGIST_COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.primary,
     borderRadius: 18,
     padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: PSYCHOLOGIST_COLORS.primary,
+    shadowColor: PATIENTS_COLORS.primary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
@@ -1535,59 +1537,59 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: PATIENTS_COLORS.headerOverlay,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  scheduleTitle: { color: PSYCHOLOGIST_COLORS.surface, fontSize: 15, fontWeight: '700' },
-  scheduleSubtitle: { color: '#D1E7DD', fontSize: 11.5, marginTop: 2 },
+  scheduleTitle: { color: PATIENTS_COLORS.surface, fontSize: 15, fontWeight: '700' },
+  scheduleSubtitle: { color: PATIENTS_COLORS.textOnGreenMuted, fontSize: 11.5, marginTop: 2 },
 
-  historyTitle: { fontSize: 16, fontWeight: '700', color: PSYCHOLOGIST_COLORS.textPrimary, marginBottom: 10 },
+  historyTitle: { fontSize: 16, fontWeight: '700', color: PATIENTS_COLORS.textPrimary, marginBottom: 10 },
   emptyHistoryCard: {
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderRadius: 16,
     paddingVertical: 28,
     paddingHorizontal: 20,
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: PSYCHOLOGIST_COLORS.border,
+    borderColor: PATIENTS_COLORS.border,
     borderStyle: 'dashed',
   },
-  emptyHistoryText: { fontSize: 13, color: PSYCHOLOGIST_COLORS.textMuted, textAlign: 'center', marginTop: 10 },
+  emptyHistoryText: { fontSize: 13, color: PATIENTS_COLORS.textMuted, textAlign: 'center', marginTop: 10 },
   sessionCard: {
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.border,
+    borderColor: PATIENTS_COLORS.border,
     padding: 14,
     marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  sessionDate: { fontSize: 12.5, fontWeight: '600', color: PSYCHOLOGIST_COLORS.textBody },
-  sessionMotivo: { fontSize: 12, color: PSYCHOLOGIST_COLORS.textMuted, marginTop: 2 },
+  sessionDate: { fontSize: 12.5, fontWeight: '600', color: PATIENTS_COLORS.textBody },
+  sessionMotivo: { fontSize: 12, color: PATIENTS_COLORS.textMuted, marginTop: 2 },
   statusBadge: {
-    backgroundColor: PSYCHOLOGIST_COLORS.warningSurface,
+    backgroundColor: PATIENTS_COLORS.warningSurface,
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 10,
   },
-  statusBadgeText: { fontSize: 11, fontWeight: '700', color: PSYCHOLOGIST_COLORS.warning },
-  statusBadgeCompleted: { backgroundColor: PSYCHOLOGIST_COLORS.surfaceGreen },
-  statusBadgeTextCompleted: { color: PSYCHOLOGIST_COLORS.primary },
-  statusBadgeCancelled: { backgroundColor: PSYCHOLOGIST_COLORS.dangerSurface },
-  statusBadgeTextCancelled: { color: PSYCHOLOGIST_COLORS.danger },
+  statusBadgeText: { fontSize: 11, fontWeight: '700', color: PATIENTS_COLORS.warning },
+  statusBadgeCompleted: { backgroundColor: PATIENTS_COLORS.surfaceGreen },
+  statusBadgeTextCompleted: { color: PATIENTS_COLORS.primary },
+  statusBadgeCancelled: { backgroundColor: PATIENTS_COLORS.dangerSurface },
+  statusBadgeTextCancelled: { color: PATIENTS_COLORS.danger },
   sessionCardCancelled: {
-    backgroundColor: '#FAFAFA',
-    borderColor: PSYCHOLOGIST_COLORS.surfaceMuted,
+    backgroundColor: PATIENTS_COLORS.surfaceNeutral,
+    borderColor: PATIENTS_COLORS.surfaceMuted,
   },
   sessionDateCancelled: {
-    color: PSYCHOLOGIST_COLORS.textMuted,
+    color: PATIENTS_COLORS.textMuted,
   },
   sessionMotivoCancelled: {
-    color: PSYCHOLOGIST_COLORS.textSubtle,
+    color: PATIENTS_COLORS.textSubtle,
   },
 
   paginationRow: {
@@ -1597,7 +1599,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    borderTopColor: PATIENTS_COLORS.borderNeutral,
   },
   pageButton: {
     flexDirection: 'row',
@@ -1607,13 +1609,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   pageButtonDisabled: { opacity: 0.5 },
-  pageButtonText: { fontSize: 13.5, fontWeight: '700', color: PSYCHOLOGIST_COLORS.primary },
-  pageButtonTextDisabled: { color: '#CBD5E1' },
-  pageIndicator: { fontSize: 13, fontWeight: '600', color: PSYCHOLOGIST_COLORS.textMuted },
+  pageButtonText: { fontSize: 13.5, fontWeight: '700', color: PATIENTS_COLORS.primary },
+  pageButtonTextDisabled: { color: PATIENTS_COLORS.borderSlate },
+  pageIndicator: { fontSize: 13, fontWeight: '600', color: PATIENTS_COLORS.textMuted },
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: PATIENTS_COLORS.modalBackdrop,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -1622,66 +1624,66 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 360,
     maxHeight: '85%',
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderRadius: 20,
     padding: 20,
   },
   modalTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.textPrimary,
+    color: PATIENTS_COLORS.textPrimary,
     marginBottom: 14,
     textAlign: 'center',
   },
-  fieldLabel: { fontSize: 12.5, fontWeight: '700', color: '#4A5568', marginBottom: 6 },
+  fieldLabel: { fontSize: 12.5, fontWeight: '700', color: PATIENTS_COLORS.textGray, marginBottom: 6 },
   pickerTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.borderSoft,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 11,
     marginBottom: 14,
   },
   pickerTriggerDisabled: {
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceSubtle,
-    borderColor: PSYCHOLOGIST_COLORS.border,
+    backgroundColor: PATIENTS_COLORS.surfaceSubtle,
+    borderColor: PATIENTS_COLORS.border,
   },
   pickerIcon: { marginRight: 10 },
-  pickerValueText: { flex: 1, fontSize: 14, fontWeight: '500', color: PSYCHOLOGIST_COLORS.textPrimary },
-  pickerPlaceholder: { color: PSYCHOLOGIST_COLORS.textSubtle, fontWeight: '400' },
+  pickerValueText: { flex: 1, fontSize: 14, fontWeight: '500', color: PATIENTS_COLORS.textPrimary },
+  pickerPlaceholder: { color: PATIENTS_COLORS.textSubtle, fontWeight: '400' },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
   chip: {
     flexGrow: 1,
     borderWidth: 1.5,
-    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.borderSoft,
     borderRadius: 10,
     paddingVertical: 9,
     alignItems: 'center',
   },
-  chipActive: { borderColor: PSYCHOLOGIST_COLORS.primary, backgroundColor: PSYCHOLOGIST_COLORS.surfaceGreen },
-  chipText: { fontSize: 13, fontWeight: '600', color: PSYCHOLOGIST_COLORS.textMuted },
-  chipTextActive: { color: PSYCHOLOGIST_COLORS.primary, fontWeight: '700' },
+  chipActive: { borderColor: PATIENTS_COLORS.primary, backgroundColor: PATIENTS_COLORS.surfaceGreen },
+  chipText: { fontSize: 13, fontWeight: '600', color: PATIENTS_COLORS.textMuted },
+  chipTextActive: { color: PATIENTS_COLORS.primary, fontWeight: '700' },
   input: {
     borderWidth: 1.5,
-    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.borderSoft,
     borderRadius: 12,
     paddingVertical: 11,
     paddingHorizontal: 14,
     fontSize: 14,
-    color: PSYCHOLOGIST_COLORS.textPrimary,
+    color: PATIENTS_COLORS.textPrimary,
     marginBottom: 16,
   },
   saveButton: {
-    backgroundColor: PSYCHOLOGIST_COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.primary,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  saveButtonText: { color: PSYCHOLOGIST_COLORS.surface, fontSize: 15.5, fontWeight: '700' },
+  saveButtonText: { color: PATIENTS_COLORS.surface, fontSize: 15.5, fontWeight: '700' },
   cancelText: {
-    color: PSYCHOLOGIST_COLORS.textMuted,
+    color: PATIENTS_COLORS.textMuted,
     fontSize: 13,
     fontWeight: '600',
     textAlign: 'center',
@@ -1696,17 +1698,17 @@ const styles = StyleSheet.create({
   manageButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PSYCHOLOGIST_COLORS.canvas,
+    backgroundColor: PATIENTS_COLORS.canvas,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#CBE5D6',
+    borderColor: PATIENTS_COLORS.borderMintSoft,
   },
   manageButtonText: {
     fontSize: 11.5,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.primary,
+    color: PATIENTS_COLORS.primary,
   },
   modalHeaderRow: {
     flexDirection: 'row',
@@ -1717,36 +1719,36 @@ const styles = StyleSheet.create({
   modalHeaderTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.textPrimary,
+    color: PATIENTS_COLORS.textPrimary,
   },
   infoBanner: {
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceMuted,
+    backgroundColor: PATIENTS_COLORS.surfaceMuted,
     borderRadius: 10,
     padding: 10,
     marginBottom: 14,
   },
   infoBannerText: {
     fontSize: 12.5,
-    color: PSYCHOLOGIST_COLORS.textSecondary,
+    color: PATIENTS_COLORS.textSecondary,
   },
   deleteButton: {
-    backgroundColor: PSYCHOLOGIST_COLORS.dangerSurface,
+    backgroundColor: PATIENTS_COLORS.dangerSurface,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: PATIENTS_COLORS.borderDangerSoft,
     borderRadius: 14,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 10,
   },
   deleteButtonText: {
-    color: PSYCHOLOGIST_COLORS.danger,
+    color: PATIENTS_COLORS.danger,
     fontSize: 14,
     fontWeight: '700',
   },
   suplenteBanner: {
-    backgroundColor: PSYCHOLOGIST_COLORS.infoSurface,
+    backgroundColor: PATIENTS_COLORS.infoSurface,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.infoBorder,
+    borderColor: PATIENTS_COLORS.infoBorder,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
@@ -1760,17 +1762,17 @@ const styles = StyleSheet.create({
   suplenteBannerTitle: {
     fontSize: 13.5,
     fontWeight: '700',
-    color: '#1E40AF',
+    color: PATIENTS_COLORS.textInfoStrong,
   },
   suplenteBannerText: {
     fontSize: 12.5,
-    color: '#1E3A8A',
+    color: PATIENTS_COLORS.textInfoDark,
     lineHeight: 18,
   },
   titularSuplenciaBanner: {
-    backgroundColor: '#FFFBEB',
+    backgroundColor: PATIENTS_COLORS.warningSurfaceSoft,
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: PATIENTS_COLORS.borderWarning,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
@@ -1778,11 +1780,11 @@ const styles = StyleSheet.create({
   titularBannerTitle: {
     fontSize: 13.5,
     fontWeight: '700',
-    color: '#92400E',
+    color: PATIENTS_COLORS.textWarningStrong,
   },
   titularBannerText: {
     fontSize: 12.5,
-    color: '#78350F',
+    color: PATIENTS_COLORS.textWarningDark,
     lineHeight: 18,
     marginBottom: 10,
   },
@@ -1794,30 +1796,30 @@ const styles = StyleSheet.create({
   },
   doctorBadgeText: {
     fontSize: 11.5,
-    color: PSYCHOLOGIST_COLORS.textMuted,
+    color: PATIENTS_COLORS.textMuted,
     fontWeight: '600',
   },
   readOnlyBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceMuted,
+    backgroundColor: PATIENTS_COLORS.surfaceMuted,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.border,
+    borderColor: PATIENTS_COLORS.border,
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 6,
   },
   readOnlyBadgeText: {
     fontSize: 11,
-    color: PSYCHOLOGIST_COLORS.textMuted,
+    color: PATIENTS_COLORS.textMuted,
     fontWeight: '600',
   },
   substitutionScheduleNotice: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFBEB',
+    backgroundColor: PATIENTS_COLORS.warningSurfaceSoft,
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: PATIENTS_COLORS.borderWarning,
     borderRadius: 10,
     padding: 10,
     marginBottom: 14,
@@ -1825,7 +1827,7 @@ const styles = StyleSheet.create({
   substitutionScheduleNoticeText: {
     flex: 1,
     fontSize: 12,
-    color: '#92400E',
+    color: PATIENTS_COLORS.textWarningStrong,
     lineHeight: 16,
   },
 });

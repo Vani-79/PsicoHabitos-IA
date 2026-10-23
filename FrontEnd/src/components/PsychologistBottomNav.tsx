@@ -6,6 +6,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { PSYCHOLOGIST_COLORS } from '../screens/Psicologo/psychologistColors';
 
 export type PsychologistTab = 'inicio' | 'pacientes' | 'calendario' | 'perfil';
 
@@ -20,8 +21,18 @@ export const PsychologistBottomNav: React.FC<
   activeTab,
   onChangeTab,
 }) => {
+  const navigationColors = PSYCHOLOGIST_COLORS[activeTab].navigation;
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: navigationColors.background,
+          borderTopColor: navigationColors.border,
+        },
+      ]}
+    >
 
       {/* Inicio */}
       <TouchableOpacity
@@ -32,9 +43,15 @@ export const PsychologistBottomNav: React.FC<
         <Ionicons
           name={activeTab === 'inicio' ? 'home' : 'home-outline'}
           size={22}
-          color={activeTab === 'inicio' ? '#0F613B' : '#9CA3AF'}
+          color={activeTab === 'inicio' ? navigationColors.active : navigationColors.inactive}
         />
-        <Text style={[styles.label, activeTab === 'inicio' && styles.activeLabel]}>
+        <Text
+          style={[
+            styles.label,
+            { color: activeTab === 'inicio' ? navigationColors.active : navigationColors.inactive },
+            activeTab === 'inicio' && styles.activeLabel,
+          ]}
+        >
           Inicio
         </Text>
       </TouchableOpacity>
@@ -48,9 +65,15 @@ export const PsychologistBottomNav: React.FC<
         <Ionicons
           name={activeTab === 'pacientes' ? 'people' : 'people-outline'}
           size={22}
-          color={activeTab === 'pacientes' ? '#0F613B' : '#9CA3AF'}
+          color={activeTab === 'pacientes' ? navigationColors.active : navigationColors.inactive}
         />
-        <Text style={[styles.label, activeTab === 'pacientes' && styles.activeLabel]}>
+        <Text
+          style={[
+            styles.label,
+            { color: activeTab === 'pacientes' ? navigationColors.active : navigationColors.inactive },
+            activeTab === 'pacientes' && styles.activeLabel,
+          ]}
+        >
           Pacientes
         </Text>
       </TouchableOpacity>
@@ -64,9 +87,15 @@ export const PsychologistBottomNav: React.FC<
         <Ionicons
           name={activeTab === 'calendario' ? 'calendar' : 'calendar-outline'}
           size={22}
-          color={activeTab === 'calendario' ? '#0F613B' : '#9CA3AF'}
+          color={activeTab === 'calendario' ? navigationColors.active : navigationColors.inactive}
         />
-        <Text style={[styles.label, activeTab === 'calendario' && styles.activeLabel]}>
+        <Text
+          style={[
+            styles.label,
+            { color: activeTab === 'calendario' ? navigationColors.active : navigationColors.inactive },
+            activeTab === 'calendario' && styles.activeLabel,
+          ]}
+        >
           Calendario
         </Text>
       </TouchableOpacity>
@@ -80,9 +109,15 @@ export const PsychologistBottomNav: React.FC<
         <Ionicons
           name={activeTab === 'perfil' ? 'person' : 'person-outline'}
           size={22}
-          color={activeTab === 'perfil' ? '#0F613B' : '#9CA3AF'}
+          color={activeTab === 'perfil' ? navigationColors.active : navigationColors.inactive}
         />
-        <Text style={[styles.label, activeTab === 'perfil' && styles.activeLabel]}>
+        <Text
+          style={[
+            styles.label,
+            { color: activeTab === 'perfil' ? navigationColors.active : navigationColors.inactive },
+            activeTab === 'perfil' && styles.activeLabel,
+          ]}
+        >
           Perfil
         </Text>
       </TouchableOpacity>
@@ -94,9 +129,7 @@ export const PsychologistBottomNav: React.FC<
 const styles = StyleSheet.create({
   container: {
     height: 72,
-    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
@@ -114,12 +147,10 @@ const styles = StyleSheet.create({
   label: {
     marginTop: 4,
     fontSize: 11,
-    color: '#9CA3AF',
     fontWeight: '600',
   },
 
   activeLabel: {
-    color: '#0F613B',
     fontWeight: '700',
   },
 });

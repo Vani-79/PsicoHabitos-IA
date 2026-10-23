@@ -27,6 +27,8 @@ import { formatToMySqlDateTime, formatToChileanDate } from '../../utils/date';
 import { isValidEmail, validatePatientForm } from '../../utils/validators';
 import { PSYCHOLOGIST_COLORS } from './psychologistColors';
 
+const PATIENTS_COLORS = PSYCHOLOGIST_COLORS.pacientes;
+
 const SESSION_DURATIONS = [
   { key: '30', label: '30 min' },
   { key: '45', label: '45 min' },
@@ -179,21 +181,6 @@ const notifyRegisterResult = (
 
 // =================== SUBCOMPONENTES PRESENTACIONALES ===================
 
-const InstitutionalHeader: React.FC = () => (
-  <View style={styles.header}>
-    <Image
-      source={require('../../../assets/logo.png')}
-      style={styles.logoImage}
-      resizeMode="contain"
-    />
-    <Text style={styles.brandTitle}>
-      <Text style={styles.titlePsico}>Psico</Text>
-      <Text style={styles.titleHabitos}>Hábitos-IA</Text>
-    </Text>
-    <Text style={styles.sloganText}>Tu bienestar, un día a la vez.</Text>
-  </View>
-);
-
 interface RegistrationModeSelectorProps {
   mode: 'nuevo' | 'existente';
   onSelectMode: (mode: 'nuevo' | 'existente') => void;
@@ -213,7 +200,7 @@ const RegistrationModeSelector: React.FC<RegistrationModeSelectorProps> = ({
         <Ionicons
           name="person-add"
           size={16}
-          color={isNuevo ? PSYCHOLOGIST_COLORS.surface : PSYCHOLOGIST_COLORS.textSecondary}
+          color={isNuevo ? PATIENTS_COLORS.surface : PATIENTS_COLORS.textSecondary}
         />
         <Text
           style={[
@@ -232,7 +219,7 @@ const RegistrationModeSelector: React.FC<RegistrationModeSelectorProps> = ({
         <Ionicons
           name="link"
           size={16}
-          color={!isNuevo ? PSYCHOLOGIST_COLORS.surface : PSYCHOLOGIST_COLORS.textSecondary}
+          color={!isNuevo ? PATIENTS_COLORS.surface : PATIENTS_COLORS.textSecondary}
         />
         <Text
           style={[
@@ -279,7 +266,7 @@ const ValidatedTextInput: React.FC<ValidatedTextInputProps> = ({
     <TextInput
       style={[styles.input, hasError && styles.inputErrorBorder]}
       placeholder={placeholder}
-      placeholderTextColor={PSYCHOLOGIST_COLORS.textSubtle}
+      placeholderTextColor={PATIENTS_COLORS.textSubtle}
       value={value}
       onChangeText={onChangeText}
       onBlur={onBlur}
@@ -318,7 +305,7 @@ const PickerTriggerField: React.FC<PickerTriggerFieldProps> = ({
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <Ionicons name={iconName} size={20} color={PSYCHOLOGIST_COLORS.primary} style={styles.dateIcon} />
+      <Ionicons name={iconName} size={20} color={PATIENTS_COLORS.primary} style={styles.dateIcon} />
       <Text
         style={[
           styles.datePickerValueText,
@@ -327,7 +314,7 @@ const PickerTriggerField: React.FC<PickerTriggerFieldProps> = ({
       >
         {valueText}
       </Text>
-      <Ionicons name="chevron-down" size={18} color={PSYCHOLOGIST_COLORS.textMuted} />
+      <Ionicons name="chevron-down" size={18} color={PATIENTS_COLORS.textMuted} />
     </TouchableOpacity>
   </View>
 );
@@ -425,7 +412,7 @@ const ModalityChips: React.FC<ModalityChipsProps> = ({
           <Ionicons
             name={item.icon}
             size={16}
-            color={isSelected ? PSYCHOLOGIST_COLORS.primary : PSYCHOLOGIST_COLORS.textSecondary}
+            color={isSelected ? PATIENTS_COLORS.primary : PATIENTS_COLORS.textSecondary}
             style={{ marginRight: 6 }}
           />
           <Text
@@ -623,7 +610,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>Registrar Nuevo Paciente</Text>
-      <Text style={styles.cardSubtitle}>Complete la ficha clínica del paciente</Text>
+      
 
       <ValidatedTextInput
         label="Nombre"
@@ -669,7 +656,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
           <Text style={styles.inputLabel}>Edad</Text>
           <TextInput
             style={styles.input}
-            placeholderTextColor={PSYCHOLOGIST_COLORS.textSubtle}
+            placeholderTextColor={PATIENTS_COLORS.textSubtle}
             value={form.edad}
             editable={false}
           />
@@ -724,7 +711,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="Observaciones iniciales, motivo de consulta, etc."
-          placeholderTextColor={PSYCHOLOGIST_COLORS.textSubtle}
+          placeholderTextColor={PATIENTS_COLORS.textSubtle}
           value={form.observacionesPrimeraSesion}
           onChangeText={(text) => updateField('observacionesPrimeraSesion', text)}
           multiline
@@ -784,7 +771,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
         disabled={isSubmitDisabled}
       >
         {isSaving ? (
-          <ActivityIndicator color={PSYCHOLOGIST_COLORS.surface} />
+          <ActivityIndicator color={PATIENTS_COLORS.surface} />
         ) : (
           <Text style={styles.submitButtonText}>Registrar Paciente</Text>
         )}
@@ -851,7 +838,7 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <InstitutionalHeader />
+         
 
           <RegistrationModeSelector
             mode={registrationMode}
@@ -877,7 +864,7 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
   },
 
   
@@ -903,49 +890,46 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   titlePsico: {
-    color: '#0E5C3A',
+    color: PATIENTS_COLORS.primary,
   },
   titleHabitos: {
-    color: PSYCHOLOGIST_COLORS.accent,
+    color: PATIENTS_COLORS.accent,
   },
   sloganText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0E5C3A',
+    color: PATIENTS_COLORS.primary,
     marginTop: 4,
     textAlign: 'center',
   },
   card: {
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    marginTop: 40,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderRadius: 28,
     padding: 22,
-    shadowColor: PSYCHOLOGIST_COLORS.shadow,
+    shadowColor: PATIENTS_COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 10,
-    elevation: 3,
+    elevation:1,
     borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderColor: PATIENTS_COLORS.borderNeutral,
   },
   cardTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#2D3748',
+    fontSize: 18,
+    fontWeight: '600',
+    color: PATIENTS_COLORS.textGrayStrong,
     textAlign: 'center',
+    marginBottom: 30,
   },
-  cardSubtitle: {
-    fontSize: 14,
-    color: '#718096',
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 20,
-  },
+ 
   segmentContainer: {
+    marginVertical: 40,
     flexDirection: 'row',
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceMuted,
+    backgroundColor: PATIENTS_COLORS.surfaceMuted,
     borderRadius: 12,
     padding: 4,
-    marginBottom: 16,
+    marginBottom: 1,
   },
   segmentBtn: {
     flex: 1,
@@ -957,15 +941,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   segmentBtnActive: {
-    backgroundColor: PSYCHOLOGIST_COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.primary,
   },
   segmentBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: PSYCHOLOGIST_COLORS.textSecondary,
+    color: PATIENTS_COLORS.textSecondary,
   },
   segmentBtnTextActive: {
-    color: PSYCHOLOGIST_COLORS.surface,
+    color: PATIENTS_COLORS.surface,
     fontWeight: '700',
   },
   inputGroup: {
@@ -978,38 +962,38 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13.5,
     fontWeight: '700',
-    color: '#4A5568',
+    color: PATIENTS_COLORS.textGray,
     marginBottom: 6,
   },
   requiredStar: {
-    color: '#EF4444',
+    color: PATIENTS_COLORS.dangerBright,
   },
   input: {
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderWidth: 1.5,
-    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.borderSoft,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: PSYCHOLOGIST_COLORS.textPrimary,
+    color: PATIENTS_COLORS.textPrimary,
   },
   inputErrorBorder: {
-    borderColor: PSYCHOLOGIST_COLORS.danger,
+    borderColor: PATIENTS_COLORS.danger,
     borderWidth: 1,
   },
 
   fieldErrorText: {
-    color: PSYCHOLOGIST_COLORS.danger,
+    color: PATIENTS_COLORS.danger,
     fontSize: 12,
     marginTop: 5,
   },
   datePickerTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderWidth: 1.5,
-    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.borderSoft,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -1020,16 +1004,16 @@ const styles = StyleSheet.create({
   datePickerValueText: {
     flex: 1,
     fontSize: 15,
-    color: PSYCHOLOGIST_COLORS.textPrimary,
+    color: PATIENTS_COLORS.textPrimary,
     fontWeight: '500',
   },
   datePickerPlaceholder: {
-    color: PSYCHOLOGIST_COLORS.textSubtle,
+    color: PATIENTS_COLORS.textSubtle,
     fontWeight: '400',
   },
   genderContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: PATIENTS_COLORS.surfaceSlate,
     borderRadius: 12,
     padding: 3,
   },
@@ -1041,8 +1025,8 @@ const styles = StyleSheet.create({
     borderRadius: 9,
   },
   genderOptionActive: {
-    backgroundColor: PSYCHOLOGIST_COLORS.primary,
-    shadowColor: PSYCHOLOGIST_COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.primary,
+    shadowColor: PATIENTS_COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
@@ -1051,32 +1035,32 @@ const styles = StyleSheet.create({
   genderOptionText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748B',
+    color: PATIENTS_COLORS.textSlate,
   },
   genderOptionTextActive: {
-    color: PSYCHOLOGIST_COLORS.surface,
+    color: PATIENTS_COLORS.surface,
     fontWeight: '700',
   },
   submitButton: {
-    backgroundColor: PSYCHOLOGIST_COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.primary,
     borderRadius: 14,
     paddingVertical: 15,
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 10,
-    shadowColor: PSYCHOLOGIST_COLORS.primary,
+    shadowColor: PATIENTS_COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 2,
   },
   submitButtonDisabled: {
-    backgroundColor: '#A5C1B3',
+    backgroundColor: PATIENTS_COLORS.borderGreenAccent,
     shadowOpacity: 0,
     elevation: 0,
   },
   submitButtonText: {
-    color: PSYCHOLOGIST_COLORS.surface,
+    color: PATIENTS_COLORS.surface,
     fontSize: 16.5,
     fontWeight: '700',
   },
@@ -1090,24 +1074,24 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 14,
     borderRadius: 10,
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceMuted,
+    backgroundColor: PATIENTS_COLORS.surfaceMuted,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.border,
+    borderColor: PATIENTS_COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
   },
   durationChipActive: {
-    backgroundColor: PSYCHOLOGIST_COLORS.canvas,
-    borderColor: PSYCHOLOGIST_COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.canvas,
+    borderColor: PATIENTS_COLORS.primary,
   },
   durationChipText: {
     fontSize: 13,
     fontWeight: '600',
-    color: PSYCHOLOGIST_COLORS.textSecondary,
+    color: PATIENTS_COLORS.textSecondary,
   },
   durationChipTextActive: {
-    color: PSYCHOLOGIST_COLORS.primary,
+    color: PATIENTS_COLORS.primary,
     fontWeight: '700',
   },
   flexChip: {

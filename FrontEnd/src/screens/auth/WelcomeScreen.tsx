@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   featuresSection: {
-    width: '100%',
+    width: '95%',
     marginVertical: 18,
   },
   featureCard: {
@@ -191,23 +191,22 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: AUTH_COLORS.welcomeBorder,
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    marginBottom: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    marginBottom: 8,
     shadowColor: AUTH_COLORS.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
     shadowRadius: 3,
     elevation: 1,
   },
   featureIconContainer: {
-    width: 38,
-    height: 38,
+    width: 35,
+    height: 35,
     borderRadius: 19,
     backgroundColor: AUTH_COLORS.greenSoft,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    marginLeft: 12,
   },
   hopeFeatureIcon: {
     width: 26,
@@ -227,18 +226,19 @@ const styles = StyleSheet.create({
     color: AUTH_COLORS.greenMutedText,
     lineHeight: 16,
   },
-  buttonSection: {
-    width: '100%',
-    alignItems: 'center',
+ buttonSection: {
+    width: '100%', // Ancho completo para dar espacio a los elementos hijos
+    alignSelf: 'center',
+    alignItems: 'center', // Mantiene el botón de inicio de sesión centrado
     marginTop: 8,
   },
   loginButton: {
     backgroundColor: AUTH_COLORS.green,
-    width: '100%',
+    width: '50%', // Define el ancho deseado para el botón (o 200, etc.)
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderRadius: 14,
     shadowColor: AUTH_COLORS.green,
     shadowOffset: { width: 0, height: 3 },
@@ -248,15 +248,17 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     color: AUTH_COLORS.white,
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
     marginRight: 8,
   },
   buttonIcon: {
     marginLeft: 4,
+
   },
   securityBadge: {
     flexDirection: 'row',
+    alignSelf: 'flex-start',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 12,
@@ -268,11 +270,12 @@ const styles = StyleSheet.create({
   securityText: {
     fontSize: 12.5,
     fontWeight: '600',
+    alignSelf: 'flex-start',
+    textAlign: 'left',
   },
   termsHintText: {
     fontSize: 11,
     color: AUTH_COLORS.grayGreen,
     marginTop: 4,
-    textAlign: 'center',
   },
 });

@@ -28,16 +28,18 @@ type Props = NativeStackScreenProps<PsychologistStackParamList, 'PatientHabitRep
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+const PATIENTS_COLORS = PSYCHOLOGIST_COLORS.pacientes;
+
 const HABIT_CONFIG: Record<
   HabitKey,
   { label: string; color: string; areaColor: string; icon: keyof typeof Ionicons.glyphMap }
 > = {
-  comida: { label: 'Comida', color: '#D97706', areaColor: PSYCHOLOGIST_COLORS.warningSurface, icon: 'restaurant-outline' },
-  ejercicio: { label: 'Ejercicio', color: '#16A34A', areaColor: '#DCFCE7', icon: 'barbell-outline' },
-  hidratacion: { label: 'Hidratación', color: '#0284C7', areaColor: '#E0F2FE', icon: 'water-outline' },
-  sueno: { label: 'Sueño', color: '#7C3AED', areaColor: '#EDE9FE', icon: 'moon-outline' },
-  ansiedad: { label: 'Ansiedad', color: '#E11D48', areaColor: '#FFE4E6', icon: 'pulse-outline' },
-  estres: { label: 'Estrés', color: '#2563EB', areaColor: '#DBEAFE', icon: 'flash-outline' },
+  comida: { label: 'Comida', color: PATIENTS_COLORS.habitFood, areaColor: PATIENTS_COLORS.warningSurface, icon: 'restaurant-outline' },
+  ejercicio: { label: 'Ejercicio', color: PATIENTS_COLORS.habitExercise, areaColor: PATIENTS_COLORS.habitExerciseSurface, icon: 'barbell-outline' },
+  hidratacion: { label: 'Hidratación', color: PATIENTS_COLORS.habitHydration, areaColor: PATIENTS_COLORS.habitHydrationSurface, icon: 'water-outline' },
+  sueno: { label: 'Sueño', color: PATIENTS_COLORS.habitSleep, areaColor: PATIENTS_COLORS.habitSleepSurface, icon: 'moon-outline' },
+  ansiedad: { label: 'Ansiedad', color: PATIENTS_COLORS.habitAnxiety, areaColor: PATIENTS_COLORS.habitAnxietySurface, icon: 'pulse-outline' },
+  estres: { label: 'Estrés', color: PATIENTS_COLORS.habitStress, areaColor: PATIENTS_COLORS.habitStressSurface, icon: 'flash-outline' },
 };
 
 const PERIOD_LABELS: Record<HabitPeriod, string> = {
@@ -83,7 +85,7 @@ const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 const CHART_Y_AXIS_TEXT_STYLE = {
   fontSize: 8.5,
-  color: '#64748B',
+  color: PATIENTS_COLORS.textSlate,
   fontWeight: '600' as const,
 };
 
@@ -374,7 +376,7 @@ const generateChartData = (
 ) => {
   if (!chronologicalRecords.length) return [];
 
-  const baseColor = HABIT_CONFIG[activeChartHabit]?.color || PSYCHOLOGIST_COLORS.primaryAlt;
+  const baseColor = HABIT_CONFIG[activeChartHabit]?.color || PATIENTS_COLORS.primaryAlt;
   const labelModulo = Math.max(1, Math.floor(chronologicalRecords.length / 6));
 
   return chronologicalRecords.map((r, index) => {
@@ -393,9 +395,9 @@ const generateChartData = (
       label: showLabel ? dayLabel : '',
       dataPointText: '',
       dataPointRadius: isSelected ? 12 : 8,
-      dataPointColor: isSelected ? '#0F172A' : baseColor,
+      dataPointColor: isSelected ? PATIENTS_COLORS.textNavy : baseColor,
       showVerticalLine: isSelected,
-      verticalLineColor: '#0F172A40',
+      verticalLineColor: PATIENTS_COLORS.chartPointTransparent,
       verticalLineThickness: 2,
       verticalLineStrokeDashArray: [4, 4],
       onPress: () => onSelectDay(recDate),
@@ -522,15 +524,15 @@ const AdherenceRing: React.FC<{ percentage: number }> = ({ percentage }) => {
       <Svg width={size} height={size}>
         <Defs>
           <LinearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor={PSYCHOLOGIST_COLORS.primaryAlt} />
-            <Stop offset="100%" stopColor="#34D399" />
+            <Stop offset="0%" stopColor={PATIENTS_COLORS.primaryAlt} />
+            <Stop offset="100%" stopColor={PATIENTS_COLORS.chartGradientEnd} />
           </LinearGradient>
         </Defs>
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={PSYCHOLOGIST_COLORS.borderSoft}
+          stroke={PATIENTS_COLORS.borderSoft}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -559,14 +561,14 @@ const EmptyReportCard: React.FC<{
 }> = ({ periodText, onOpenFilters }) => (
   <View style={styles.emptyCard}>
     <View style={styles.emptyIconCircle}>
-      <Ionicons name="file-tray-outline" size={36} color="#94A3B8" />
+      <Ionicons name="file-tray-outline" size={36} color={PATIENTS_COLORS.chartEmptyState} />
     </View>
     <Text style={styles.emptyTitle}>Sin registros en este período</Text>
     <Text style={styles.emptySubtitle}>
       El paciente no registró check-ins diarios en el rango seleccionado ({periodText}).
     </Text>
     <TouchableOpacity style={styles.emptyActionBtn} onPress={onOpenFilters}>
-      <Ionicons name="calendar" size={16} color={PSYCHOLOGIST_COLORS.surface} />
+      <Ionicons name="calendar" size={16} color={PATIENTS_COLORS.surface} />
       <Text style={styles.emptyActionBtnText}>Cambiar período de búsqueda</Text>
     </TouchableOpacity>
   </View>
@@ -616,7 +618,7 @@ const ReportKpis: React.FC<ReportKpisProps> = ({ stats, selectedRecord }) => {
           {isSelected ? 'Hora de este día' : 'Hora del registro'}
         </Text>
         <View style={styles.kpiContentCenter}>
-          <Text style={[styles.kpiBigNumber, { color: isSelected ? PSYCHOLOGIST_COLORS.primaryAlt : '#0284C7' }]}>
+          <Text style={[styles.kpiBigNumber, { color: isSelected ? PATIENTS_COLORS.primaryAlt : PATIENTS_COLORS.infoBlue }]}>
             {timeText}
           </Text>
           <Text style={styles.kpiSublabel}>{timeSublabel}</Text>
@@ -625,7 +627,7 @@ const ReportKpis: React.FC<ReportKpisProps> = ({ stats, selectedRecord }) => {
           <Ionicons
             name={isSelected ? 'radio-button-on' : 'time-outline'}
             size={11}
-            color={isSelected ? PSYCHOLOGIST_COLORS.primaryAlt : '#0284C7'}
+            color={isSelected ? PATIENTS_COLORS.primaryAlt : PATIENTS_COLORS.infoBlue}
           />
           <Text style={isSelected ? styles.kpiBadgeGreenText : styles.kpiBadgeBlueText}>
             {badgeText}
@@ -643,7 +645,7 @@ const DayDetailCard: React.FC<{ record: MySqlDailyHabitRecord }> = ({ record }) 
     <View style={styles.dayDetailCard}>
       <View style={styles.dayDetailHeader}>
         <View style={styles.dayDetailIconWrap}>
-          <Ionicons name="checkmark-done-circle" size={28} color={PSYCHOLOGIST_COLORS.primaryAlt} />
+          <Ionicons name="checkmark-done-circle" size={28} color={PATIENTS_COLORS.primaryAlt} />
         </View>
         <View>
           <Text style={styles.dayDetailTitle}>
@@ -679,21 +681,21 @@ const InspectingBanner: React.FC<{
         onPress={onDeselect}
         activeOpacity={0.7}
       >
-        <Ionicons name="close-circle" size={17} color="#475569" />
+        <Ionicons name="close-circle" size={17} color={PATIENTS_COLORS.textSlateStrong} />
         <Text style={styles.deselectBtnText}>Deseleccionar</Text>
       </TouchableOpacity>
     </View>
 
     <View style={styles.inspectingMainInfo}>
       <View style={styles.inspectingCalendarIconWrap}>
-        <Ionicons name="calendar" size={22} color={PSYCHOLOGIST_COLORS.primaryAlt} />
+        <Ionicons name="calendar" size={22} color={PATIENTS_COLORS.primaryAlt} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.inspectingDateText}>
           {formatToChileanDate(record.evaluation_date)}
         </Text>
         <View style={styles.inspectingTimeMetaRow}>
-          <Ionicons name="time" size={13} color="#0284C7" />
+          <Ionicons name="time" size={13} color={PATIENTS_COLORS.infoBlue} />
           <Text style={styles.inspectingTimeMetaText}>
             Check-in confirmado a las {formatTimeOnly(record.confirmed_at)} hrs
           </Text>
@@ -702,7 +704,7 @@ const InspectingBanner: React.FC<{
     </View>
 
     <View style={styles.inspectingFooterHint}>
-      <Ionicons name="sparkles" size={13} color="#166534" />
+      <Ionicons name="sparkles" size={13} color={PATIENTS_COLORS.textGreenSuccess} />
       <Text style={styles.inspectingFooterHintText}>
         Métricas y desglose inferior enfocados en esta fecha. Pulsa Deseleccionar para volver al promedio.
       </Text>
@@ -923,7 +925,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
           style={styles.backBtn}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={22} color="#1E293B" />
+          <Ionicons name="arrow-back" size={22} color={PATIENTS_COLORS.textNavySecondary} />
         </TouchableOpacity>
 
         <View style={styles.headerTitleGroup}>
@@ -938,7 +940,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
           onPress={() => setShowFilterModal(true)}
           activeOpacity={0.8}
         >
-          <Ionicons name="filter" size={17} color={PSYCHOLOGIST_COLORS.primaryAlt} />
+          <Ionicons name="filter" size={17} color={PATIENTS_COLORS.primaryAlt} />
           <Text style={styles.filterBtnText}>Filtros</Text>
         </TouchableOpacity>
       </View>
@@ -946,7 +948,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
       {/* Pill de Rango Activo */}
       <View style={styles.activeFilterBar}>
         <View style={styles.activeFilterPill}>
-          <Ionicons name="calendar-outline" size={14} color={PSYCHOLOGIST_COLORS.primaryAlt} />
+          <Ionicons name="calendar-outline" size={14} color={PATIENTS_COLORS.primaryAlt} />
           <Text style={styles.activeFilterPillText}>{periodPillText}</Text>
         </View>
         <Text style={styles.recordsCountText}>
@@ -956,7 +958,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
 
       {loading ? (
         <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color={PSYCHOLOGIST_COLORS.primaryAlt} />
+          <ActivityIndicator size="large" color={PATIENTS_COLORS.primaryAlt} />
           <Text style={styles.loadingText}>Procesando métricas clínicas...</Text>
         </View>
       ) : (
@@ -965,7 +967,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[PSYCHOLOGIST_COLORS.primaryAlt]} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[PATIENTS_COLORS.primaryAlt]} />
           }
         >
           {filteredRecords.length === 0 ? (
@@ -1024,7 +1026,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
                             <Text
                               style={[
                                 styles.chartPillText,
-                                isCurSelected && { color: PSYCHOLOGIST_COLORS.surface, fontWeight: '700' },
+                                isCurSelected && { color: PATIENTS_COLORS.surface, fontWeight: '700' },
                               ]}
                             >
                               {cfg.label}
@@ -1044,11 +1046,11 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
                         endSpacing={30}
                         curved
                         areaChart
-                        startFillColor={HABIT_CONFIG[activeChartHabit]?.areaColor || '#E8F5EE'}
-                        endFillColor={PSYCHOLOGIST_COLORS.surface}
+                        startFillColor={HABIT_CONFIG[activeChartHabit]?.areaColor || PATIENTS_COLORS.surfaceHighlight}
+                        endFillColor={PATIENTS_COLORS.surface}
                         startOpacity={0.65}
                         endOpacity={0.05}
-                        color={HABIT_CONFIG[activeChartHabit]?.color || PSYCHOLOGIST_COLORS.primaryAlt}
+                        color={HABIT_CONFIG[activeChartHabit]?.color || PATIENTS_COLORS.primaryAlt}
                         thickness={3}
                         maxValue={5}
                         noOfSections={5}
@@ -1062,16 +1064,16 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
                         formatYLabel={formatYLabel}
                         yAxisLabelWidth={currentYAxisLabelWidth}
                         yAxisTextStyle={CHART_Y_AXIS_TEXT_STYLE}
-                        xAxisLabelTextStyle={{ fontSize: 9, color: '#64748B' }}
+                        xAxisLabelTextStyle={{ fontSize: 9, color: PATIENTS_COLORS.textSlate }}
                         showValuesAsDataPointsText={false}
                         textColor="transparent"
                         textFontSize={0}
-                        dataPointsColor={HABIT_CONFIG[activeChartHabit]?.color || PSYCHOLOGIST_COLORS.primaryAlt}
+                        dataPointsColor={HABIT_CONFIG[activeChartHabit]?.color || PATIENTS_COLORS.primaryAlt}
                         dataPointsRadius={8}
                         zIndex1={1}
-                        yAxisColor={PSYCHOLOGIST_COLORS.borderSoft}
-                        xAxisColor={PSYCHOLOGIST_COLORS.borderSoft}
-                        rulesColor="#F1F5F9"
+                        yAxisColor={PATIENTS_COLORS.borderSoft}
+                        xAxisColor={PATIENTS_COLORS.borderSoft}
+                        rulesColor={PATIENTS_COLORS.surfaceSlate}
                         isAnimated={false}
                         animateOnDataChange={false}
                       />
@@ -1089,7 +1091,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
 
               {/* Desglose Individual por Hábito */}
               <View style={styles.sectionHeadingRow}>
-                <Ionicons name="list-circle" size={20} color={PSYCHOLOGIST_COLORS.primaryAlt} />
+                <Ionicons name="list-circle" size={20} color={PATIENTS_COLORS.primaryAlt} />
                 <Text style={styles.sectionHeading}>{headingText}</Text>
                 {selectedRecord && (
                   <TouchableOpacity
@@ -1097,7 +1099,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
                     onPress={() => setSelectedRecordDate(null)}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="refresh" size={12} color={PSYCHOLOGIST_COLORS.primaryAlt} />
+                    <Ionicons name="refresh" size={12} color={PATIENTS_COLORS.primaryAlt} />
                     <Text style={styles.headingResetPillText}>Ver promedios</Text>
                   </TouchableOpacity>
                 )}
@@ -1136,22 +1138,22 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: PSYCHOLOGIST_COLORS.canvasSubtle,
+    backgroundColor: PATIENTS_COLORS.canvasSubtle,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: PSYCHOLOGIST_COLORS.borderSoft,
+    borderBottomColor: PATIENTS_COLORS.borderSoft,
   },
   backBtn: {
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: PATIENTS_COLORS.surfaceSlate,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -1162,17 +1164,17 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#0F172A',
+    color: PATIENTS_COLORS.textNavy,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: PATIENTS_COLORS.textSlate,
     marginTop: 1,
   },
   filterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E8F5EE',
+    backgroundColor: PATIENTS_COLORS.surfaceHighlight,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
@@ -1181,7 +1183,7 @@ const styles = StyleSheet.create({
   filterBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.primaryAlt,
+    color: PATIENTS_COLORS.primaryAlt,
   },
   activeFilterBar: {
     flexDirection: 'row',
@@ -1189,16 +1191,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: PATIENTS_COLORS.surfaceSlate,
   },
   activeFilterPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3FAF6',
+    backgroundColor: PATIENTS_COLORS.surfaceHighlightSoft,
     borderWidth: 1,
-    borderColor: '#C6E7D6',
+    borderColor: PATIENTS_COLORS.borderMint,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
@@ -1207,11 +1209,11 @@ const styles = StyleSheet.create({
   activeFilterPillText: {
     fontSize: 12,
     fontWeight: '600',
-    color: PSYCHOLOGIST_COLORS.primaryAlt,
+    color: PATIENTS_COLORS.primaryAlt,
   },
   recordsCountText: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: PATIENTS_COLORS.chartEmptyState,
     fontWeight: '500',
   },
   container: {
@@ -1230,23 +1232,23 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#64748B',
+    color: PATIENTS_COLORS.textSlate,
     fontWeight: '500',
   },
   emptyCard: {
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.borderSoft,
     marginTop: 20,
   },
   emptyIconCircle: {
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: PATIENTS_COLORS.surfaceSlate,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 14,
@@ -1254,12 +1256,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1E293B',
+    color: PATIENTS_COLORS.textNavySecondary,
     marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: '#64748B',
+    color: PATIENTS_COLORS.textSlate,
     textAlign: 'center',
     lineHeight: 18,
     marginBottom: 18,
@@ -1267,14 +1269,14 @@ const styles = StyleSheet.create({
   emptyActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PSYCHOLOGIST_COLORS.primaryAlt,
+    backgroundColor: PATIENTS_COLORS.primaryAlt,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
     gap: 6,
   },
   emptyActionBtnText: {
-    color: PSYCHOLOGIST_COLORS.surface,
+    color: PATIENTS_COLORS.surface,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -1285,13 +1287,13 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     flex: 1,
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderRadius: 16,
     padding: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
-    shadowColor: PSYCHOLOGIST_COLORS.shadow,
+    borderColor: PATIENTS_COLORS.borderSoft,
+    shadowColor: PATIENTS_COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -1300,7 +1302,7 @@ const styles = StyleSheet.create({
   kpiTitle: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748B',
+    color: PATIENTS_COLORS.textSlate,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 6,
@@ -1314,21 +1316,21 @@ const styles = StyleSheet.create({
     position: 'absolute',
     fontSize: 14,
     fontWeight: '700',
-    color: '#0F172A',
+    color: PATIENTS_COLORS.textNavy,
   },
   kpiBigNumber: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#0F172A',
+    color: PATIENTS_COLORS.textNavy,
   },
   kpiSublabel: {
     fontSize: 10,
-    color: '#64748B',
+    color: PATIENTS_COLORS.textSlate,
     marginTop: 2,
   },
   kpiBadgeGreen: {
     marginTop: 6,
-    backgroundColor: '#E8F5EE',
+    backgroundColor: PATIENTS_COLORS.surfaceHighlight,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -1336,11 +1338,11 @@ const styles = StyleSheet.create({
   kpiBadgeGreenText: {
     fontSize: 10,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.primaryAlt,
+    color: PATIENTS_COLORS.primaryAlt,
   },
   kpiBadgeBlue: {
     marginTop: 6,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: PATIENTS_COLORS.infoBlueSurface,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -1351,14 +1353,14 @@ const styles = StyleSheet.create({
   kpiBadgeBlueText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#0284C7',
+    color: PATIENTS_COLORS.infoBlue,
   },
   dayDetailCard: {
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.borderSoft,
     marginBottom: 16,
   },
   dayDetailHeader: {
@@ -1370,38 +1372,38 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#E8F5EE',
+    backgroundColor: PATIENTS_COLORS.surfaceHighlight,
     justifyContent: 'center',
     alignItems: 'center',
   },
   dayDetailTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#0F172A',
+    color: PATIENTS_COLORS.textNavy,
   },
   dayDetailSubtitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: PATIENTS_COLORS.textSlate,
     marginTop: 2,
   },
   dayDetailDivider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: PATIENTS_COLORS.surfaceSlate,
     marginVertical: 12,
   },
   dayDetailDesc: {
     fontSize: 13,
-    color: '#475569',
+    color: PATIENTS_COLORS.textSlateStrong,
     lineHeight: 18,
   },
   chartCard: {
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.borderSoft,
     marginBottom: 20,
-    shadowColor: PSYCHOLOGIST_COLORS.shadow,
+    shadowColor: PATIENTS_COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -1416,11 +1418,11 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#0F172A',
+    color: PATIENTS_COLORS.textNavy,
   },
   chartSubtitle: {
     fontSize: 11,
-    color: '#64748B',
+    color: PATIENTS_COLORS.textSlate,
     marginTop: 2,
   },
   chartPillsScroll: {
@@ -1431,14 +1433,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: PATIENTS_COLORS.surfaceSlateSubtle,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.borderSoft,
   },
   chartPillText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#475569',
+    color: PATIENTS_COLORS.textSlateStrong,
   },
   chartWrapper: {
     marginTop: 8,
@@ -1449,7 +1451,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: PATIENTS_COLORS.surfaceSlate,
   },
   daySelectorScroll: {
     gap: 8,
@@ -1460,16 +1462,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 10,
-    backgroundColor: PSYCHOLOGIST_COLORS.canvasSubtle,
+    backgroundColor: PATIENTS_COLORS.canvasSubtle,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.borderSoft,
     alignItems: 'center',
     minWidth: 54,
   },
   dayChipSelected: {
-    backgroundColor: PSYCHOLOGIST_COLORS.primaryAlt,
-    borderColor: PSYCHOLOGIST_COLORS.primaryAlt,
-    shadowColor: PSYCHOLOGIST_COLORS.primaryAlt,
+    backgroundColor: PATIENTS_COLORS.primaryAlt,
+    borderColor: PATIENTS_COLORS.primaryAlt,
+    shadowColor: PATIENTS_COLORS.primaryAlt,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
@@ -1478,21 +1480,21 @@ const styles = StyleSheet.create({
   dayChipDayName: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#64748B',
+    color: PATIENTS_COLORS.textSlate,
     textTransform: 'uppercase',
   },
   dayChipDayNameSelected: {
-    color: PSYCHOLOGIST_COLORS.textOnPrimaryMuted,
+    color: PATIENTS_COLORS.textOnPrimaryMuted,
     fontWeight: '700',
   },
   dayChipDate: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#1E293B',
+    color: PATIENTS_COLORS.textNavySecondary,
     marginTop: 1,
   },
   dayChipDateSelected: {
-    color: PSYCHOLOGIST_COLORS.surface,
+    color: PATIENTS_COLORS.surface,
   },
   sectionHeadingRow: {
     flexDirection: 'row',
@@ -1503,18 +1505,18 @@ const styles = StyleSheet.create({
   sectionHeading: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#0F172A',
+    color: PATIENTS_COLORS.textNavy,
   },
   habitsCardsList: {
     gap: 10,
     marginBottom: 20,
   },
   habitCard: {
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.borderSoft,
   },
   habitCardTop: {
     flexDirection: 'row',
@@ -1531,11 +1533,11 @@ const styles = StyleSheet.create({
   habitCardName: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1E293B',
+    color: PATIENTS_COLORS.textNavySecondary,
   },
   habitCardSub: {
     fontSize: 11,
-    color: '#64748B',
+    color: PATIENTS_COLORS.textSlate,
     marginTop: 1,
   },
   habitScoreGroup: {
@@ -1557,7 +1559,7 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 6,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: PATIENTS_COLORS.surfaceSlate,
     borderRadius: 3,
     marginTop: 10,
     overflow: 'hidden',
@@ -1567,17 +1569,17 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   kpiCardInspecting: {
-    borderColor: PSYCHOLOGIST_COLORS.primaryAlt,
+    borderColor: PATIENTS_COLORS.primaryAlt,
     borderWidth: 1.5,
   },
   inspectingBannerTop: {
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderRadius: 16,
     padding: 14,
     marginBottom: 14,
     borderWidth: 1.5,
-    borderColor: PSYCHOLOGIST_COLORS.primaryAlt,
-    shadowColor: PSYCHOLOGIST_COLORS.primaryAlt,
+    borderColor: PATIENTS_COLORS.primaryAlt,
+    shadowColor: PATIENTS_COLORS.primaryAlt,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -1593,7 +1595,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#DCFCE7',
+    backgroundColor: PATIENTS_COLORS.successSurface,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -1602,29 +1604,29 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#16A34A',
+    backgroundColor: PATIENTS_COLORS.successBright,
   },
   inspectingPillText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#166534',
+    color: PATIENTS_COLORS.textGreenSuccess,
     letterSpacing: 0.5,
   },
   deselectBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: PATIENTS_COLORS.surfaceSlate,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.borderSoft,
   },
   deselectBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#334155',
+    color: PATIENTS_COLORS.textSlateDark,
   },
   inspectingMainInfo: {
     flexDirection: 'row',
@@ -1635,14 +1637,14 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#E8F5EE',
+    backgroundColor: PATIENTS_COLORS.surfaceHighlight,
     justifyContent: 'center',
     alignItems: 'center',
   },
   inspectingDateText: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: PATIENTS_COLORS.textNavy,
   },
   inspectingTimeMetaRow: {
     flexDirection: 'row',
@@ -1652,7 +1654,7 @@ const styles = StyleSheet.create({
   },
   inspectingTimeMetaText: {
     fontSize: 12,
-    color: '#0284C7',
+    color: PATIENTS_COLORS.infoBlue,
     fontWeight: '600',
   },
   inspectingFooterHint: {
@@ -1662,11 +1664,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: PATIENTS_COLORS.surfaceSlate,
   },
   inspectingFooterHintText: {
     fontSize: 11,
-    color: '#166534',
+    color: PATIENTS_COLORS.textGreenSuccess,
     fontWeight: '500',
     flex: 1,
   },
@@ -1674,7 +1676,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#E8F5EE',
+    backgroundColor: PATIENTS_COLORS.surfaceHighlight,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -1683,10 +1685,10 @@ const styles = StyleSheet.create({
   headingResetPillText: {
     fontSize: 11,
     fontWeight: '600',
-    color: PSYCHOLOGIST_COLORS.primaryAlt,
+    color: PATIENTS_COLORS.primaryAlt,
   },
   habitCardSelectedMode: {
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FCFDFD',
+    borderColor: PATIENTS_COLORS.borderSlate,
+    backgroundColor: PATIENTS_COLORS.surfaceChart,
   },
 });

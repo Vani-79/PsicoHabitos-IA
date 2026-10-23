@@ -22,6 +22,8 @@ import { AppointmentSession } from '../../types/patient';
 import { formatToChileanDate } from '../../utils/date';
 import { PSYCHOLOGIST_COLORS } from './psychologistColors';
 
+const CALENDAR_COLORS = PSYCHOLOGIST_COLORS.calendario;
+
 interface PsychologistCalendarScreenProps {
   doctorName?: string;
   onNavigateTab: (tab: PsychologistTab) => void;
@@ -284,7 +286,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
     if (loading) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color={PSYCHOLOGIST_COLORS.primary} />
+          <ActivityIndicator size="small" color={CALENDAR_COLORS.primary} />
           <Text style={styles.loadingText}>Cargando agenda de la semana...</Text>
         </View>
       );
@@ -294,7 +296,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
       return (
         <View style={styles.emptyDayContainer}>
           <View style={styles.emptyIconCircle}>
-            <Ionicons name="time-outline" size={32} color={PSYCHOLOGIST_COLORS.primary} />
+            <Ionicons name="time-outline" size={32} color={CALENDAR_COLORS.primary} />
           </View>
           <Text style={styles.emptyTitle}>Sin sesiones programadas</Text>
           <Text style={styles.emptySubtitle}>
@@ -341,7 +343,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
                       {/* Cabecera de la cita */}
                       <View style={styles.sessionHeaderRow}>
                         <View style={styles.timeDurationPill}>
-                          <Ionicons name="time" size={13} color={PSYCHOLOGIST_COLORS.primary} style={{ marginRight: 4 }} />
+                          <Ionicons name="time" size={13} color={CALENDAR_COLORS.primary} style={{ marginRight: 4 }} />
                           <Text style={styles.timeDurationText}>
                             {apt.hora} {apt.horaFin ? `- ${apt.horaFin}` : ''} ({apt.duracion} min)
                           </Text>
@@ -356,7 +358,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
                           <Ionicons
                             name={apt.modalidad === 'online' ? 'videocam' : 'business'}
                             size={12}
-                            color={apt.modalidad === 'online' ? '#2563EB' : PSYCHOLOGIST_COLORS.primary}
+                            color={apt.modalidad === 'online' ? CALENDAR_COLORS.onlineSession : CALENDAR_COLORS.primary}
                             style={{ marginRight: 4 }}
                           />
                           <Text
@@ -382,7 +384,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
                         </Text>
                         {apt.rol_psicologo === 'suplente' && (
                           <View style={styles.suplenteRoleBadge}>
-                            <Ionicons name="repeat" size={11} color={PSYCHOLOGIST_COLORS.info} style={{ marginRight: 3 }} />
+                            <Ionicons name="repeat" size={11} color={CALENDAR_COLORS.info} style={{ marginRight: 3 }} />
                             <Text style={styles.suplenteRoleBadgeText}>Suplencia</Text>
                           </View>
                         )}
@@ -390,7 +392,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
                           <Ionicons
                             name="chevron-forward"
                             size={15}
-                            color={PSYCHOLOGIST_COLORS.textSubtle}
+                            color={CALENDAR_COLORS.textSubtle}
                             style={{ marginLeft: 4 }}
                           />
                         )}
@@ -402,7 +404,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
                           <Ionicons
                             name="document-text-outline"
                             size={13}
-                            color={PSYCHOLOGIST_COLORS.textSecondary}
+                            color={CALENDAR_COLORS.textSecondary}
                             style={{ marginRight: 4, marginTop: 1 }}
                           />
                           <Text style={styles.notesText} numberOfLines={2}>
@@ -459,7 +461,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
               onPress={handleGoToToday}
               activeOpacity={0.8}
             >
-              <Ionicons name="today-outline" size={14} color={PSYCHOLOGIST_COLORS.primary} style={{ marginRight: 4 }} />
+              <Ionicons name="today-outline" size={14} color={CALENDAR_COLORS.primary} style={{ marginRight: 4 }} />
               <Text style={styles.todayButtonText}>Hoy</Text>
             </TouchableOpacity>
           )}
@@ -473,7 +475,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
         ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[PSYCHOLOGIST_COLORS.primary]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[CALENDAR_COLORS.primary]} />
         }
       >
         {/* Selector de Mes Desplegable */}
@@ -483,11 +485,11 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
             onPress={() => setShowMonthPickerModal(true)}
             activeOpacity={0.8}
           >
-            <Ionicons name="calendar" size={17} color={PSYCHOLOGIST_COLORS.primary} style={{ marginRight: 6 }} />
+            <Ionicons name="calendar" size={17} color={CALENDAR_COLORS.primary} style={{ marginRight: 6 }} />
             <Text style={styles.monthDropdownText}>
               {MONTH_NAMES[currentMonth]} {currentYear}
             </Text>
-            <Ionicons name="chevron-down" size={15} color={PSYCHOLOGIST_COLORS.textSecondary} style={{ marginLeft: 6 }} />
+            <Ionicons name="chevron-down" size={15} color={CALENDAR_COLORS.textSecondary} style={{ marginLeft: 6 }} />
           </TouchableOpacity>
         </View>
 
@@ -599,7 +601,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: PSYCHOLOGIST_COLORS.canvasSubtle,
+    backgroundColor: CALENDAR_COLORS.canvasSubtle,
   },
   topBar: {
     flexDirection: 'row',
@@ -607,20 +609,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: CALENDAR_COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#EDF2F7',
+    borderBottomColor: CALENDAR_COLORS.borderPale,
   },
   topBarTag: {
     fontSize: 10.5,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.primary,
+    color: CALENDAR_COLORS.primary,
     letterSpacing: 0.8,
   },
   topBarTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.textStrong,
+    color: CALENDAR_COLORS.textStrong,
     marginTop: 2,
   },
   topBarActions: {
@@ -631,17 +633,17 @@ const styles = StyleSheet.create({
   todayButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PSYCHOLOGIST_COLORS.canvas,
+    backgroundColor: CALENDAR_COLORS.canvas,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.borderGreen,
+    borderColor: CALENDAR_COLORS.borderGreen,
   },
   todayButtonText: {
     fontSize: 12,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.primary,
+    color: CALENDAR_COLORS.primary,
   },
   scrollContent: {
     flexGrow: 1,
@@ -652,88 +654,88 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: CALENDAR_COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: PSYCHOLOGIST_COLORS.surfaceMuted,
+    borderBottomColor: CALENDAR_COLORS.surfaceMuted,
   },
   dayCardDisabled: {
     opacity: 0.35,
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceMuted,
+    backgroundColor: CALENDAR_COLORS.surfaceMuted,
   },
   monthDropdownButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceSubtle,
+    backgroundColor: CALENDAR_COLORS.surfaceSubtle,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.border,
+    borderColor: CALENDAR_COLORS.border,
   },
   monthDropdownText: {
     fontSize: 15,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.textStrong,
+    color: CALENDAR_COLORS.textStrong,
   },
   weekStripContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: CALENDAR_COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#EDF2F7',
+    borderBottomColor: CALENDAR_COLORS.borderPale,
   },
   dayCard: {
     flex: 1,
     maxWidth: 48,
     height: 68,
     borderRadius: 13,
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceSubtle,
+    backgroundColor: CALENDAR_COLORS.surfaceSubtle,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.border,
+    borderColor: CALENDAR_COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 4,
     marginHorizontal: 2,
   },
   dayCardActive: {
-    backgroundColor: PSYCHOLOGIST_COLORS.primary,
-    borderColor: PSYCHOLOGIST_COLORS.primary,
-    shadowColor: PSYCHOLOGIST_COLORS.primary,
+    backgroundColor: CALENDAR_COLORS.primary,
+    borderColor: CALENDAR_COLORS.primary,
+    shadowColor: CALENDAR_COLORS.primary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 3,
   },
   dayCardToday: {
-    borderColor: PSYCHOLOGIST_COLORS.primary,
+    borderColor: CALENDAR_COLORS.primary,
     borderWidth: 1.5,
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceGreenSoft,
+    backgroundColor: CALENDAR_COLORS.surfaceGreenSoft,
   },
   dayNameText: {
     fontSize: 11,
     fontWeight: '600',
-    color: PSYCHOLOGIST_COLORS.textMuted,
+    color: CALENDAR_COLORS.textMuted,
     marginBottom: 3,
   },
   dayNameTextActive: {
-    color: PSYCHOLOGIST_COLORS.textOnPrimaryMuted,
+    color: CALENDAR_COLORS.textOnPrimaryMuted,
   },
   dayNameTextToday: {
-    color: PSYCHOLOGIST_COLORS.primary,
+    color: CALENDAR_COLORS.primary,
     fontWeight: '700',
   },
   dayNumText: {
     fontSize: 16.5,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.textStrong,
+    color: CALENDAR_COLORS.textStrong,
   },
   dayNumTextActive: {
-    color: PSYCHOLOGIST_COLORS.surface,
+    color: CALENDAR_COLORS.surface,
   },
   dayNumTextToday: {
-    color: PSYCHOLOGIST_COLORS.primary,
+    color: CALENDAR_COLORS.primary,
   },
   indicatorsRow: {
     height: 6,
@@ -745,16 +747,16 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: PSYCHOLOGIST_COLORS.primary,
+    backgroundColor: CALENDAR_COLORS.primary,
   },
   dotIndicatorActive: {
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: CALENDAR_COLORS.surface,
   },
   todaySmallDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#10B981',
+    backgroundColor: CALENDAR_COLORS.availableSlot,
   },
   dotPlaceholder: {
     width: 5,
@@ -766,25 +768,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceMuted,
+    backgroundColor: CALENDAR_COLORS.surfaceMuted,
   },
   daySummaryFullDate: {
     fontSize: 13.5,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.textPrimary,
+    color: CALENDAR_COLORS.textPrimary,
   },
   daySummaryBadge: {
-    backgroundColor: PSYCHOLOGIST_COLORS.canvas,
+    backgroundColor: CALENDAR_COLORS.canvas,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.borderGreen,
+    borderColor: CALENDAR_COLORS.borderGreen,
   },
   daySummaryBadgeText: {
     fontSize: 11.5,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.primary,
+    color: CALENDAR_COLORS.primary,
   },
   loadingContainer: {
     paddingVertical: 40,
@@ -793,22 +795,22 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 8,
     fontSize: 13,
-    color: PSYCHOLOGIST_COLORS.textMuted,
+    color: CALENDAR_COLORS.textMuted,
   },
   emptyDayContainer: {
     margin: 20,
     padding: 28,
     borderRadius: 16,
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: CALENDAR_COLORS.surface,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.border,
+    borderColor: CALENDAR_COLORS.border,
   },
   emptyIconCircle: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: PSYCHOLOGIST_COLORS.canvas,
+    backgroundColor: CALENDAR_COLORS.canvas,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
@@ -816,12 +818,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 15.5,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.textStrong,
+    color: CALENDAR_COLORS.textStrong,
     marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: PSYCHOLOGIST_COLORS.textMuted,
+    color: CALENDAR_COLORS.textMuted,
     textAlign: 'center',
     lineHeight: 19,
   },
@@ -840,7 +842,7 @@ const styles = StyleSheet.create({
   hourText: {
     fontSize: 11.5,
     fontWeight: '600',
-    color: PSYCHOLOGIST_COLORS.textMuted,
+    color: CALENDAR_COLORS.textMuted,
   },
   eventsCol: {
     flex: 1,
@@ -848,29 +850,29 @@ const styles = StyleSheet.create({
   },
   hourDivider: {
     height: 1,
-    backgroundColor: PSYCHOLOGIST_COLORS.border,
+    backgroundColor: CALENDAR_COLORS.border,
     marginBottom: 8,
   },
   sessionCard: {
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: CALENDAR_COLORS.surface,
     borderLeftWidth: 4,
-    shadowColor: PSYCHOLOGIST_COLORS.shadow,
+    shadowColor: CALENDAR_COLORS.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 1,
   },
   sessionCardPresencial: {
-    borderLeftColor: PSYCHOLOGIST_COLORS.primary,
-    borderColor: PSYCHOLOGIST_COLORS.border,
+    borderLeftColor: CALENDAR_COLORS.primary,
+    borderColor: CALENDAR_COLORS.border,
     borderWidth: 1,
   },
   sessionCardOnline: {
-    borderLeftColor: '#2563EB',
-    borderColor: PSYCHOLOGIST_COLORS.border,
+    borderLeftColor: CALENDAR_COLORS.onlineSession,
+    borderColor: CALENDAR_COLORS.border,
     borderWidth: 1,
   },
   sessionHeaderRow: {
@@ -882,7 +884,7 @@ const styles = StyleSheet.create({
   timeDurationPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceMuted,
+    backgroundColor: CALENDAR_COLORS.surfaceMuted,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -890,7 +892,7 @@ const styles = StyleSheet.create({
   timeDurationText: {
     fontSize: 11.5,
     fontWeight: '600',
-    color: PSYCHOLOGIST_COLORS.textBody,
+    color: CALENDAR_COLORS.textBody,
   },
   modalityBadge: {
     flexDirection: 'row',
@@ -900,20 +902,20 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   modalityBadgePresencial: {
-    backgroundColor: PSYCHOLOGIST_COLORS.canvas,
+    backgroundColor: CALENDAR_COLORS.canvas,
   },
   modalityBadgeOnline: {
-    backgroundColor: PSYCHOLOGIST_COLORS.infoSurface,
+    backgroundColor: CALENDAR_COLORS.infoSurface,
   },
   modalityBadgeText: {
     fontSize: 11,
     fontWeight: '700',
   },
   modalityBadgeTextPresencial: {
-    color: PSYCHOLOGIST_COLORS.primary,
+    color: CALENDAR_COLORS.primary,
   },
   modalityBadgeTextOnline: {
-    color: '#2563EB',
+    color: CALENDAR_COLORS.onlineSession,
   },
   patientRowWithBadge: {
     flexDirection: 'row',
@@ -925,19 +927,19 @@ const styles = StyleSheet.create({
   patientNameText: {
     fontSize: 15,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.textStrong,
+    color: CALENDAR_COLORS.textStrong,
     flex: 1,
   },
   patientNameCancelled: {
-    color: PSYCHOLOGIST_COLORS.textSubtle,
+    color: CALENDAR_COLORS.textSubtle,
     textDecorationLine: 'line-through',
   },
   suplenteRoleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PSYCHOLOGIST_COLORS.infoSurface,
+    backgroundColor: CALENDAR_COLORS.infoSurface,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.infoBorder,
+    borderColor: CALENDAR_COLORS.infoBorder,
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
@@ -945,12 +947,12 @@ const styles = StyleSheet.create({
   suplenteRoleBadgeText: {
     fontSize: 10.5,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.info,
+    color: CALENDAR_COLORS.info,
   },
   notesRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceSubtle,
+    backgroundColor: CALENDAR_COLORS.surfaceSubtle,
     padding: 8,
     borderRadius: 8,
     marginTop: 4,
@@ -959,7 +961,7 @@ const styles = StyleSheet.create({
   notesText: {
     flex: 1,
     fontSize: 12,
-    color: PSYCHOLOGIST_COLORS.textSecondary,
+    color: CALENDAR_COLORS.textSecondary,
     lineHeight: 16,
   },
   sessionFooterRow: {
@@ -973,25 +975,25 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   statusPillScheduled: {
-    backgroundColor: PSYCHOLOGIST_COLORS.warningSurface,
+    backgroundColor: CALENDAR_COLORS.warningSurface,
   },
   statusPillCompleted: {
-    backgroundColor: PSYCHOLOGIST_COLORS.canvas,
+    backgroundColor: CALENDAR_COLORS.canvas,
   },
   statusPillCancelled: {
-    backgroundColor: PSYCHOLOGIST_COLORS.dangerSurface,
+    backgroundColor: CALENDAR_COLORS.dangerSurface,
   },
   statusPillText: {
     fontSize: 10.5,
     fontWeight: '600',
   },
   statusPillTextScheduled: {
-    color: '#92400E',
+    color: CALENDAR_COLORS.textWarningStrong,
   },
   statusPillTextCompleted: {
-    color: PSYCHOLOGIST_COLORS.primary,
+    color: CALENDAR_COLORS.primary,
   },
   statusPillTextCancelled: {
-    color: PSYCHOLOGIST_COLORS.danger,
+    color: CALENDAR_COLORS.danger,
   },
 });

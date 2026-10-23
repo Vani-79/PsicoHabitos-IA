@@ -21,6 +21,8 @@ import {
 import { formatToChileanDate } from '../../../utils/date';
 import { PSYCHOLOGIST_COLORS } from '../psychologistColors';
 
+const PATIENTS_COLORS = PSYCHOLOGIST_COLORS.pacientes;
+
 const SESSION_DURATIONS = [
   { key: '30', label: '30 min' },
   { key: '45', label: '45 min' },
@@ -143,7 +145,7 @@ const Step1Search: React.FC<Step1SearchProps> = ({
 }) => (
   <View style={styles.card}>
     <View style={styles.cardHeaderIcon}>
-      <Ionicons name="search" size={24} color={PSYCHOLOGIST_COLORS.primary} />
+      <Ionicons name="search" size={24} color={PATIENTS_COLORS.primary} />
     </View>
     <Text style={styles.cardTitle}>Buscar paciente registrado</Text>
     <Text style={styles.cardSubtitle}>
@@ -153,11 +155,11 @@ const Step1Search: React.FC<Step1SearchProps> = ({
     <View style={styles.inputGroup}>
       <Text style={styles.label}>Correo del paciente</Text>
       <View style={styles.inputWrapper}>
-        <Ionicons name="mail-outline" size={20} color={PSYCHOLOGIST_COLORS.textMuted} style={styles.inputIcon} />
+        <Ionicons name="mail-outline" size={20} color={PATIENTS_COLORS.textMuted} style={styles.inputIcon} />
         <TextInput
           style={styles.textInput}
           placeholder="ejemplo@correo.com"
-          placeholderTextColor={PSYCHOLOGIST_COLORS.textSubtle}
+          placeholderTextColor={PATIENTS_COLORS.textSubtle}
           value={searchEmail}
           onChangeText={setSearchEmail}
           keyboardType="email-address"
@@ -173,11 +175,11 @@ const Step1Search: React.FC<Step1SearchProps> = ({
       disabled={isSearching}
     >
       {isSearching ? (
-        <ActivityIndicator color={PSYCHOLOGIST_COLORS.surface} size="small" />
+        <ActivityIndicator color={PATIENTS_COLORS.surface} size="small" />
       ) : (
         <>
           <Text style={styles.primaryButtonText}>Buscar paciente</Text>
-          <Ionicons name="arrow-forward" size={18} color={PSYCHOLOGIST_COLORS.surface} />
+          <Ionicons name="arrow-forward" size={18} color={PATIENTS_COLORS.surface} />
         </>
       )}
     </TouchableOpacity>
@@ -212,7 +214,7 @@ const Step2Modality: React.FC<Step2ModalityProps> = ({
     <View style={styles.card}>
       <View style={styles.patientInfoBox}>
         <View style={styles.patientAvatar}>
-          <Ionicons name="person" size={22} color={PSYCHOLOGIST_COLORS.primary} />
+          <Ionicons name="person" size={22} color={PATIENTS_COLORS.primary} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.patientName}>
@@ -226,7 +228,7 @@ const Step2Modality: React.FC<Step2ModalityProps> = ({
 
       {Boolean(lookupData.hasTitular && lookupData.currentSpecialist) && (
         <View style={styles.titularAlertBox}>
-          <Ionicons name="shield-checkmark" size={20} color={PSYCHOLOGIST_COLORS.info} />
+          <Ionicons name="shield-checkmark" size={20} color={PATIENTS_COLORS.info} />
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Text style={styles.titularAlertTitle}>Paciente con especialista asignado</Text>
             <Text style={styles.titularAlertText}>
@@ -238,7 +240,7 @@ const Step2Modality: React.FC<Step2ModalityProps> = ({
 
       {Boolean(lookupData.currentSuplente) && (
         <View style={styles.suplenteNoticeBox}>
-          <Ionicons name="time-outline" size={18} color="#D97706" />
+          <Ionicons name="time-outline" size={18} color={PATIENTS_COLORS.warningBright} />
           <Text style={styles.suplenteNoticeText}>
             Suplencia actual: {lookupData.currentSuplente}
             {lookupData.suplenteInfo?.fecha_fin_suplencia
@@ -266,10 +268,10 @@ const Step2Modality: React.FC<Step2ModalityProps> = ({
       {selectedRelation === 'suplente' && (
         <View style={[styles.inputGroup, { marginTop: 12 }]}>
           <Text style={styles.label}>
-            Fecha de término de la suplencia <Text style={{ color: '#EF4444' }}>*</Text>
+            Fecha de término de la suplencia <Text style={{ color: PATIENTS_COLORS.dangerBright }}>*</Text>
           </Text>
           <TouchableOpacity style={styles.dateSelector} onPress={onOpenDatePicker}>
-            <Ionicons name="calendar-outline" size={20} color={PSYCHOLOGIST_COLORS.primary} />
+            <Ionicons name="calendar-outline" size={20} color={PATIENTS_COLORS.primary} />
             <Text style={[styles.dateSelectorText, !endDateSuplencia && styles.placeholderText]}>
               {endDateSuplencia ? formatFullDateSpanish(endDateSuplencia) : 'Seleccionar fecha de término'}
             </Text>
@@ -292,7 +294,7 @@ const Step2Modality: React.FC<Step2ModalityProps> = ({
 
       <View style={styles.actionRow}>
         <TouchableOpacity style={styles.secondaryButton} onPress={onBack}>
-          <Ionicons name="arrow-back" size={18} color={PSYCHOLOGIST_COLORS.textSecondary} />
+          <Ionicons name="arrow-back" size={18} color={PATIENTS_COLORS.textSecondary} />
           <Text style={styles.secondaryButtonText}>Volver</Text>
         </TouchableOpacity>
 
@@ -302,11 +304,11 @@ const Step2Modality: React.FC<Step2ModalityProps> = ({
           disabled={isSendingOtp}
         >
           {isSendingOtp ? (
-            <ActivityIndicator color={PSYCHOLOGIST_COLORS.surface} size="small" />
+            <ActivityIndicator color={PATIENTS_COLORS.surface} size="small" />
           ) : (
             <>
               <Text style={styles.primaryButtonText}>Enviar Código</Text>
-              <Ionicons name="paper-plane" size={16} color={PSYCHOLOGIST_COLORS.surface} />
+              <Ionicons name="paper-plane" size={16} color={PATIENTS_COLORS.surface} />
             </>
           )}
         </TouchableOpacity>
@@ -360,7 +362,7 @@ const Step3OtpSession: React.FC<Step3OtpSessionProps> = ({
 }) => (
   <View style={styles.card}>
     <View style={styles.otpBanner}>
-      <Ionicons name="mail-unread" size={22} color={PSYCHOLOGIST_COLORS.primary} />
+      <Ionicons name="mail-unread" size={22} color={PATIENTS_COLORS.primary} />
       <View style={{ flex: 1, marginLeft: 10 }}>
         <Text style={styles.otpBannerTitle}>Autorización requerida por Ley 21.719</Text>
         <Text style={styles.otpBannerText}>
@@ -371,12 +373,12 @@ const Step3OtpSession: React.FC<Step3OtpSessionProps> = ({
 
     <View style={styles.inputGroup}>
       <Text style={styles.label}>
-        Código de autorización (6 dígitos) <Text style={{ color: '#EF4444' }}>*</Text>
+        Código de autorización (6 dígitos) <Text style={{ color: PATIENTS_COLORS.dangerBright }}>*</Text>
       </Text>
       <TextInput
         style={styles.otpInput}
         placeholder="000000"
-        placeholderTextColor={PSYCHOLOGIST_COLORS.textSubtle}
+        placeholderTextColor={PATIENTS_COLORS.textSubtle}
         value={otpCode}
         onChangeText={(text) => setOtpCode(text.replace(/\D/g, '').slice(0, 6))}
         keyboardType="number-pad"
@@ -393,7 +395,7 @@ const Step3OtpSession: React.FC<Step3OtpSessionProps> = ({
     <View style={styles.inputGroup}>
       <Text style={styles.label}>Fecha de la sesión</Text>
       <TouchableOpacity style={styles.dateSelector} onPress={onOpenDatePicker}>
-        <Ionicons name="calendar-outline" size={20} color={PSYCHOLOGIST_COLORS.primary} />
+        <Ionicons name="calendar-outline" size={20} color={PATIENTS_COLORS.primary} />
         <Text style={[styles.dateSelectorText, !firstSessionDate && styles.placeholderText]}>
           {firstSessionDate ? formatFullDateSpanish(firstSessionDate) : 'Seleccionar fecha'}
         </Text>
@@ -404,7 +406,7 @@ const Step3OtpSession: React.FC<Step3OtpSessionProps> = ({
       <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
         <Text style={styles.label}>Hora de inicio</Text>
         <TouchableOpacity style={styles.dateSelector} onPress={onOpenTimePicker}>
-          <Ionicons name="time-outline" size={20} color={PSYCHOLOGIST_COLORS.primary} />
+          <Ionicons name="time-outline" size={20} color={PATIENTS_COLORS.primary} />
           <Text style={styles.dateSelectorText}>{firstSessionTime}</Text>
         </TouchableOpacity>
       </View>
@@ -464,7 +466,7 @@ const Step3OtpSession: React.FC<Step3OtpSessionProps> = ({
       <TextInput
         style={[styles.textInput, { height: 70, textAlignVertical: 'top' }]}
         placeholder={`Primera sesión (${selectedRelation === 'suplente' ? 'Suplencia' : 'Titular'})`}
-        placeholderTextColor={PSYCHOLOGIST_COLORS.textSubtle}
+        placeholderTextColor={PATIENTS_COLORS.textSubtle}
         value={firstSessionNotes}
         onChangeText={setFirstSessionNotes}
         multiline
@@ -473,7 +475,7 @@ const Step3OtpSession: React.FC<Step3OtpSessionProps> = ({
 
     <View style={styles.actionRow}>
       <TouchableOpacity style={styles.secondaryButton} onPress={onBack}>
-        <Ionicons name="arrow-back" size={18} color={PSYCHOLOGIST_COLORS.textSecondary} />
+        <Ionicons name="arrow-back" size={18} color={PATIENTS_COLORS.textSecondary} />
         <Text style={styles.secondaryButtonText}>Volver</Text>
       </TouchableOpacity>
 
@@ -483,11 +485,11 @@ const Step3OtpSession: React.FC<Step3OtpSessionProps> = ({
         disabled={isSubmitting}
       >
         {isSubmitting ? (
-          <ActivityIndicator color={PSYCHOLOGIST_COLORS.surface} size="small" />
+          <ActivityIndicator color={PATIENTS_COLORS.surface} size="small" />
         ) : (
           <>
             <Text style={styles.primaryButtonText}>Vincular y Agendar</Text>
-            <Ionicons name="checkmark-circle" size={18} color={PSYCHOLOGIST_COLORS.surface} />
+            <Ionicons name="checkmark-circle" size={18} color={PATIENTS_COLORS.surface} />
           </>
         )}
       </TouchableOpacity>
@@ -872,38 +874,38 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: PSYCHOLOGIST_COLORS.border,
+    backgroundColor: PATIENTS_COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepDotActive: {
-    backgroundColor: PSYCHOLOGIST_COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.primary,
   },
   stepDotText: {
     fontSize: 14,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.textMuted,
+    color: PATIENTS_COLORS.textMuted,
   },
   stepDotTextActive: {
-    color: PSYCHOLOGIST_COLORS.surface,
+    color: PATIENTS_COLORS.surface,
   },
   stepLine: {
     width: 40,
     height: 3,
-    backgroundColor: PSYCHOLOGIST_COLORS.border,
+    backgroundColor: PATIENTS_COLORS.border,
     marginHorizontal: 4,
   },
   stepLineActive: {
-    backgroundColor: PSYCHOLOGIST_COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.primary,
   },
   card: {
-    backgroundColor: PSYCHOLOGIST_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.surface,
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: PSYCHOLOGIST_COLORS.border,
+    borderColor: PATIENTS_COLORS.border,
     elevation: 2,
-    shadowColor: PSYCHOLOGIST_COLORS.shadow,
+    shadowColor: PATIENTS_COLORS.shadow,
     shadowOpacity: 0.05,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
@@ -912,7 +914,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceGreen,
+    backgroundColor: PATIENTS_COLORS.surfaceGreen,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -920,12 +922,12 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.textStrong,
+    color: PATIENTS_COLORS.textStrong,
     marginBottom: 4,
   },
   cardSubtitle: {
     fontSize: 14,
-    color: PSYCHOLOGIST_COLORS.textMuted,
+    color: PATIENTS_COLORS.textMuted,
     lineHeight: 20,
     marginBottom: 20,
   },
@@ -935,16 +937,16 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: PSYCHOLOGIST_COLORS.textBody,
+    color: PATIENTS_COLORS.textBody,
     marginBottom: 6,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: PATIENTS_COLORS.borderDisabled,
     borderRadius: 10,
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceSubtle,
+    backgroundColor: PATIENTS_COLORS.surfaceSubtle,
     paddingHorizontal: 12,
   },
   inputIcon: {
@@ -954,28 +956,28 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     fontSize: 15,
-    color: PSYCHOLOGIST_COLORS.textStrong,
+    color: PATIENTS_COLORS.textStrong,
   },
   otpInput: {
     height: 56,
     borderWidth: 2,
-    borderColor: PSYCHOLOGIST_COLORS.primary,
+    borderColor: PATIENTS_COLORS.primary,
     borderRadius: 12,
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceGreenSoft,
+    backgroundColor: PATIENTS_COLORS.surfaceGreenSoft,
     textAlign: 'center',
     fontSize: 28,
     fontWeight: '800',
     letterSpacing: 10,
-    color: PSYCHOLOGIST_COLORS.primary,
+    color: PATIENTS_COLORS.primary,
   },
   resendText: {
     fontSize: 13,
-    color: PSYCHOLOGIST_COLORS.primary,
+    color: PATIENTS_COLORS.primary,
     fontWeight: '600',
   },
   primaryButton: {
     height: 48,
-    backgroundColor: PSYCHOLOGIST_COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.primary,
     borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
@@ -986,24 +988,24 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 15,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.surface,
+    color: PATIENTS_COLORS.surface,
   },
   secondaryButton: {
     height: 48,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: PATIENTS_COLORS.borderDisabled,
     borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
     gap: 6,
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceSubtle,
+    backgroundColor: PATIENTS_COLORS.surfaceSubtle,
   },
   secondaryButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: PSYCHOLOGIST_COLORS.textSecondary,
+    color: PATIENTS_COLORS.textSecondary,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -1018,14 +1020,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderRadius: 12,
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceMuted,
+    backgroundColor: PATIENTS_COLORS.surfaceMuted,
     marginBottom: 12,
   },
   patientAvatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceGreen,
+    backgroundColor: PATIENTS_COLORS.surfaceGreen,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -1033,11 +1035,11 @@ const styles = StyleSheet.create({
   patientName: {
     fontSize: 16,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.textStrong,
+    color: PATIENTS_COLORS.textStrong,
   },
   patientSub: {
     fontSize: 13,
-    color: PSYCHOLOGIST_COLORS.textMuted,
+    color: PATIENTS_COLORS.textMuted,
     marginTop: 2,
   },
   titularAlertBox: {
@@ -1045,19 +1047,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderRadius: 10,
-    backgroundColor: PSYCHOLOGIST_COLORS.infoSurface,
+    backgroundColor: PATIENTS_COLORS.infoSurface,
     borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6',
+    borderLeftColor: PATIENTS_COLORS.infoBlueBright,
     marginBottom: 10,
   },
   titularAlertTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1E40AF',
+    color: PATIENTS_COLORS.textInfoStrong,
   },
   titularAlertText: {
     fontSize: 13,
-    color: '#1E3A8A',
+    color: PATIENTS_COLORS.textInfoDark,
     marginTop: 2,
   },
   suplenteNoticeBox: {
@@ -1065,13 +1067,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
     borderRadius: 8,
-    backgroundColor: PSYCHOLOGIST_COLORS.warningSurface,
+    backgroundColor: PATIENTS_COLORS.warningSurface,
     marginBottom: 10,
     gap: 8,
   },
   suplenteNoticeText: {
     fontSize: 12,
-    color: '#92400E',
+    color: PATIENTS_COLORS.textWarningStrong,
     fontWeight: '600',
     flex: 1,
   },
@@ -1079,12 +1081,12 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: PSYCHOLOGIST_COLORS.border,
-    backgroundColor: '#FAFAFA',
+    borderColor: PATIENTS_COLORS.border,
+    backgroundColor: PATIENTS_COLORS.surfaceNeutral,
   },
   modeCardSelected: {
-    borderColor: PSYCHOLOGIST_COLORS.primary,
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceGreenSoft,
+    borderColor: PATIENTS_COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.surfaceGreenSoft,
   },
   modeCardHeader: {
     flexDirection: 'row',
@@ -1096,29 +1098,29 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 2,
-    borderColor: PSYCHOLOGIST_COLORS.textSubtle,
+    borderColor: PATIENTS_COLORS.textSubtle,
     marginRight: 8,
   },
   radioDotActive: {
-    borderColor: PSYCHOLOGIST_COLORS.primary,
-    backgroundColor: PSYCHOLOGIST_COLORS.primary,
+    borderColor: PATIENTS_COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.primary,
   },
   modeCardTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.textStrong,
+    color: PATIENTS_COLORS.textStrong,
   },
   modeCardDesc: {
     fontSize: 13,
-    color: PSYCHOLOGIST_COLORS.textSecondary,
+    color: PATIENTS_COLORS.textSecondary,
     lineHeight: 18,
   },
   dateSelector: {
     height: 48,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: PATIENTS_COLORS.borderDisabled,
     borderRadius: 10,
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceSubtle,
+    backgroundColor: PATIENTS_COLORS.surfaceSubtle,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
@@ -1126,40 +1128,40 @@ const styles = StyleSheet.create({
   },
   dateSelectorText: {
     fontSize: 14,
-    color: PSYCHOLOGIST_COLORS.textStrong,
+    color: PATIENTS_COLORS.textStrong,
     fontWeight: '500',
   },
   placeholderText: {
-    color: PSYCHOLOGIST_COLORS.textSubtle,
+    color: PATIENTS_COLORS.textSubtle,
   },
   otpBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
     borderRadius: 10,
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceGreen,
+    backgroundColor: PATIENTS_COLORS.surfaceGreen,
     marginBottom: 16,
   },
   otpBannerTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.primary,
+    color: PATIENTS_COLORS.primary,
   },
   otpBannerText: {
     fontSize: 13,
-    color: '#166534',
+    color: PATIENTS_COLORS.textGreenSuccess,
     marginTop: 2,
     lineHeight: 18,
   },
   divider: {
     height: 1,
-    backgroundColor: PSYCHOLOGIST_COLORS.border,
+    backgroundColor: PATIENTS_COLORS.border,
     marginVertical: 18,
   },
   sectionHeaderTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: PSYCHOLOGIST_COLORS.textStrong,
+    color: PATIENTS_COLORS.textStrong,
     marginBottom: 14,
   },
   row: {
@@ -1170,7 +1172,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     height: 48,
     borderRadius: 10,
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceMuted,
+    backgroundColor: PATIENTS_COLORS.surfaceMuted,
     padding: 4,
   },
   modalityBtn: {
@@ -1180,15 +1182,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalityBtnActive: {
-    backgroundColor: PSYCHOLOGIST_COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.primary,
   },
   modalityBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: PSYCHOLOGIST_COLORS.textSecondary,
+    color: PATIENTS_COLORS.textSecondary,
   },
   modalityBtnTextActive: {
-    color: PSYCHOLOGIST_COLORS.surface,
+    color: PATIENTS_COLORS.surface,
   },
   durationRow: {
     flexDirection: 'row',
@@ -1200,21 +1202,21 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: PSYCHOLOGIST_COLORS.surfaceSubtle,
+    borderColor: PATIENTS_COLORS.borderDisabled,
+    backgroundColor: PATIENTS_COLORS.surfaceSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
   durBtnActive: {
-    borderColor: PSYCHOLOGIST_COLORS.primary,
-    backgroundColor: PSYCHOLOGIST_COLORS.primary,
+    borderColor: PATIENTS_COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.primary,
   },
   durBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: PSYCHOLOGIST_COLORS.textSecondary,
+    color: PATIENTS_COLORS.textSecondary,
   },
   durBtnTextActive: {
-    color: PSYCHOLOGIST_COLORS.surface,
+    color: PATIENTS_COLORS.surface,
   },
 });

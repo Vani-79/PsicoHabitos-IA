@@ -103,7 +103,7 @@ export const ForgotEmailCard: React.FC<ForgotEmailCardProps> = ({
         {isLoading ? (
           <ActivityIndicator color={AUTH_COLORS.white} />
         ) : (
-          <Text style={authStyles.submitButtonText}>Enviar Código</Text>
+          <Text style={authStyles.submitButtonText}>Enviar código</Text>
         )}
       </TouchableOpacity>
 

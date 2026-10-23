@@ -99,24 +99,23 @@ export const ForgotCodeCard: React.FC<ForgotCodeCardProps> = ({
   return (
     <View style={authStyles.card}>
       <View style={authStyles.welcomeBadge}>
-        <Ionicons name="shield-checkmark-outline" size={20} color={AUTH_COLORS.green} />
-        <Text style={authStyles.welcomeBadgeText}>VERIFICAR CÓDIGO</Text>
+        <Ionicons name="shield-checkmark-outline" size={20} color={AUTH_COLORS.green} />        
       </View>
 
-      <Text style={authStyles.cardTitle}>Código de 6 Dígitos</Text>
+      
       <Text style={authStyles.cardSubtitle}>
-        Hemos enviado un código a{'\n'}
+        Te hemos enviado un código de 6 dígitos a{'\n'}
         <Text style={{ fontWeight: '700', color: AUTH_COLORS.green }}>{email}</Text>
       </Text>
 
       {/* Input de Código */}
       <View style={authStyles.inputGroup}>
-        <Text style={authStyles.inputLabel}>Ingresa el código</Text>
+        <Text style={authStyles.inputLabel}>Ingresar</Text>
         <View style={authStyles.codeInputWrapper}>
           <TextInput
             style={authStyles.codeInput}
             placeholder="------"
-            placeholderTextColor={AUTH_COLORS.mint}
+            placeholderTextColor={AUTH_COLORS.gray800}
             value={recoveryCode}
             onChangeText={(text) =>
               setRecoveryCode(text.replace(/\D/g, '').slice(0, 6))
@@ -127,7 +126,7 @@ export const ForgotCodeCard: React.FC<ForgotCodeCardProps> = ({
           />
         </View>
         <Text style={authStyles.codeHelperText}>
-          El código tiene 6 dígitos numéricos y vence en 15 minutos.
+          El código vencerá en 15 minutos
         </Text>
       </View>
 
@@ -144,13 +143,13 @@ export const ForgotCodeCard: React.FC<ForgotCodeCardProps> = ({
         {isLoading ? (
           <ActivityIndicator color={AUTH_COLORS.white} />
         ) : (
-          <Text style={authStyles.submitButtonText}>Verificar Código</Text>
+          <Text style={authStyles.submitButtonText}>Verificar</Text>
         )}
       </TouchableOpacity>
 
       {/* Reenviar código */}
       <View style={authStyles.resendRow}>
-        <Text style={authStyles.resendPromptText}>¿No recibiste el código?</Text>
+        <Text style={authStyles.resendPromptText}>¿No lo recibiste?</Text>
         <TouchableOpacity
           onPress={handleResendCode}
           disabled={isResending}
@@ -163,7 +162,7 @@ export const ForgotCodeCard: React.FC<ForgotCodeCardProps> = ({
               style={{ marginLeft: 6 }}
             />
           ) : (
-            <Text style={authStyles.resendLinkText}>Reenviar código</Text>
+            <Text style={authStyles.resendLinkText}>Reenviar</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -178,7 +177,7 @@ export const ForgotCodeCard: React.FC<ForgotCodeCardProps> = ({
 
       {/* Volver */}
       <TouchableOpacity style={authStyles.cancelLink} onPress={onBackToLogin}>
-        <Text style={authStyles.cancelLinkText}>Volver al inicio de sesión</Text>
+        <Text style={authStyles.cancelLinkText}>Volver al inicio</Text>
       </TouchableOpacity>
     </View>
   );

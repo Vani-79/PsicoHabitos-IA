@@ -9,8 +9,8 @@ export const AUTH_COLORS = {
   gray400: '#9CA3AF',
   gray500: '#718096',
   gray600: '#6B7280',
-  gray700: '#64748B',
-  gray800: '#4A5568',
+  gray700: '#080e0ae1',
+  gray800: '#7a7c80',
   gray900: '#374151',
   charcoal: '#1F2937',
   heading: '#2D3748',
@@ -22,16 +22,16 @@ export const AUTH_COLORS = {
   greenSubtle: '#F2F8F4',
   greenMuted: '#9FB8AA',
   welcomeBackground: '#ffffff',
-  greenPale: '#F0FDF4',
+  greenPale: '#acb0ad38',
   background: '#F8FAF9',
   disabledBackground: '#F3F4F6',
   // Bordes y separadores.
   greenBorder: '#D3E6DC',
-  greenBorderStrong: '#168A54',
+  greenBorderStrong: '#acb2af2a',
   greenBorderSoft: '#DEEBE3',
   welcomeBorder: '#edefede8',
-  greenPaleBorder: '#BBF7D0',
-  gray100: '#F0F0F0',
+  greenPaleBorder: '#cbcfcdc4',
+  gray100: '#ffffff4f',
   gray200: '#E2E8F0',
   gray300: '#CBD5E1',
   disabledBorder: '#E5E7EB',
@@ -44,7 +44,7 @@ export const AUTH_COLORS = {
   red: '#DC2626',
 
   // Sombras.
-  black: '#989595',
+  black: '#b1b1b1',
 } as const;
 
 const INPUT_SURFACE_STYLE = {
@@ -233,7 +233,7 @@ export const authStyles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: 13.5,
-    color: AUTH_COLORS.greenDark,
+    color: AUTH_COLORS.gray800,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -248,7 +248,7 @@ export const authStyles = StyleSheet.create({
   },
   modifyEmailLink: {
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   modifyEmailText: {
     fontSize: 13,
@@ -315,23 +315,25 @@ export const authStyles = StyleSheet.create({
     borderWidth: 2,
     borderColor: AUTH_COLORS.greenBorderStrong,
     borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 1,
+    width: '80%',
+    paddingHorizontal: 10,
     marginBottom: 8,
+    alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
   },
   codeInput: {
-    fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: 12,
+    fontSize: 25,
+    fontWeight: '500',
+    letterSpacing: 15,
     color: AUTH_COLORS.green,
     textAlign: 'center',
     width: '100%',
     paddingVertical: 4,
   },
   codeHelperText: {
-    fontSize: 12.5,
+    fontSize: 12,
     color: AUTH_COLORS.gray600,
     textAlign: 'center',
     marginBottom: 18,
@@ -345,6 +347,7 @@ export const authStyles = StyleSheet.create({
   resendPromptText: {
     fontSize: 13,
     color: AUTH_COLORS.gray600,
+    marginBottom: 17,
   },
   resendLinkText: {
     fontSize: 13,
@@ -352,6 +355,7 @@ export const authStyles = StyleSheet.create({
     fontWeight: '700',
     textDecorationLine: 'underline',
     marginLeft: 4,
+    marginBottom: 17,
   },
 
   // Correo seleccionado durante el acceso.
