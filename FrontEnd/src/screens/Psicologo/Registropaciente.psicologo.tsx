@@ -76,8 +76,8 @@ const INITIAL_FORM: PatientRegistrationForm = {
   fechaNacimiento: '',
   genero: '',
   fechaPrimeraSesion: '',
-  horaPrimeraSesion: '10:00',
-  duracionPrimeraSesion: '60',
+  horaPrimeraSesion: '',
+  duracionPrimeraSesion: '',
   modalidadPrimeraSesion: 'presencial',
   observacionesPrimeraSesion: '',
   email: '',
@@ -154,8 +154,8 @@ const buildPatientRecord = (form: PatientRegistrationForm): MySqlPatientRecord =
   fecha_nacimiento: form.fechaNacimiento,
   genero: form.genero as Gender,
   fecha_primera_sesion: form.fechaPrimeraSesion,
-  hora_primera_sesion: form.horaPrimeraSesion || '10:00',
-  duracion_primera_sesion: Number(form.duracionPrimeraSesion) || 60,
+  hora_primera_sesion: form.horaPrimeraSesion || '',
+  duracion_primera_sesion: Number(form.duracionPrimeraSesion) || 0,
   modalidad_primera_sesion: form.modalidadPrimeraSesion || 'presencial',
   observaciones_primera_sesion: (form.observacionesPrimeraSesion || '').trim(),
   email: form.email.trim().toLowerCase(),
@@ -607,14 +607,20 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
 
   const isSubmitDisabled = !isFormValid || isSaving;
 
+
+
+  //------------------------------------------//
+
+  //FORMULARIO DE REGISTRO NUEVO PACIENTE
+
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>Registrar Nuevo Paciente</Text>
+      <Text style={styles.cardTitle}>Formulario de registro</Text>
       
 
       <ValidatedTextInput
         label="Nombre"
-        placeholder="Ingresa tu nombre"
+        placeholder="Ej. 'Carla'"
         value={form.nombre}
         hasError={hasEmptyFieldError(touched.nombre, form.nombre)}
         errorMessage="Este campo no puede estar vacío."
@@ -624,7 +630,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
 
       <ValidatedTextInput
         label="Apellido Paterno"
-        placeholder="Ingresa tu apellido paterno"
+        placeholder="Ej. 'Gómez'"
         value={form.apellidoPaterno}
         hasError={hasEmptyFieldError(touched.apellidoPaterno, form.apellidoPaterno)}
         errorMessage="Este campo no puede estar vacío."
@@ -634,7 +640,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
 
       <ValidatedTextInput
         label="Apellido Materno"
-        placeholder="Ingresa tu apellido materno"
+        placeholder="Ej. 'Pérez'"
         value={form.apellidoMaterno}
         hasError={hasEmptyFieldError(touched.apellidoMaterno, form.apellidoMaterno)}
         errorMessage="Este campo no puede estar vacío."
@@ -643,7 +649,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
       />
 
       <PickerTriggerField
-        label="Fecha de Nacimiento"
+        label="Fecha de nacimiento"
         required
         valueText={birthDateLabel}
         isPlaceholder={!form.fechaNacimiento}
@@ -674,7 +680,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
       </View>
 
       <PickerTriggerField
-        label="Fecha de Primera Sesión"
+        label="Fecha sesión"
         required
         valueText={sessionDateLabel}
         isPlaceholder={!form.fechaPrimeraSesion}
@@ -683,7 +689,8 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
       />
 
       <PickerTriggerField
-        label="Hora de Inicio de la Primera Sesión"
+        label="Hora sesión"
+        required 
         valueText={sessionTimeLabel}
         isPlaceholder={!form.horaPrimeraSesion}
         iconName="time-outline"
@@ -691,7 +698,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
       />
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Duración de la Sesión</Text>
+        <Text style={styles.inputLabel}>Duración</Text>
         <DurationChips
           selectedDuration={form.duracionPrimeraSesion}
           onSelectDuration={(dur) => updateField('duracionPrimeraSesion', dur)}
@@ -699,7 +706,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Modalidad de la Sesión</Text>
+        <Text style={styles.inputLabel}>Modalidad</Text>
         <ModalityChips
           selectedModality={form.modalidadPrimeraSesion}
           onSelectModality={(mod) => updateField('modalidadPrimeraSesion', mod)}
@@ -707,7 +714,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Observaciones de la Sesión</Text>
+        <Text style={styles.inputLabel}>Observaciones</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="Observaciones iniciales, motivo de consulta, etc."
@@ -720,8 +727,8 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
       </View>
 
       <ValidatedTextInput
-        label="Email del Paciente"
-        placeholder="paciente@email.com"
+        label="Correo electrónico"
+        placeholder="Paciente@email.com"
         value={form.email}
         hasError={Boolean(emailError)}
         errorMessage={emailError ?? undefined}
@@ -733,7 +740,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
 
       <DatePickerModal
         visible={showBirthDatePicker}
-        title="Fecha de Nacimiento"
+        title="Fecha de nacimiento"
         initialDate={form.fechaNacimiento || '2000-01-01'}
         maxDate={new Date(2010, 11, 31)}
         onClose={() => setShowBirthDatePicker(false)}
@@ -742,7 +749,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
 
       <DatePickerModal
         visible={showSessionDatePicker}
-        title="Fecha de Primera Sesión"
+        title="Fecha de sesión"
         initialDate={form.fechaPrimeraSesion || new Date().toISOString().split('T')[0]}
         maxDate={new Date()}
         onClose={() => setShowSessionDatePicker(false)}
@@ -751,7 +758,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
 
       <TimePickerModal
         visible={showSessionTimePicker}
-        selectedTime={form.horaPrimeraSesion || '10:00'}
+        selectedTime={form.horaPrimeraSesion || ''}
         selectedDate={form.fechaPrimeraSesion}
         allowPastTimes={true}
         busySessions={busySessions}
@@ -773,7 +780,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
         {isSaving ? (
           <ActivityIndicator color={PATIENTS_COLORS.surface} />
         ) : (
-          <Text style={styles.submitButtonText}>Registrar Paciente</Text>
+          <Text style={styles.submitButtonText}>Registrar</Text>
         )}
       </TouchableOpacity>
     </View>
@@ -860,48 +867,30 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
   );
 };
 
-// Estilos compartidos por el registro de pacientes y sus selectores.
+
+
+
+//-------------------------------------------------//
+
+
+
+
+// ESTILOS DE FORMULARIO REGISTRO
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: PATIENTS_COLORS.surface,
   },
-
   
+  //REGISTRAR NUEVO PACIENTE FORMULARIO REGISTRO
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 60,
+    paddingTop: 20,
+    paddingBottom: 40,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  logoImage: {
-    width: 90,
-    height: 90,
-    marginBottom: 10,
-  },
-  brandTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    textAlign: 'center',
-  },
-  titlePsico: {
-    color: PATIENTS_COLORS.primary,
-  },
-  titleHabitos: {
-    color: PATIENTS_COLORS.accent,
-  },
-  sloganText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: PATIENTS_COLORS.primary,
-    marginTop: 4,
-    textAlign: 'center',
-  },
+
+  //TARJETA FORMULARIO REGISTRO
   card: {
     marginTop: 40,
     backgroundColor: PATIENTS_COLORS.surface,
@@ -915,22 +904,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: PATIENTS_COLORS.borderNeutral,
   },
+
+  //TITULO FORMULARIO REGISTRO
   cardTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: PATIENTS_COLORS.textGrayStrong,
     textAlign: 'center',
     marginBottom: 30,
   },
+
+
+
  
+  //INICIO TARJETA DE PACIENTE NUEVO, YA REGISTRADO
   segmentContainer: {
-    marginVertical: 40,
+    marginVertical: 20,
     flexDirection: 'row',
     backgroundColor: PATIENTS_COLORS.surfaceMuted,
     borderRadius: 12,
     padding: 4,
     marginBottom: 1,
   },
+
   segmentBtn: {
     flex: 1,
     flexDirection: 'row',
@@ -940,34 +936,57 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     gap: 6,
   },
+
   segmentBtnActive: {
     backgroundColor: PATIENTS_COLORS.primary,
   },
+
+  
   segmentBtnText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: PATIENTS_COLORS.textSecondary,
   },
+
+
   segmentBtnTextActive: {
     color: PATIENTS_COLORS.surface,
-    fontWeight: '700',
+    fontWeight: '600',
   },
+
+ //FIN TARJETA DE PACIENTE NUEVO, YA REGISTRADO
+
+
+
+//---------------------------------------//
+
+
+
+//INICIO FORMULARIO DE REGISTRO
+
+//separacion 
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 15,
   },
+  
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
+
+  //letra nombre etc
   inputLabel: {
-    fontSize: 13.5,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
     color: PATIENTS_COLORS.textGray,
-    marginBottom: 6,
+    marginBottom: 5,
   },
+
   requiredStar: {
     color: PATIENTS_COLORS.dangerBright,
   },
+
+  //letra dentro de contenedor nombre etc
   input: {
     backgroundColor: PATIENTS_COLORS.surface,
     borderWidth: 1.5,
@@ -975,19 +994,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 15,
+    fontSize: 13,
     color: PATIENTS_COLORS.textPrimary,
   },
+
   inputErrorBorder: {
     borderColor: PATIENTS_COLORS.danger,
-    borderWidth: 1,
+    borderWidth: 2,
   },
 
+  //letra error campo vacio etc
   fieldErrorText: {
     color: PATIENTS_COLORS.danger,
     fontSize: 12,
-    marginTop: 5,
+    marginTop: 9,
   },
+
   datePickerTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -998,25 +1020,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
+
   dateIcon: {
-    marginRight: 10,
+    marginRight: 8,
   },
+
+  //altura de texto fecha y hora
   datePickerValueText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 13,
     color: PATIENTS_COLORS.textPrimary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
+
   datePickerPlaceholder: {
     color: PATIENTS_COLORS.textSubtle,
     fontWeight: '400',
   },
+
+  // Contenedor género
   genderContainer: {
     flexDirection: 'row',
     backgroundColor: PATIENTS_COLORS.surfaceSlate,
     borderRadius: 12,
     padding: 3,
   },
+
   genderOption: {
     flex: 1,
     paddingVertical: 10,
@@ -1024,79 +1053,87 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 9,
   },
+
   genderOptionActive: {
     backgroundColor: PATIENTS_COLORS.primary,
-    shadowColor: PATIENTS_COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
     elevation: 2,
   },
+
   genderOptionText: {
     fontSize: 12,
     fontWeight: '600',
     color: PATIENTS_COLORS.textSlate,
   },
+
   genderOptionTextActive: {
     color: PATIENTS_COLORS.surface,
-    fontWeight: '700',
   },
+
+
+//boton registrar paciente
   submitButton: {
     backgroundColor: PATIENTS_COLORS.primary,
-    borderRadius: 14,
-    paddingVertical: 15,
+    borderRadius: 12,
+    paddingVertical: 10,
+    width: '50%',
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 10,
-    shadowColor: PATIENTS_COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
+    alignSelf: 'center',
+    marginTop: 30,
+    marginBottom: 50,
+    elevation: 1,
   },
+
   submitButtonDisabled: {
-    backgroundColor: PATIENTS_COLORS.borderGreenAccent,
-    shadowOpacity: 0,
-    elevation: 0,
+    backgroundColor: PATIENTS_COLORS.borderGreenAccent,    
+    elevation: 1,
   },
+
   submitButtonText: {
     color: PATIENTS_COLORS.surface,
-    fontSize: 16.5,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
   },
+
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
     marginTop: 4,
   },
+
+  //duracion sesion
   durationChip: {
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 12,
     backgroundColor: PATIENTS_COLORS.surfaceMuted,
     borderWidth: 1,
     borderColor: PATIENTS_COLORS.border,
-    alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
   },
+
   durationChipActive: {
     backgroundColor: PATIENTS_COLORS.canvas,
     borderColor: PATIENTS_COLORS.primary,
   },
+
   durationChipText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: PATIENTS_COLORS.textSecondary,
   },
+
   durationChipTextActive: {
     color: PATIENTS_COLORS.primary,
-    fontWeight: '700',
+    fontWeight: '600',
   },
+
   flexChip: {
     flex: 1,
   },
+
+  //observaciones de la sesion 
   textArea: {
     minHeight: 76,
     textAlignVertical: 'top',

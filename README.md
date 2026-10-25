@@ -104,7 +104,7 @@ El proceso psicoterapéutico profesional consta de 5 fases estructuradas:
 ### Descripción de la Arquitectura
 La solución implementa una **Arquitectura en Capas Desacopladas (Clean Architecture / 3 Capas)**:
 
-1. **Capa de Presentación (FrontEnd Móvil/Web):** Desarrollada con React Native y Expo. Implementa contextos de autenticación (`AuthContext`), roles dinámicos en caliente (`ProfileRoleHeader`) y llamadas tipadas a la API (`api.ts`).
+1. **Capa de Presentación (FrontEnd Móvil/Web):** Desarrollada con React Native y Expo. Implementa contextos de autenticación (`AuthContext`), cambio dinámico de roles y llamadas tipadas a la API (`api.ts`).
 2. **Capa de Negocio y Seguridad (BackEnd REST API):** Construida en Node.js/TypeScript. Incorpora middlewares de autenticación (`authMiddleware`), limitadores de tasa (`rateLimiter`), controladores por entidad clínica (`routes/`) y servicios auxiliares (`emailService`).
 3. **Capa de Persistencia y Gobernanza (MySQL 8.0):** Modelo relacional blindado en la base de datos mediante triggers para evitar agendas huérfanas o citas sin suscripción activa, y un evento autónomo de mantenimiento cada 1 hora para depuración de credenciales temporales.
 

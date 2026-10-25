@@ -112,23 +112,23 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
       : formatToChileanDate(fechaVencimientoRaw);
 
     return (
-      <View style={styles.profileCard}>
-        <View style={styles.avatarCircle}>
-          <Ionicons name="person" size={42} color={PROFILE_COLORS.primary} />
-        </View>
-        <Text style={styles.profileName}>{fullName}</Text>
+
+      //NOMBRE DE ESPECIALISTA
+      <View style={styles.profileCard}>      
+        <Text style={styles.profileName}>Ps. {fullName}</Text>
         <View style={styles.roleTag}>
           <Text style={styles.roleTagText}>ESPECIALISTA REGISTRADO</Text>
         </View>
 
         <View style={styles.infoSection}>
+
           {/* Campo 1: Nombre */}
           <View style={styles.infoRow}>
             <View style={styles.infoIconWrapper}>
               <Ionicons name="person-outline" size={18} color={PROFILE_COLORS.primary} />
             </View>
             <View style={styles.infoTextWrapper}>
-              <Text style={styles.infoLabel}>Nombre</Text>
+              <Text style={styles.infoLabel}>Nombre completo</Text>
               <Text style={styles.infoValue}>{fullName}</Text>
             </View>
           </View>
@@ -139,7 +139,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
               <Ionicons name="mail-outline" size={18} color={PROFILE_COLORS.primary} />
             </View>
             <View style={styles.infoTextWrapper}>
-              <Text style={styles.infoLabel}>Correo</Text>
+              <Text style={styles.infoLabel}>Correo electrónico</Text>
               <Text style={styles.infoValue}>{emailDisplay}</Text>
             </View>
           </View>
@@ -150,7 +150,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
               <Ionicons name="calendar-outline" size={18} color={PROFILE_COLORS.primary} />
             </View>
             <View style={styles.infoTextWrapper}>
-              <Text style={styles.infoLabel}>Fecha de Ingreso</Text>
+              <Text style={styles.infoLabel}>Ingreso desde</Text>
               <Text style={styles.infoValue}>{fechaIngresoDisplay}</Text>
             </View>
           </View>
@@ -165,7 +165,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
               />
             </View>
             <View style={styles.infoTextWrapper}>
-              <Text style={styles.infoLabel}>Fecha de Vencimiento de la Suscripción</Text>
+              <Text style={styles.infoLabel}>Suscripción activa hasta</Text>
               <Text
                 style={[
                   styles.infoValue,
@@ -187,7 +187,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
               />
             </View>
             <View style={styles.infoTextWrapper}>
-              <Text style={styles.infoLabel}>Estado de la suscripción</Text>
+              <Text style={styles.infoLabel}>Estado suscripción</Text>
               <View style={styles.statusBadgeRow}>
                 <Text
                   style={[
@@ -205,6 +205,9 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
     );
   };
 
+
+
+  //PENDIENTE DE VER
   return (
     <SafeAreaView style={styles.container}>
       {/* Encabezado con selector de rol desplegable desde 'Mi Perfil' */}
@@ -246,16 +249,22 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
   );
 };
 
-// Estilos del perfil profesional, la suscripción y las acciones de cuenta.
+
+
+
+// ESTILOS DE PERFIL
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: PROFILE_COLORS.canvas },
+
+  container: { flex: 1, backgroundColor: PROFILE_COLORS.fondoBase },
+
   scrollContent: {
     padding: 20,
     alignItems: 'center',
   },
-  profileCard: {
+
+ profileCard: {
     width: '100%',
-    backgroundColor: PROFILE_COLORS.surface,
+    backgroundColor: PROFILE_COLORS.fondoTarjeta,
     borderRadius: 22,
     padding: 24,
     alignItems: 'center',
@@ -263,8 +272,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: PROFILE_COLORS.bordeTarjeta, 
   },
+  
   loadingCard: {
     width: '100%',
     backgroundColor: PROFILE_COLORS.surface,
@@ -278,40 +290,33 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  
   loadingText: {
     marginTop: 12,
     fontSize: 14,
     color: PROFILE_COLORS.textMuted,
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  avatarCircle: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    backgroundColor: PROFILE_COLORS.profileSurface,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 14,
-    borderWidth: 2,
-    borderColor: PROFILE_COLORS.profileBorder,
-  },
+
   profileName: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: PROFILE_COLORS.textPrimary,
+    fontSize: 20,
+    fontWeight: '600',
+    color: PROFILE_COLORS.textoPrincipal,
     marginBottom: 6,
   },
+
   roleTag: {
-    backgroundColor: PROFILE_COLORS.profileSurface,
+    backgroundColor: PROFILE_COLORS.fondoiconos,
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 12,
     marginBottom: 24,
   },
+
   roleTagText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    color: PROFILE_COLORS.primary,
+    color: PROFILE_COLORS.textoSecundario,
     letterSpacing: 0.5,
   },
   infoSection: {
@@ -325,36 +330,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
   },
+
+  //fondo iconos
   infoIconWrapper: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: PROFILE_COLORS.surfaceGreenSoft,
+    backgroundColor: PROFILE_COLORS.fondoiconos,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
+
   infoTextWrapper: {
     flex: 1,
   },
+
+  //texto titulos nombre etc
   infoLabel: {
-    fontSize: 12,
-    color: PROFILE_COLORS.textMuted,
+    fontSize: 13,
+    color: PROFILE_COLORS.textoPrincipal,
     fontWeight: '500',
   },
+
+  //texto subtitulos
   infoValue: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
-    color: PROFILE_COLORS.textPrimary,
+    color: PROFILE_COLORS.textoSecundario,
     marginTop: 2,
   },
+
   statusBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+
   statusActiveText: {
-    color: PROFILE_COLORS.primary,
+    color: PROFILE_COLORS.estadoActivo,
   },
+
   statusInactiveText: {
     color: PROFILE_COLORS.danger,
   },

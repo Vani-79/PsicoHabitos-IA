@@ -110,14 +110,6 @@ const getGroupLetter = (p: MySqlPatientRecord) => {
   return withoutAccent[first] ?? (first || '#');
 };
 
-// Saludo e ícono según la hora del teléfono (solo visual, no afecta ninguna lógica)
-const getGreeting = () => {
-  const h = new Date().getHours();
-  if (h < 12) return { text: 'Buenos días,', icon: 'sunny-outline' as const };
-  if (h < 20) return { text: 'Buenas tardes,', icon: 'partly-sunny-outline' as const };
-  return { text: 'Buenas noches,', icon: 'moon-outline' as const };
-};
-
 // Normaliza texto para búsquedas: quita tildes/acentos y pasa a minúsculas ("Álvaro" -> "alvaro")
 const normalizeText = (text: string) =>
   text
@@ -310,7 +302,7 @@ interface PsychologistHomeTabProps {
   onOpenCalendar: () => void;
 }
 
-// Contenido de la pestaña Inicio (Saludo, botón registrar y agenda de hoy)
+// Contenido de la pestaña Inicio (nombre del profesional, registro y agenda de hoy)
 const PsychologistHomeTab: React.FC<PsychologistHomeTabProps> = ({
   doctorName,
   isSubscriptionActive,
@@ -319,22 +311,12 @@ const PsychologistHomeTab: React.FC<PsychologistHomeTabProps> = ({
   onSelectPatient,
   onOpenCalendar,
 }) => {
-  const greeting = getGreeting();
-
   return (
     <>
-      {/* Tarjeta de saludo */}
-      <View style={styles.greetingCard}>
-        <View style={styles.greetingTextWrapper}>
-          <Text style={styles.greetingText}>{greeting.text}</Text>
-          <Text style={styles.doctorName} numberOfLines={1}>
-            {doctorName}
-          </Text>
-        </View>
-        <View style={styles.greetingIconCircle}>
-          <Ionicons name={greeting.icon} size={22} color={HOME_COLORS.iconAccent} />
-        </View>
-      </View>
+      {/* Nombre del profesional como texto libre, sin tarjeta ni saludo */}
+      <Text style={styles.doctorName} numberOfLines={1}>
+        {doctorName}
+      </Text>
 
       {/* Sección de registro de pacientes */}
       <View style={styles.actionSection}>
@@ -380,7 +362,7 @@ const PsychologistHomeTab: React.FC<PsychologistHomeTabProps> = ({
       {/* Sección de pacientes del día */}
       <View style={[styles.patientsSection, styles.agendaCard]}>
         <View style={styles.agendaHeader}>
-          <Text style={styles.agendaTitle}>Agenda de hoy</Text>
+          <Text style={styles.agendaTitle}>Agenda del día</Text>
           <TouchableOpacity
             onPress={onOpenCalendar}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -748,43 +730,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  /* =========================
-     TARJETA DE SALUDO
-  ========================= */
-
-  greetingCard: {
-    ...softShadow,
-    backgroundColor: HOME_COLORS.card,
-    borderWidth: 1,
-    borderColor: HOME_COLORS.borderCard,
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 30,
-    marginVertical: 30,
-  },
-
-  greetingTextWrapper: {
-    flex: 1,
-    marginRight: 12,
-  },
-
-  greetingText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: HOME_COLORS.textGreenSubtle,
-  },
-
-  greetingIconCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: HOME_COLORS.highlight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
   searchBox: {
     height: 40,
     flexDirection: 'row',
@@ -805,10 +750,12 @@ const styles = StyleSheet.create({
   },
 
   doctorName: {
-    fontSize: 19,
+    fontSize: 22,
     fontWeight: '700',
     color: HOME_COLORS.textPrimary,
-    marginTop: 2,
+    marginTop: 12,
+    marginBottom: 20,
+    paddingHorizontal: 4,
   },
 
   /* =========================
