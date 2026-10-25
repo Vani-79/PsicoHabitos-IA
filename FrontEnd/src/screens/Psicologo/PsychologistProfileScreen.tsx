@@ -125,7 +125,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
           {/* Campo 1: Nombre */}
           <View style={styles.infoRow}>
             <View style={styles.infoIconWrapper}>
-              <Ionicons name="person-outline" size={18} color={PROFILE_COLORS.primary} />
+              <Ionicons name="person-outline" size={18} color={PROFILE_COLORS.iconosPerfil} />
             </View>
             <View style={styles.infoTextWrapper}>
               <Text style={styles.infoLabel}>Nombre completo</Text>
@@ -136,7 +136,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
           {/* Campo 2: Correo */}
           <View style={styles.infoRow}>
             <View style={styles.infoIconWrapper}>
-              <Ionicons name="mail-outline" size={18} color={PROFILE_COLORS.primary} />
+              <Ionicons name="mail-outline" size={18} color={PROFILE_COLORS.iconosPerfil} />
             </View>
             <View style={styles.infoTextWrapper}>
               <Text style={styles.infoLabel}>Correo electrónico</Text>
@@ -147,7 +147,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
           {/* Campo 3: Fecha de Ingreso */}
           <View style={styles.infoRow}>
             <View style={styles.infoIconWrapper}>
-              <Ionicons name="calendar-outline" size={18} color={PROFILE_COLORS.primary} />
+              <Ionicons name="calendar-outline" size={18} color={PROFILE_COLORS.iconosPerfil} />
             </View>
             <View style={styles.infoTextWrapper}>
               <Text style={styles.infoLabel}>Ingreso desde</Text>
@@ -161,7 +161,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
               <Ionicons
                 name="hourglass-outline"
                 size={18}
-                color={isActivo ? PROFILE_COLORS.primary : PROFILE_COLORS.danger}
+                color={isActivo ? PROFILE_COLORS.primary : PROFILE_COLORS.iconosPerfil}
               />
             </View>
             <View style={styles.infoTextWrapper}>
@@ -183,7 +183,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
               <Ionicons
                 name={isActivo ? 'shield-checkmark-outline' : 'alert-circle-outline'}
                 size={18}
-                color={isActivo ? PROFILE_COLORS.primary : PROFILE_COLORS.danger}
+                color={isActivo ? PROFILE_COLORS.iconosPerfil : PROFILE_COLORS.iconosPerfil}
               />
             </View>
             <View style={styles.infoTextWrapper}>
@@ -201,6 +201,16 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
             </View>
           </View>
         </View>
+
+        {/* Botón rojo de Cerrar Sesión */}
+        <TouchableOpacity
+          style={styles.logoutButton}
+          activeOpacity={0.8}
+          onPress={handleLogoutPress}
+        >
+          <Ionicons name="log-out-outline" size={20} color={PROFILE_COLORS.surface} style={styles.logoutIcon} />
+          <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -231,16 +241,6 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
         showsVerticalScrollIndicator={false}
       >
         {renderProfileContent()}
-
-        {/* Botón rojo de Cerrar Sesión */}
-        <TouchableOpacity
-          style={styles.logoutButton}
-          activeOpacity={0.8}
-          onPress={handleLogoutPress}
-        >
-          <Ionicons name="log-out-outline" size={20} color={PROFILE_COLORS.surface} style={styles.logoutIcon} />
-          <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
-        </TouchableOpacity>
       </ScrollView>
 
       {/* Barra de navegación inferior */}
@@ -258,20 +258,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: PROFILE_COLORS.fondoBase },
 
   scrollContent: {
-    padding: 20,
+    paddingVertical: 40,
+    paddingHorizontal: 20,
     alignItems: 'center',
   },
 
  profileCard: {
     width: '100%',
     backgroundColor: PROFILE_COLORS.fondoTarjeta,
+    paddingVertical: 20,
     borderRadius: 22,
     padding: 24,
     alignItems: 'center',
-    shadowColor: PROFILE_COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
     elevation: 1,
     borderWidth: 1,
     borderColor: PROFILE_COLORS.bordeTarjeta, 
@@ -316,15 +314,15 @@ const styles = StyleSheet.create({
   roleTagText: {
     fontSize: 10,
     fontWeight: '700',
-    color: PROFILE_COLORS.textoSecundario,
+    color: PROFILE_COLORS.textoSec,
     letterSpacing: 0.5,
   },
+
   infoSection: {
     width: '100%',
-    borderTopWidth: 1,
-    borderTopColor: PROFILE_COLORS.surfaceMuted,
     paddingTop: 16,
   },
+
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -371,29 +369,29 @@ const styles = StyleSheet.create({
   },
 
   statusInactiveText: {
-    color: PROFILE_COLORS.danger,
+    color: PROFILE_COLORS.estadoInactivo,
   },
+
   logoutButton: {
-    width: '100%',
-    backgroundColor: PROFILE_COLORS.danger,
+    width: '45%',
+    backgroundColor: PROFILE_COLORS.estadoInactivo,
     borderRadius: 16,
-    paddingVertical: 14,
+    paddingVertical: 11,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
-    shadowColor: PROFILE_COLORS.danger,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
+    marginTop: 40,
+    marginBottom: 30,
+    elevation: 1,
   },
+
   logoutIcon: {
-    marginRight: 8,
+    marginRight: 6,    
   },
+
   logoutButtonText: {
-    color: PROFILE_COLORS.surface,
-    fontSize: 16,
-    fontWeight: '700',
+    color: PROFILE_COLORS.textoBlanco,
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

@@ -5,19 +5,22 @@ const SHARED_FOUNDATION = {
   shadow: '#82bda1',
   textPrimary: '#1F2937',
   textMuted: '#6B7280',
-  fondoBase: '#FFFFFF',
+  fondoBase: '#FFFFFF', //fondo general
 
   //COLORES GENERALES
-  textoPrincipal: '#343131',
-  textoSecundario: '#797474',
-
-
+  textoPrincipal: '#343131', //negro
+  textoSecundario: '#797474', //gris
+  textoBlanco: '#FFFFFF',
+  iconosPerfil: '#6ca5a9', //color iconos
+  fondoiconos: '#d4d9da47', //fondo iconos
+  bordeIconos: '#96969639', //borde iconos
+ 
 
   //COLORES DE BARRA NAVEGACION
   navigation: {
     background: '#bee5e63b',
     border: '#FFF',
-    active: '#4fb7dc', //NAVEGACION
+    active: '#6ca5a9', //NAVEGACION
     inactive: '#9CA3AF',
   },
 };
@@ -252,21 +255,33 @@ export const PSYCHOLOGIST_COLORS = {
     ...SHARED_PATIENT_CALENDAR,
     // Colores propios del calendario.
     shadow: '#000000',
-    borderGreen: '#A7F3D0',
+    bordeCalendar: '#a2a2a21b',
     onlineSession: '#2563EB',
     availableSlot: '#10B981',
+    textoHora: '#e18539',
+    estadoCompletada: '#45b087',
+    estadoReagendar: '#e18539',
+    estadoCancelada: '#d83232',
+    
+    
+
+
   },
 
-  // PERFIL PESTAÑA
+  // PERFIL PESTAÑA TAMBIEN CONTIENE COLORES GENERALES DE TEXTO
   perfil: {
     ...SHARED_FOUNDATION,
     ...SHARED_CLINICAL_BASE,
     shadow: '#868888d5',
-    fondoiconos: '#d4d9da38', //fondo iconos
     profileBorder: '#FFFFFF', //borde icono
     fondoTarjeta: '#FFFFFF',
-    bordeTarjeta:  '#64b1be38',
-    estadoActivo: '#4eb56dce',
+    bordeTarjeta:  '#a2a2a21b',
+    estadoActivo: '#4eb86cce',
+    estadoInactivo: '#DC2626',
+    textoBlanco: '#FFFFFF',
+    fondoPerfil: '#6ca5a9',
+    textoSec: '#6ca5a9',
+    
     
   },
 } as const;
