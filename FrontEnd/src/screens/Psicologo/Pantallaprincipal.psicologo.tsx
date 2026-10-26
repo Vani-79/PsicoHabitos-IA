@@ -287,7 +287,9 @@ const TodayAgendaRow: React.FC<TodayAgendaRowProps> = ({
       <Ionicons
         name={isSubscriptionActive ? 'chevron-forward' : 'lock-closed'}
         size={16}
-        color={HOME_COLORS.textoSecundario}
+        color={HOME_COLORS.iconosPerfil
+
+        }
       />
     </TouchableOpacity>
   );
@@ -313,9 +315,9 @@ const PsychologistHomeTab: React.FC<PsychologistHomeTabProps> = ({
 }) => {
   return (
     <>
-      {/* Nombre del profesional como texto libre, sin tarjeta ni saludo */}
+      {/* Nombre del profesional como texto libre*/}
       <Text style={styles.doctorName} numberOfLines={1}>
-        {doctorName}
+        Hola, {doctorName}
       </Text>
 
       {/* Sección de registro de pacientes */}
@@ -337,7 +339,7 @@ const PsychologistHomeTab: React.FC<PsychologistHomeTabProps> = ({
             <Ionicons
               name={isSubscriptionActive ? 'add' : 'lock-closed'}
               size={18}
-              color={isSubscriptionActive ? HOME_COLORS.iconosPerfil : HOME_COLORS.textoSecundario}
+              color={isSubscriptionActive ? HOME_COLORS.iconosPerfil : HOME_COLORS.iconosPerfil}
             />
           </View>
 
@@ -373,7 +375,7 @@ const PsychologistHomeTab: React.FC<PsychologistHomeTabProps> = ({
 
         {todayPatients.length === 0 ? (
           <View style={styles.agendaEmpty}>
-            <Ionicons name="calendar-outline" size={40} color={HOME_COLORS.textoSecundario} />
+            <Ionicons name="calendar-outline" size={40} color={HOME_COLORS.iconosPerfil} />
             <Text style={styles.emptyStateTitle}>Sin sesiones hoy</Text>
             <Text style={[styles.emptyStateText, { color: HOME_COLORS.textoSecundario }]}>
               No tienes consultas o citas programadas para el día de hoy.
@@ -471,7 +473,7 @@ const DirectoryPatientCard: React.FC<DirectoryPatientCardProps> = ({
         <Ionicons
           name={isSubscriptionActive ? 'chevron-forward' : 'lock-closed'}
           size={16}
-          color={HOME_COLORS.directoryTextSubtle}
+          color={HOME_COLORS.iconosPerfil}
         />
       </TouchableOpacity>
     </React.Fragment>
@@ -564,11 +566,11 @@ const PatientDirectorySection: React.FC<PatientDirectorySectionProps> = ({
       </View>
 
       <View style={styles.searchBox}>
-        <Ionicons name="search-outline" size={17} color={HOME_COLORS.directoryTextSubtle} style={{ marginRight: 8 }} />
+        <Ionicons name="search-outline" size={17} color={HOME_COLORS.iconosPerfil} style={{ marginRight: 8 }} />
         <TextInput
           style={styles.searchInput}
           placeholder="Buscar por nombre o apellido"
-          placeholderTextColor={HOME_COLORS.directoryTextSubtle}
+          placeholderTextColor={HOME_COLORS.textoSecundario}
           value={searchTerm}
           onChangeText={onChangeSearchTerm}
           editable={isSubscriptionActive}
@@ -726,7 +728,7 @@ const patientsShadow = {
 
 
 
-// ESTILOS PESTAÑA PRINCIPAL
+// ESTILOS PESTAÑA MIS PACIENTES
 
 const styles = StyleSheet.create({
 
@@ -734,17 +736,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  //PESTAÑA MIS PACIENTES
   searchBox: {
     height: 40,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PATIENTS_COLORS.directorySearch,
-    borderWidth: 1,
-    borderColor: PATIENTS_COLORS.borderGreenSoft,
-    borderRadius: 10,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
+    borderWidth: 1.5,
+    borderColor: PATIENTS_COLORS.bordeIconos,
+    borderRadius: 12,
     paddingHorizontal: 20,
-    marginBottom: 18,
+    marginBottom: 30,
     marginVertical: 10,
   },
 
@@ -752,12 +753,12 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
     fontSize: 14,
-    color: PATIENTS_COLORS.textoPrincipal,
+    color: PATIENTS_COLORS.textoSecundario,
   },
 
   doctorName: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '600',
     color: HOME_COLORS.textoPrincipal,
     marginTop: 20,
     marginBottom: 40,
@@ -802,8 +803,8 @@ const styles = StyleSheet.create({
   buttonIconWrapper: {
     width: 38,
     height: 38,
-    borderRadius: 11,
-    backgroundColor: HOME_COLORS.fondoiconos,
+    borderRadius: 12,
+    backgroundColor: HOME_COLORS.fondoBase,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -815,7 +816,7 @@ const styles = StyleSheet.create({
 
   registerButtonTitle: {
     flex: 1,
-    color: HOME_COLORS.iconosPerfil,
+    color: HOME_COLORS.textoPrincipal,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -846,21 +847,24 @@ const styles = StyleSheet.create({
     backgroundColor: HOME_COLORS.fondoBase,
     borderWidth: 1,
     borderColor: HOME_COLORS.bordeIconos,
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 12,
+    padding: 20,
+    marginTop: 40,
+    paddingVertical: 130,
   },
 
   agendaHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginTop: -110,
+    marginBottom: 0,
     paddingHorizontal: 2,
   },
 
   agendaTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: HOME_COLORS.textoPrincipal,
   },
 
@@ -881,7 +885,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 10,
-    backgroundColor: HOME_COLORS.surfaceGreenSoft,
+    backgroundColor: HOME_COLORS.fondoBase,
     borderWidth: 1,
     borderColor: HOME_COLORS.bordeIconos,
     borderRadius: 12,
@@ -947,27 +951,27 @@ const styles = StyleSheet.create({
   },
 
   directoryTitle: {
-    fontSize: 17,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '500',
     color: PATIENTS_COLORS.textoPrincipal,
+    letterSpacing: 0.6 
   },
 
   directoryCount: {
-    fontSize: 12.5,
-    color: PATIENTS_COLORS.textGreenSubtle,
+    fontSize: 12,
+    color: PATIENTS_COLORS.iconosPerfil,
   },
 
   // Tarjeta grande: título, buscador y lista
   directoryPanel: {
-    ...patientsShadow,
     flex: 1, // ocupa todo el alto disponible aunque haya pocos pacientes
-    backgroundColor: PATIENTS_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
     borderWidth: 1,
-    borderColor: PATIENTS_COLORS.borderGreenSoft,
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingTop: 18,
-    paddingBottom: 4,
+    borderColor: PATIENTS_COLORS.bordeIconos,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
   },
 
   // Sin letras de grupo, un poco más de aire bajo el buscador
@@ -1022,7 +1026,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     marginHorizontal: 4,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: PATIENTS_COLORS.textSubtle,
   },
 
@@ -1063,8 +1067,8 @@ const styles = StyleSheet.create({
   },
 
   directoryName: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     color: PATIENTS_COLORS.textoPrincipal,
   },
 
@@ -1085,7 +1089,7 @@ const styles = StyleSheet.create({
 
   emptyStateTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     marginTop: 12,
     marginBottom: 6,
     textAlign: 'center',
@@ -1117,7 +1121,7 @@ const styles = StyleSheet.create({
 
   subscriptionBannerTitle: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '600',
   },
 
   subscriptionBannerMessage: {

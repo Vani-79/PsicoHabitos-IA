@@ -34,13 +34,17 @@ const PROFILE_COLORS = PSYCHOLOGIST_COLORS.perfil;
 const HABIT_CONFIG: Record<
   HabitKey,
   { label: string; color: string; areaColor: string; icon: keyof typeof Ionicons.glyphMap }
-> = {
-  comida: { label: 'Comida', color: PATIENTS_COLORS.habitFood, areaColor: PATIENTS_COLORS.warningSurface, icon: 'restaurant-outline' },
-  ejercicio: { label: 'Ejercicio', color: PATIENTS_COLORS.habitExercise, areaColor: PATIENTS_COLORS.habitExerciseSurface, icon: 'barbell-outline' },
-  hidratacion: { label: 'Hidratación', color: PATIENTS_COLORS.habitHydration, areaColor: PATIENTS_COLORS.habitHydrationSurface, icon: 'water-outline' },
-  sueno: { label: 'Sueño', color: PATIENTS_COLORS.habitSleep, areaColor: PATIENTS_COLORS.habitSleepSurface, icon: 'moon-outline' },
-  ansiedad: { label: 'Ansiedad', color: PATIENTS_COLORS.habitAnxiety, areaColor: PATIENTS_COLORS.habitAnxietySurface, icon: 'pulse-outline' },
-  estres: { label: 'Estrés', color: PATIENTS_COLORS.habitStress, areaColor: PATIENTS_COLORS.habitStressSurface, icon: 'flash-outline' },
+> = { 
+  
+  
+  //INFORME DE HABITOS COLORES
+
+  comida: { label: 'Comida', color: PATIENTS_COLORS.comida, areaColor: PATIENTS_COLORS.fondoComida, icon: 'restaurant-outline' },
+  ejercicio: { label: 'Ejercicio', color: PATIENTS_COLORS.ejercicio, areaColor: PATIENTS_COLORS.fondoEjercicio, icon: 'barbell-outline' },
+  hidratacion: { label: 'Hidratación', color: PATIENTS_COLORS.hidratacion, areaColor: PATIENTS_COLORS.fondoHidratacion, icon: 'water-outline' },
+  sueno: { label: 'Sueño', color: PATIENTS_COLORS.sueño, areaColor: PATIENTS_COLORS.fondoSueño, icon: 'moon-outline' },
+  ansiedad: { label: 'Ansiedad', color: PATIENTS_COLORS.ansiedad, areaColor: PATIENTS_COLORS.fondoAnsiedad, icon: 'pulse-outline' },
+  estres: { label: 'Estrés', color: PATIENTS_COLORS.estres, areaColor: PATIENTS_COLORS.fondoEstres, icon: 'flash-outline' },
 };
 
 const PERIOD_LABELS: Record<HabitPeriod, string> = {
@@ -922,17 +926,15 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
       {/* Header Superior */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backBtn}
-          activeOpacity={0.7}
+         
         >
-          <Ionicons name="arrow-back" size={22} color={PATIENTS_COLORS.textoPrincipal} />
+         
         </TouchableOpacity>
 
         <View style={styles.headerTitleGroup}>
           <Text style={styles.headerTitle}>Informe de Hábitos</Text>
           <Text style={styles.headerSubtitle} numberOfLines={1}>
-            {patient.nombre} {patient.apellido_paterno}
+            {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno}
           </Text>
         </View>
 
@@ -1135,7 +1137,7 @@ export const PatientHabitReportScreen: React.FC<Props> = ({ navigation, route })
   );
 };
 
-// Estilos del informe, indicadores y visualizaciones de hábitos.
+// ESTILOS EN INFORME DE HABITOS
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -1144,29 +1146,24 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     backgroundColor: PATIENTS_COLORS.fondoBase,
-    borderBottomWidth: 1,
-    borderBottomColor: PATIENTS_COLORS.bordeIconos,
+    marginTop: 20,
+    marginBottom: 20,
   },
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: PATIENTS_COLORS.fondoiconos,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
+
+
   headerTitleGroup: {
     flex: 1,
   },
+
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     color: PATIENTS_COLORS.textoPrincipal,
   },
+
   headerSubtitle: {
     fontSize: 12,
     color: PATIENTS_COLORS.textoSecundario,
@@ -1175,7 +1172,7 @@ const styles = StyleSheet.create({
   filterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PATIENTS_COLORS.surfaceGreenSoft,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
@@ -1183,7 +1180,7 @@ const styles = StyleSheet.create({
   },
   filterBtnText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: PATIENTS_COLORS.iconosPerfil,
   },
   activeFilterBar: {
@@ -1191,10 +1188,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
     backgroundColor: PATIENTS_COLORS.fondoBase,
-    borderBottomWidth: 1,
-    borderBottomColor: PATIENTS_COLORS.fondoiconos,
   },
   activeFilterPill: {
     flexDirection: 'row',
@@ -1256,7 +1251,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: PATIENTS_COLORS.textoPrincipal,
     marginBottom: 6,
   },
@@ -1322,7 +1317,7 @@ const styles = StyleSheet.create({
   kpiBigNumber: {
     fontSize: 22,
     fontWeight: '800',
-    color: PATIENTS_COLORS.textoPrincipal,
+    color: PATIENTS_COLORS.textoSecundario,
   },
   kpiSublabel: {
     fontSize: 10,
@@ -1331,7 +1326,7 @@ const styles = StyleSheet.create({
   },
   kpiBadgeGreen: {
     marginTop: 6,
-    backgroundColor: PATIENTS_COLORS.surfaceGreenSoft,
+    backgroundColor: PATIENTS_COLORS.fondoiconos,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -1343,7 +1338,7 @@ const styles = StyleSheet.create({
   },
   kpiBadgeBlue: {
     marginTop: 6,
-    backgroundColor: PATIENTS_COLORS.surfaceGreenSoft,
+    backgroundColor: PATIENTS_COLORS.fondoiconos,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -1380,7 +1375,7 @@ const styles = StyleSheet.create({
   dayDetailTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: PATIENTS_COLORS.textoPrincipal,
+    color: PATIENTS_COLORS.textoSecundario,
   },
   dayDetailSubtitle: {
     fontSize: 12,
@@ -1418,7 +1413,7 @@ const styles = StyleSheet.create({
   },
   chartTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: PATIENTS_COLORS.textoPrincipal,
   },
   chartSubtitle: {
@@ -1434,11 +1429,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: PATIENTS_COLORS.surfaceGreenSoft,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
     borderWidth: 1,
     borderColor: PATIENTS_COLORS.bordeIconos,
   },
   chartPillText: {
+    
     fontSize: 11,
     fontWeight: '600',
     color: PATIENTS_COLORS.textoPrincipal,
@@ -1470,13 +1466,13 @@ const styles = StyleSheet.create({
     minWidth: 54,
   },
   dayChipSelected: {
-    backgroundColor: PATIENTS_COLORS.iconosPerfil,
+    backgroundColor: PATIENTS_COLORS.fondoClaro,
     borderColor: PATIENTS_COLORS.iconosPerfil,
     shadowColor: PATIENTS_COLORS.iconosPerfil,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
-    elevation: 3,
+    
   },
   dayChipDayName: {
     fontSize: 10,
@@ -1485,28 +1481,29 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   dayChipDayNameSelected: {
-    color: PATIENTS_COLORS.textoBlanco,
+    color: PATIENTS_COLORS.textoSecundario,
     fontWeight: '700',
   },
   dayChipDate: {
     fontSize: 12,
-    fontWeight: '700',
-    color: PATIENTS_COLORS.textoPrincipal,
+    fontWeight: '600',
+    color: PATIENTS_COLORS.textoSecundario,
     marginTop: 1,
   },
   dayChipDateSelected: {
-    color: PATIENTS_COLORS.textoBlanco,
+    color: PATIENTS_COLORS.textoSecundario,
   },
   sectionHeadingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 12,
+    marginTop: 20,
+    marginBottom: 20,
   },
   sectionHeading: {
     fontSize: 15,
-    fontWeight: '700',
-    color: PATIENTS_COLORS.textoPrincipal,
+    fontWeight: '600',
+    color: PATIENTS_COLORS.textoSecundario,
   },
   habitsCardsList: {
     gap: 10,
@@ -1533,7 +1530,7 @@ const styles = StyleSheet.create({
   },
   habitCardName: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: PATIENTS_COLORS.textoPrincipal,
   },
   habitCardSub: {
