@@ -836,7 +836,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 8,
     fontSize: 13,
-    color: CALENDAR_COLORS.textMuted,
+    color: CALENDAR_COLORS.textoSecundario,
   },
 
   emptyDayContainer: {
@@ -1068,10 +1068,13 @@ const styles = StyleSheet.create({
   statusPillTextScheduled: {
     color: CALENDAR_COLORS.estadoReagendar,
   },
+
   statusPillTextCompleted: {
     color: CALENDAR_COLORS.estadoCompletada,
   },
+
   statusPillTextCancelled: {
     color: CALENDAR_COLORS.estadoCancelada,
   },
+
 });

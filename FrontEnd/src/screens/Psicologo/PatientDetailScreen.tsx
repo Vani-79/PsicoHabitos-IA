@@ -25,6 +25,7 @@ import { HabitFilterModal } from '../../components/HabitFilterModal';
 import { PSYCHOLOGIST_COLORS } from './psychologistColors';
 
 const PATIENTS_COLORS = PSYCHOLOGIST_COLORS.pacientes;
+const PROFILE_COLORS = PSYCHOLOGIST_COLORS.perfil;
 
 type Duracion = '30' | '45' | '60' | '75' | '90';
 type Modalidad = 'presencial' | 'online';
@@ -261,7 +262,7 @@ const SessionItemCard: React.FC<SessionItemCardProps> = ({ session, onEdit }) =>
             <Ionicons
               name="shield-checkmark-outline"
               size={12}
-              color={PATIENTS_COLORS.textMuted}
+              color={PATIENTS_COLORS.textoSecundario}
               style={{ marginRight: 4 }}
             />
             <Text style={styles.doctorBadgeText}>
@@ -276,7 +277,7 @@ const SessionItemCard: React.FC<SessionItemCardProps> = ({ session, onEdit }) =>
             {session.observaciones}
           </Text>
         ) : (
-          <Text style={[styles.sessionMotivo, { fontStyle: 'italic', color: PATIENTS_COLORS.textSubtle }]}>
+          <Text style={[styles.sessionMotivo, { fontStyle: 'italic', color: PATIENTS_COLORS.textoSecundario }]}>
             Sin observaciones registradas
           </Text>
         )}
@@ -311,7 +312,7 @@ const SessionItemCard: React.FC<SessionItemCardProps> = ({ session, onEdit }) =>
               <Ionicons
                 name="create-outline"
                 size={13}
-                color={PATIENTS_COLORS.primary}
+                color={PATIENTS_COLORS.iconosPerfil}
                 style={{ marginRight: 3 }}
               />
               <Text style={styles.manageButtonText}>Modificar</Text>
@@ -321,7 +322,7 @@ const SessionItemCard: React.FC<SessionItemCardProps> = ({ session, onEdit }) =>
               <Ionicons
                 name="lock-closed"
                 size={11}
-                color={PATIENTS_COLORS.textMuted}
+                color={PATIENTS_COLORS.textoSecundario}
                 style={{ marginRight: 3 }}
               />
               <Text style={styles.readOnlyBadgeText}>Solo lectura</Text>
@@ -357,7 +358,7 @@ const SessionPagination: React.FC<SessionPaginationProps> = ({
         <Ionicons
           name="chevron-back"
           size={18}
-          color={currentPage === 0 ? PATIENTS_COLORS.borderSlate : PATIENTS_COLORS.primary}
+          color={currentPage === 0 ? PATIENTS_COLORS.bordeIconos : PATIENTS_COLORS.iconosPerfil}
         />
         <Text style={[styles.pageButtonText, currentPage === 0 && styles.pageButtonTextDisabled]}>
           Anterior
@@ -388,7 +389,7 @@ const SessionPagination: React.FC<SessionPaginationProps> = ({
         <Ionicons
           name="chevron-forward"
           size={18}
-          color={currentPage >= totalPages - 1 ? PATIENTS_COLORS.borderSlate : PATIENTS_COLORS.primary}
+          color={currentPage >= totalPages - 1 ? PATIENTS_COLORS.bordeIconos : PATIENTS_COLORS.iconosPerfil}
         />
       </TouchableOpacity>
     </View>
@@ -421,8 +422,8 @@ const SessionsHistorySection: React.FC<SessionsHistorySectionProps> = ({
     if (loading) {
       return (
         <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-          <ActivityIndicator size="small" color={PATIENTS_COLORS.primary} />
-          <Text style={{ marginTop: 8, color: PATIENTS_COLORS.textMuted, fontSize: 13 }}>
+          <ActivityIndicator size="small" color={PATIENTS_COLORS.iconosPerfil} />
+          <Text style={{ marginTop: 8, color: PATIENTS_COLORS.textoSecundario, fontSize: 13 }}>
             Cargando sesiones...
           </Text>
         </View>
@@ -432,7 +433,7 @@ const SessionsHistorySection: React.FC<SessionsHistorySectionProps> = ({
     if (sessions.length === 0) {
       return (
         <View style={styles.emptyHistoryCard}>
-          <Ionicons name="calendar-outline" size={36} color={PATIENTS_COLORS.textSubtle} />
+          <Ionicons name="calendar-outline" size={36} color={PATIENTS_COLORS.textoSecundario} />
           <Text style={styles.emptyHistoryText}>
             Aún no hay sesiones agendadas para este paciente.
           </Text>
@@ -688,11 +689,11 @@ const ScheduleSessionModal: React.FC<ScheduleSessionModalProps> = ({
                 onPress={() => setShowDatePicker(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="calendar" size={18} color={PATIENTS_COLORS.primary} style={styles.pickerIcon} />
+                <Ionicons name="calendar" size={18} color={PATIENTS_COLORS.iconosPerfil} style={styles.pickerIcon} />
                 <Text style={[styles.pickerValueText, !fecha && styles.pickerPlaceholder]}>
                   {fecha ? formatToChileanDate(fecha) : 'Seleccionar fecha'}
                 </Text>
-                <Ionicons name="chevron-down" size={16} color={PATIENTS_COLORS.textMuted} />
+                <Ionicons name="chevron-down" size={16} color={PATIENTS_COLORS.textoSecundario} />
               </TouchableOpacity>
 
               {/* Hora */}
@@ -705,13 +706,13 @@ const ScheduleSessionModal: React.FC<ScheduleSessionModalProps> = ({
                 <Ionicons
                   name="time"
                   size={18}
-                  color={fecha ? PATIENTS_COLORS.primary : PATIENTS_COLORS.textSubtle}
+                  color={fecha ? PATIENTS_COLORS.iconosPerfil : PATIENTS_COLORS.textoSecundario}
                   style={styles.pickerIcon}
                 />
                 <Text style={[styles.pickerValueText, !hora && styles.pickerPlaceholder]}>
                   {hora || (fecha ? 'Seleccionar hora' : 'Primero elige la fecha')}
                 </Text>
-                <Ionicons name="chevron-down" size={16} color={PATIENTS_COLORS.textMuted} />
+                <Ionicons name="chevron-down" size={16} color={PATIENTS_COLORS.textoSecundario} />
               </TouchableOpacity>
 
               {/* Duración */}
@@ -772,7 +773,7 @@ const ScheduleSessionModal: React.FC<ScheduleSessionModalProps> = ({
                   { minHeight: 64, textAlignVertical: 'top', paddingTop: 10 },
                 ]}
                 placeholder="Ej. Seguimiento de ansiedad, evaluación inicial, acuerdos previos..."
-                placeholderTextColor={PATIENTS_COLORS.textSubtle}
+                placeholderTextColor={PATIENTS_COLORS.textoSecundario}
                 value={observaciones}
                 onChangeText={setObservaciones}
                 multiline
@@ -785,7 +786,7 @@ const ScheduleSessionModal: React.FC<ScheduleSessionModalProps> = ({
                 disabled={isSaving}
               >
                 {isSaving ? (
-                  <ActivityIndicator size="small" color={PATIENTS_COLORS.surface} />
+                  <ActivityIndicator size="small" color={PATIENTS_COLORS.textoBlanco} />
                 ) : (
                   <Text style={styles.saveButtonText}>Agendar</Text>
                 )}
@@ -1059,7 +1060,7 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                   onPress={handleClose}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Ionicons name="close" size={22} color={PATIENTS_COLORS.textMuted} />
+                  <Ionicons name="close" size={22} color={PATIENTS_COLORS.textoSecundario} />
                 </TouchableOpacity>
               </View>
 
@@ -1082,11 +1083,11 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                 <Ionicons
                   name="calendar-outline"
                   size={18}
-                  color={PATIENTS_COLORS.primary}
+                  color={PATIENTS_COLORS.iconosPerfil}
                   style={styles.pickerIcon}
                 />
                 <Text style={styles.pickerValueText}>{formatToChileanDate(editFecha)}</Text>
-                <Ionicons name="chevron-down" size={16} color={PATIENTS_COLORS.textMuted} />
+                <Ionicons name="chevron-down" size={16} color={PATIENTS_COLORS.textoSecundario} />
               </TouchableOpacity>
 
               {/* Hora */}
@@ -1099,11 +1100,11 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                 <Ionicons
                   name="time-outline"
                   size={18}
-                  color={PATIENTS_COLORS.primary}
+                  color={PATIENTS_COLORS.iconosPerfil}
                   style={styles.pickerIcon}
                 />
                 <Text style={styles.pickerValueText}>{editHora} hrs</Text>
-                <Ionicons name="chevron-down" size={16} color={PATIENTS_COLORS.textMuted} />
+                <Ionicons name="chevron-down" size={16} color={PATIENTS_COLORS.textoSecundario} />
               </TouchableOpacity>
 
               {/* Duración */}
@@ -1142,7 +1143,7 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                   <Ionicons
                     name="business-outline"
                     size={16}
-                    color={editModalidad === 'presencial' ? PATIENTS_COLORS.primary : PATIENTS_COLORS.textMuted}
+                    color={editModalidad === 'presencial' ? PATIENTS_COLORS.iconosPerfil : PATIENTS_COLORS.textoSecundario}
                   />
                   <Text
                     style={[
@@ -1162,7 +1163,7 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                   <Ionicons
                     name="videocam-outline"
                     size={16}
-                    color={editModalidad === 'online' ? PATIENTS_COLORS.primary : PATIENTS_COLORS.textMuted}
+                    color={editModalidad === 'online' ? PATIENTS_COLORS.iconosPerfil : PATIENTS_COLORS.textoSecundario}
                   />
                   <Text
                     style={[
@@ -1183,7 +1184,7 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                   { minHeight: 64, textAlignVertical: 'top', paddingTop: 10 },
                 ]}
                 placeholder="Observaciones de la sesión..."
-                placeholderTextColor={PATIENTS_COLORS.textSubtle}
+                placeholderTextColor={PATIENTS_COLORS.textoSecundario}
                 value={editObservaciones}
                 onChangeText={setEditObservaciones}
                 multiline
@@ -1200,7 +1201,7 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                 disabled={isUpdating || isDeleting}
               >
                 {isUpdating ? (
-                  <ActivityIndicator size="small" color={PATIENTS_COLORS.surface} />
+                  <ActivityIndicator size="small" color={PATIENTS_COLORS.textoBlanco} />
                 ) : (
                   <Text style={styles.saveButtonText}>Guardar modificaciones</Text>
                 )}
@@ -1350,7 +1351,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
     <SafeAreaView style={styles.container}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={onBack} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="arrow-back" size={22} color={PATIENTS_COLORS.textBody} />
+          <Ionicons name="arrow-back" size={22} color={PATIENTS_COLORS.textoSecundario} />
         </TouchableOpacity>
         <View style={{ marginLeft: 10 }}>
           <Text style={styles.tag}>FICHA DEL PACIENTE</Text>
@@ -1373,7 +1374,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
           activeOpacity={0.85}
         >
           <View style={styles.habitsReportIconWrapper}>
-            <Ionicons name="analytics" size={22} color={PATIENTS_COLORS.surface} />
+            <Ionicons name="analytics" size={22} color={PATIENTS_COLORS.textoBlanco} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.habitsReportTitle}>Registro de Hábitos</Text>
@@ -1381,13 +1382,13 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
               Consultar informe visual con gráficas y promedios
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={22} color={PATIENTS_COLORS.primaryAlt} />
+          <Ionicons name="chevron-forward" size={22} color={PATIENTS_COLORS.iconosPerfil} />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[
             styles.scheduleButton,
-            !isSubscriptionActive && { backgroundColor: PATIENTS_COLORS.textSubtle },
+            !isSubscriptionActive && { backgroundColor: PATIENTS_COLORS.textoSecundario },
           ]}
           onPress={openScheduleModal}
           activeOpacity={isSubscriptionActive ? 0.85 : 0.6}
@@ -1396,7 +1397,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
             <Ionicons
               name={isSubscriptionActive ? 'calendar' : 'lock-closed'}
               size={22}
-              color={PATIENTS_COLORS.surface}
+              color={PATIENTS_COLORS.textoBlanco}
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -1412,7 +1413,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
           <Ionicons
             name="chevron-forward"
             size={22}
-            color={isSubscriptionActive ? PATIENTS_COLORS.successMint : PATIENTS_COLORS.borderDanger}
+            color={isSubscriptionActive ? PATIENTS_COLORS.iconosPerfil : PATIENTS_COLORS.borderDanger}
           />
         </TouchableOpacity>
 
@@ -1468,33 +1469,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: PATIENTS_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
     borderBottomWidth: 1,
-    borderBottomColor: PATIENTS_COLORS.borderPale,
+    borderBottomColor: PATIENTS_COLORS.bordeIconos,
   },
-  tag: { fontSize: 11, fontWeight: '800', color: PATIENTS_COLORS.accent, letterSpacing: 0.8 },
-  patientName: { fontSize: 17, fontWeight: '700', color: PATIENTS_COLORS.textPrimary, marginTop: 2 },
+  tag: { fontSize: 11, fontWeight: '800', color: PATIENTS_COLORS.iconosPerfil, letterSpacing: 0.8 },
+  patientName: { fontSize: 17, fontWeight: '700', color: PATIENTS_COLORS.textoPrincipal, marginTop: 2 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 },
   infoCard: {
-    backgroundColor: PATIENTS_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: PATIENTS_COLORS.borderGreenSoft,
+    borderColor: PATIENTS_COLORS.bordeIconos,
     borderLeftWidth: 8,
-    borderLeftColor: PATIENTS_COLORS.brandAccent,
+    borderLeftColor: PATIENTS_COLORS.iconosPerfil,
     padding: 16,
     marginBottom: 18,
   },
-  infoText: { fontSize: 13, color: PATIENTS_COLORS.textGreenMuted, marginBottom: 6 },
+  infoText: { fontSize: 13, color: PATIENTS_COLORS.textoSecundario, marginBottom: 6 },
   habitsReportButton: {
-    backgroundColor: PATIENTS_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
     borderRadius: 18,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: PATIENTS_COLORS.borderMint,
-    shadowColor: PATIENTS_COLORS.primaryAlt,
+    borderColor: PATIENTS_COLORS.bordeIconos,
+    shadowColor: PROFILE_COLORS.shadow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -1505,7 +1506,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: PATIENTS_COLORS.primaryAlt,
+    backgroundColor: PATIENTS_COLORS.iconosPerfil,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -1513,20 +1514,20 @@ const styles = StyleSheet.create({
   habitsReportTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: PATIENTS_COLORS.textPrimary,
+    color: PATIENTS_COLORS.textoPrincipal,
   },
   habitsReportSubtitle: {
     fontSize: 12,
-    color: PATIENTS_COLORS.textGreenMuted,
+    color: PATIENTS_COLORS.textoSecundario,
     marginTop: 2,
   },
   scheduleButton: {
-    backgroundColor: PATIENTS_COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.iconosPerfil,
     borderRadius: 18,
     padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: PATIENTS_COLORS.primary,
+    shadowColor: PROFILE_COLORS.shadow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
@@ -1542,34 +1543,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  scheduleTitle: { color: PATIENTS_COLORS.surface, fontSize: 15, fontWeight: '700' },
-  scheduleSubtitle: { color: PATIENTS_COLORS.textOnGreenMuted, fontSize: 11.5, marginTop: 2 },
+  scheduleTitle: { color: PATIENTS_COLORS.textoBlanco, fontSize: 15, fontWeight: '700' },
+  scheduleSubtitle: { color: PATIENTS_COLORS.textoBlanco, fontSize: 11.5, marginTop: 2 },
 
-  historyTitle: { fontSize: 16, fontWeight: '700', color: PATIENTS_COLORS.textPrimary, marginBottom: 10 },
+  historyTitle: { fontSize: 16, fontWeight: '700', color: PATIENTS_COLORS.textoPrincipal, marginBottom: 10 },
   emptyHistoryCard: {
-    backgroundColor: PATIENTS_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
     borderRadius: 16,
     paddingVertical: 28,
     paddingHorizontal: 20,
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: PATIENTS_COLORS.border,
+    borderColor: PATIENTS_COLORS.bordeIconos,
     borderStyle: 'dashed',
   },
-  emptyHistoryText: { fontSize: 13, color: PATIENTS_COLORS.textMuted, textAlign: 'center', marginTop: 10 },
+  emptyHistoryText: { fontSize: 13, color: PATIENTS_COLORS.textoSecundario, textAlign: 'center', marginTop: 10 },
   sessionCard: {
-    backgroundColor: PATIENTS_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: PATIENTS_COLORS.border,
+    borderColor: PATIENTS_COLORS.bordeIconos,
     padding: 14,
     marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  sessionDate: { fontSize: 12.5, fontWeight: '600', color: PATIENTS_COLORS.textBody },
-  sessionMotivo: { fontSize: 12, color: PATIENTS_COLORS.textMuted, marginTop: 2 },
+  sessionDate: { fontSize: 12.5, fontWeight: '600', color: PATIENTS_COLORS.textoSecundario },
+  sessionMotivo: { fontSize: 12, color: PATIENTS_COLORS.textoSecundario, marginTop: 2 },
   statusBadge: {
     backgroundColor: PATIENTS_COLORS.warningSurface,
     paddingVertical: 4,
@@ -1577,19 +1578,19 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   statusBadgeText: { fontSize: 11, fontWeight: '700', color: PATIENTS_COLORS.warning },
-  statusBadgeCompleted: { backgroundColor: PATIENTS_COLORS.surfaceGreen },
-  statusBadgeTextCompleted: { color: PATIENTS_COLORS.primary },
+  statusBadgeCompleted: { backgroundColor: PATIENTS_COLORS.surfaceGreenSoft },
+  statusBadgeTextCompleted: { color: PATIENTS_COLORS.iconosPerfil },
   statusBadgeCancelled: { backgroundColor: PATIENTS_COLORS.dangerSurface },
   statusBadgeTextCancelled: { color: PATIENTS_COLORS.danger },
   sessionCardCancelled: {
-    backgroundColor: PATIENTS_COLORS.surfaceNeutral,
-    borderColor: PATIENTS_COLORS.surfaceMuted,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
+    borderColor: PATIENTS_COLORS.fondoiconos,
   },
   sessionDateCancelled: {
-    color: PATIENTS_COLORS.textMuted,
+    color: PATIENTS_COLORS.textoSecundario,
   },
   sessionMotivoCancelled: {
-    color: PATIENTS_COLORS.textSubtle,
+    color: PATIENTS_COLORS.textoSecundario,
   },
 
   paginationRow: {
@@ -1599,7 +1600,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: PATIENTS_COLORS.borderNeutral,
+    borderTopColor: PATIENTS_COLORS.bordeIconos,
   },
   pageButton: {
     flexDirection: 'row',
@@ -1609,9 +1610,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   pageButtonDisabled: { opacity: 0.5 },
-  pageButtonText: { fontSize: 13.5, fontWeight: '700', color: PATIENTS_COLORS.primary },
-  pageButtonTextDisabled: { color: PATIENTS_COLORS.borderSlate },
-  pageIndicator: { fontSize: 13, fontWeight: '600', color: PATIENTS_COLORS.textMuted },
+  pageButtonText: { fontSize: 13.5, fontWeight: '700', color: PATIENTS_COLORS.iconosPerfil },
+  pageButtonTextDisabled: { color: PATIENTS_COLORS.bordeIconos },
+  pageIndicator: { fontSize: 13, fontWeight: '600', color: PATIENTS_COLORS.textoSecundario },
 
   modalOverlay: {
     flex: 1,
@@ -1624,66 +1625,66 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 360,
     maxHeight: '85%',
-    backgroundColor: PATIENTS_COLORS.surface,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
     borderRadius: 20,
     padding: 20,
   },
   modalTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: PATIENTS_COLORS.textPrimary,
+    color: PATIENTS_COLORS.textoPrincipal,
     marginBottom: 14,
     textAlign: 'center',
   },
-  fieldLabel: { fontSize: 12.5, fontWeight: '700', color: PATIENTS_COLORS.textGray, marginBottom: 6 },
+  fieldLabel: { fontSize: 12.5, fontWeight: '700', color: PATIENTS_COLORS.textoSecundario, marginBottom: 6 },
   pickerTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: PATIENTS_COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.bordeIconos,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 11,
     marginBottom: 14,
   },
   pickerTriggerDisabled: {
-    backgroundColor: PATIENTS_COLORS.surfaceSubtle,
-    borderColor: PATIENTS_COLORS.border,
+    backgroundColor: PATIENTS_COLORS.surfaceGreenSoft,
+    borderColor: PATIENTS_COLORS.bordeIconos,
   },
   pickerIcon: { marginRight: 10 },
-  pickerValueText: { flex: 1, fontSize: 14, fontWeight: '500', color: PATIENTS_COLORS.textPrimary },
-  pickerPlaceholder: { color: PATIENTS_COLORS.textSubtle, fontWeight: '400' },
+  pickerValueText: { flex: 1, fontSize: 14, fontWeight: '500', color: PATIENTS_COLORS.textoPrincipal },
+  pickerPlaceholder: { color: PATIENTS_COLORS.textoSecundario, fontWeight: '400' },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
   chip: {
     flexGrow: 1,
     borderWidth: 1.5,
-    borderColor: PATIENTS_COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.bordeIconos,
     borderRadius: 10,
     paddingVertical: 9,
     alignItems: 'center',
   },
-  chipActive: { borderColor: PATIENTS_COLORS.primary, backgroundColor: PATIENTS_COLORS.surfaceGreen },
-  chipText: { fontSize: 13, fontWeight: '600', color: PATIENTS_COLORS.textMuted },
-  chipTextActive: { color: PATIENTS_COLORS.primary, fontWeight: '700' },
+  chipActive: { borderColor: PATIENTS_COLORS.iconosPerfil, backgroundColor: PATIENTS_COLORS.surfaceGreenSoft },
+  chipText: { fontSize: 13, fontWeight: '600', color: PATIENTS_COLORS.textoSecundario },
+  chipTextActive: { color: PATIENTS_COLORS.iconosPerfil, fontWeight: '700' },
   input: {
     borderWidth: 1.5,
-    borderColor: PATIENTS_COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.bordeIconos,
     borderRadius: 12,
     paddingVertical: 11,
     paddingHorizontal: 14,
     fontSize: 14,
-    color: PATIENTS_COLORS.textPrimary,
+    color: PATIENTS_COLORS.textoPrincipal,
     marginBottom: 16,
   },
   saveButton: {
-    backgroundColor: PATIENTS_COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.iconosPerfil,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  saveButtonText: { color: PATIENTS_COLORS.surface, fontSize: 15.5, fontWeight: '700' },
+  saveButtonText: { color: PATIENTS_COLORS.textoBlanco, fontSize: 15.5, fontWeight: '700' },
   cancelText: {
-    color: PATIENTS_COLORS.textMuted,
+    color: PATIENTS_COLORS.textoSecundario,
     fontSize: 13,
     fontWeight: '600',
     textAlign: 'center',
@@ -1698,17 +1699,17 @@ const styles = StyleSheet.create({
   manageButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PATIENTS_COLORS.canvas,
+    backgroundColor: PATIENTS_COLORS.canvasSubtle,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: PATIENTS_COLORS.borderMintSoft,
+    borderColor: PATIENTS_COLORS.bordeIconos,
   },
   manageButtonText: {
     fontSize: 11.5,
     fontWeight: '700',
-    color: PATIENTS_COLORS.primary,
+    color: PATIENTS_COLORS.iconosPerfil,
   },
   modalHeaderRow: {
     flexDirection: 'row',
@@ -1719,17 +1720,17 @@ const styles = StyleSheet.create({
   modalHeaderTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: PATIENTS_COLORS.textPrimary,
+    color: PATIENTS_COLORS.textoPrincipal,
   },
   infoBanner: {
-    backgroundColor: PATIENTS_COLORS.surfaceMuted,
+    backgroundColor: PATIENTS_COLORS.fondoiconos,
     borderRadius: 10,
     padding: 10,
     marginBottom: 14,
   },
   infoBannerText: {
     fontSize: 12.5,
-    color: PATIENTS_COLORS.textSecondary,
+    color: PATIENTS_COLORS.textoSecundario,
   },
   deleteButton: {
     backgroundColor: PATIENTS_COLORS.dangerSurface,
@@ -1796,22 +1797,22 @@ const styles = StyleSheet.create({
   },
   doctorBadgeText: {
     fontSize: 11.5,
-    color: PATIENTS_COLORS.textMuted,
+    color: PATIENTS_COLORS.textoSecundario,
     fontWeight: '600',
   },
   readOnlyBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PATIENTS_COLORS.surfaceMuted,
+    backgroundColor: PATIENTS_COLORS.fondoiconos,
     borderWidth: 1,
-    borderColor: PATIENTS_COLORS.border,
+    borderColor: PATIENTS_COLORS.bordeIconos,
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 6,
   },
   readOnlyBadgeText: {
     fontSize: 11,
-    color: PATIENTS_COLORS.textMuted,
+    color: PATIENTS_COLORS.textoSecundario,
     fontWeight: '600',
   },
   substitutionScheduleNotice: {

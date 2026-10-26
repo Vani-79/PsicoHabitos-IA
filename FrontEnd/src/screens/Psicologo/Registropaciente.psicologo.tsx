@@ -27,7 +27,7 @@ import { formatToMySqlDateTime, formatToChileanDate } from '../../utils/date';
 import { isValidEmail, validatePatientForm } from '../../utils/validators';
 import { PSYCHOLOGIST_COLORS } from './psychologistColors';
 
-const PATIENTS_COLORS = PSYCHOLOGIST_COLORS.pacientes;
+const REGISTRATION_COLORS = PSYCHOLOGIST_COLORS.registroPaciente;
 
 const SESSION_DURATIONS = [
   { key: '30', label: '30 min' },
@@ -50,8 +50,6 @@ const timeToMinutes = (timeStr: string) => {
   const [h, m] = timeStr.split(':').map(Number);
   return h * 60 + m;
 };
-
-
 
 const GENDER_OPTIONS: { key: Gender; label: string }[] = [
   { key: 'femenino', label: 'Femenino' },
@@ -200,7 +198,7 @@ const RegistrationModeSelector: React.FC<RegistrationModeSelectorProps> = ({
         <Ionicons
           name="person-add"
           size={16}
-          color={isNuevo ? PATIENTS_COLORS.surface : PATIENTS_COLORS.textSecondary}
+          color={isNuevo ? REGISTRATION_COLORS.fondoBase : REGISTRATION_COLORS.textoSecundario}
         />
         <Text
           style={[
@@ -219,7 +217,7 @@ const RegistrationModeSelector: React.FC<RegistrationModeSelectorProps> = ({
         <Ionicons
           name="link"
           size={16}
-          color={!isNuevo ? PATIENTS_COLORS.surface : PATIENTS_COLORS.textSecondary}
+          color={!isNuevo ? REGISTRATION_COLORS.fondoBase : REGISTRATION_COLORS.textoSecundario}
         />
         <Text
           style={[
@@ -266,7 +264,7 @@ const ValidatedTextInput: React.FC<ValidatedTextInputProps> = ({
     <TextInput
       style={[styles.input, hasError && styles.inputErrorBorder]}
       placeholder={placeholder}
-      placeholderTextColor={PATIENTS_COLORS.textSubtle}
+      placeholderTextColor={REGISTRATION_COLORS.textoSecundario}
       value={value}
       onChangeText={onChangeText}
       onBlur={onBlur}
@@ -305,7 +303,7 @@ const PickerTriggerField: React.FC<PickerTriggerFieldProps> = ({
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <Ionicons name={iconName} size={20} color={PATIENTS_COLORS.primary} style={styles.dateIcon} />
+      <Ionicons name={iconName} size={20} color={REGISTRATION_COLORS.iconosPerfil} style={styles.dateIcon} />
       <Text
         style={[
           styles.datePickerValueText,
@@ -314,7 +312,7 @@ const PickerTriggerField: React.FC<PickerTriggerFieldProps> = ({
       >
         {valueText}
       </Text>
-      <Ionicons name="chevron-down" size={18} color={PATIENTS_COLORS.textMuted} />
+      <Ionicons name="chevron-down" size={18} color={REGISTRATION_COLORS.iconosPerfil} />
     </TouchableOpacity>
   </View>
 );
@@ -412,7 +410,7 @@ const ModalityChips: React.FC<ModalityChipsProps> = ({
           <Ionicons
             name={item.icon}
             size={16}
-            color={isSelected ? PATIENTS_COLORS.primary : PATIENTS_COLORS.textSecondary}
+            color={isSelected ? REGISTRATION_COLORS.textoBlanco : REGISTRATION_COLORS.textoSecundario}
             style={{ marginRight: 6 }}
           />
           <Text
@@ -607,16 +605,9 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
 
   const isSubmitDisabled = !isFormValid || isSaving;
 
-
-
-  //------------------------------------------//
-
-  //FORMULARIO DE REGISTRO NUEVO PACIENTE
-
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>Formulario de registro</Text>
-      
 
       <ValidatedTextInput
         label="Nombre"
@@ -662,7 +653,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
           <Text style={styles.inputLabel}>Edad</Text>
           <TextInput
             style={styles.input}
-            placeholderTextColor={PATIENTS_COLORS.textSubtle}
+            placeholderTextColor={REGISTRATION_COLORS.textoSecundario}
             value={form.edad}
             editable={false}
           />
@@ -690,7 +681,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
 
       <PickerTriggerField
         label="Hora sesión"
-        required 
+        required
         valueText={sessionTimeLabel}
         isPlaceholder={!form.horaPrimeraSesion}
         iconName="time-outline"
@@ -718,7 +709,7 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="Observaciones iniciales, motivo de consulta, etc."
-          placeholderTextColor={PATIENTS_COLORS.textSubtle}
+          placeholderTextColor={REGISTRATION_COLORS.textoSecundario}
           value={form.observacionesPrimeraSesion}
           onChangeText={(text) => updateField('observacionesPrimeraSesion', text)}
           multiline
@@ -778,9 +769,16 @@ const NuevoPacienteForm: React.FC<NuevoPacienteFormProps> = ({
         disabled={isSubmitDisabled}
       >
         {isSaving ? (
-          <ActivityIndicator color={PATIENTS_COLORS.surface} />
+          <ActivityIndicator color={REGISTRATION_COLORS.textoBlanco} />
         ) : (
-          <Text style={styles.submitButtonText}>Registrar</Text>
+          <Text
+            style={[
+              styles.submitButtonText,
+              isSubmitDisabled && styles.submitButtonTextDisabled,
+            ]}
+          >
+            Registrar
+          </Text>
         )}
       </TouchableOpacity>
     </View>
@@ -845,8 +843,6 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-         
-
           <RegistrationModeSelector
             mode={registrationMode}
             onSelectMode={setRegistrationMode}
@@ -869,20 +865,13 @@ export const RegisterPatientScreen: React.FC<RegisterPatientScreenProps> = ({
 
 
 
-
-//-------------------------------------------------//
-
-
-
-
 // ESTILOS DE FORMULARIO REGISTRO
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: PATIENTS_COLORS.surface,
+    backgroundColor: REGISTRATION_COLORS.fondoBase,
   },
   
-  //REGISTRAR NUEVO PACIENTE FORMULARIO REGISTRO
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
@@ -890,38 +879,28 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
-  //TARJETA FORMULARIO REGISTRO
   card: {
-    marginTop: 40,
-    backgroundColor: PATIENTS_COLORS.surface,
-    borderRadius: 28,
+    marginTop: 20,
+    backgroundColor: REGISTRATION_COLORS.fondoBase,
+    borderRadius: 20,
     padding: 22,
-    shadowColor: PATIENTS_COLORS.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation:1,
+    elevation: 1,
     borderWidth: 1,
-    borderColor: PATIENTS_COLORS.borderNeutral,
+    borderColor: REGISTRATION_COLORS.bordeIconos,
   },
 
-  //TITULO FORMULARIO REGISTRO
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: PATIENTS_COLORS.textGrayStrong,
+    color: REGISTRATION_COLORS.textoPrincipal,
     textAlign: 'center',
     marginBottom: 30,
   },
 
-
-
- 
-  //INICIO TARJETA DE PACIENTE NUEVO, YA REGISTRADO
   segmentContainer: {
     marginVertical: 20,
     flexDirection: 'row',
-    backgroundColor: PATIENTS_COLORS.surfaceMuted,
+    backgroundColor: REGISTRATION_COLORS.fondoiconos,
     borderRadius: 12,
     padding: 4,
     marginBottom: 1,
@@ -938,33 +917,20 @@ const styles = StyleSheet.create({
   },
 
   segmentBtnActive: {
-    backgroundColor: PATIENTS_COLORS.primary,
+    backgroundColor: REGISTRATION_COLORS.iconosPerfil,
   },
 
-  
   segmentBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: PATIENTS_COLORS.textSecondary,
+    color: REGISTRATION_COLORS.textoSecundario,
   },
 
-
   segmentBtnTextActive: {
-    color: PATIENTS_COLORS.surface,
+    color: REGISTRATION_COLORS.textoBlanco,
     fontWeight: '600',
   },
 
- //FIN TARJETA DE PACIENTE NUEVO, YA REGISTRADO
-
-
-
-//---------------------------------------//
-
-
-
-//INICIO FORMULARIO DE REGISTRO
-
-//separacion 
   inputGroup: {
     marginBottom: 15,
   },
@@ -974,38 +940,35 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
 
-  //letra nombre etc
   inputLabel: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    color: PATIENTS_COLORS.textGray,
+    color: REGISTRATION_COLORS.textoSecundario,
     marginBottom: 5,
   },
 
   requiredStar: {
-    color: PATIENTS_COLORS.dangerBright,
+    color: REGISTRATION_COLORS.dangerBright,
   },
 
-  //letra dentro de contenedor nombre etc
   input: {
-    backgroundColor: PATIENTS_COLORS.surface,
-    borderWidth: 1.5,
-    borderColor: PATIENTS_COLORS.borderSoft,
-    borderRadius: 12,
+    backgroundColor: REGISTRATION_COLORS.fondoiconos,
+    borderWidth: 1,
+    borderColor: REGISTRATION_COLORS.bordeIconos,
+    borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 13,
-    color: PATIENTS_COLORS.textPrimary,
+    fontSize: 12,
+    color: REGISTRATION_COLORS.textoPrincipal,
   },
 
   inputErrorBorder: {
-    borderColor: PATIENTS_COLORS.danger,
+    borderColor: REGISTRATION_COLORS.danger,
     borderWidth: 2,
   },
 
-  //letra error campo vacio etc
   fieldErrorText: {
-    color: PATIENTS_COLORS.danger,
+    color: REGISTRATION_COLORS.danger,
     fontSize: 12,
     marginTop: 9,
   },
@@ -1013,35 +976,35 @@ const styles = StyleSheet.create({
   datePickerTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PATIENTS_COLORS.surface,
-    borderWidth: 1.5,
-    borderColor: PATIENTS_COLORS.borderSoft,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    backgroundColor: REGISTRATION_COLORS.fondoiconos,
+    borderWidth: 1,
+    borderColor: REGISTRATION_COLORS.bordeIconos,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 14,
   },
 
   dateIcon: {
-    marginRight: 8,
+    marginRight: 5,
   },
 
-  //altura de texto fecha y hora
   datePickerValueText: {
     flex: 1,
     fontSize: 13,
-    color: PATIENTS_COLORS.textPrimary,
+    color: REGISTRATION_COLORS.textoPrincipal,
     fontWeight: '600',
   },
 
   datePickerPlaceholder: {
-    color: PATIENTS_COLORS.textSubtle,
+    color: REGISTRATION_COLORS.textoSecundario,
     fontWeight: '400',
   },
 
-  // Contenedor género
   genderContainer: {
     flexDirection: 'row',
-    backgroundColor: PATIENTS_COLORS.surfaceSlate,
+    backgroundColor: REGISTRATION_COLORS.fondoiconos,
+    borderColor: REGISTRATION_COLORS.bordeIconos,
+    borderWidth: 1,
     borderRadius: 12,
     padding: 3,
   },
@@ -1052,46 +1015,54 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 9,
+    backgroundColor: REGISTRATION_COLORS.fondoBase,
+    borderColor: REGISTRATION_COLORS.bordeIconos,
+    borderWidth: 1,
   },
 
   genderOptionActive: {
-    backgroundColor: PATIENTS_COLORS.primary,
+    backgroundColor: REGISTRATION_COLORS.iconosPerfil,
     elevation: 2,
   },
 
   genderOptionText: {
     fontSize: 12,
     fontWeight: '600',
-    color: PATIENTS_COLORS.textSlate,
+    color: REGISTRATION_COLORS.textoSecundario,
   },
 
   genderOptionTextActive: {
-    color: PATIENTS_COLORS.surface,
+    color: REGISTRATION_COLORS.textoBlanco,
   },
 
-
-//boton registrar paciente
+  // Botón registrar paciente
   submitButton: {
-    backgroundColor: PATIENTS_COLORS.primary,
-    borderRadius: 12,
+    backgroundColor: REGISTRATION_COLORS.iconosPerfil,
+    borderColor: REGISTRATION_COLORS.bordeIconos,
+    borderWidth: 1,
+    borderRadius: 10,
     paddingVertical: 10,
     width: '50%',
     alignItems: 'center',
     alignSelf: 'center',
     marginTop: 30,
     marginBottom: 50,
-    elevation: 1,
+    elevation: 2,
   },
 
   submitButtonDisabled: {
-    backgroundColor: PATIENTS_COLORS.borderGreenAccent,    
-    elevation: 1,
+    backgroundColor: REGISTRATION_COLORS.fondoiconos,
+    elevation: 0,
   },
 
   submitButtonText: {
-    color: PATIENTS_COLORS.surface,
-    fontSize: 16,
+    color: REGISTRATION_COLORS.textoBlanco,
+    fontSize: 14,
     fontWeight: '600',
+  },
+
+  submitButtonTextDisabled: {
+    color: REGISTRATION_COLORS.textoSecundario,
   },
 
   chipRow: {
@@ -1101,31 +1072,30 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  //duracion sesion
   durationChip: {
     paddingVertical: 10,
     paddingHorizontal: 8,
     borderRadius: 12,
-    backgroundColor: PATIENTS_COLORS.surfaceMuted,
+    backgroundColor: REGISTRATION_COLORS.fondoiconos,
     borderWidth: 1,
-    borderColor: PATIENTS_COLORS.border,
+    borderColor: REGISTRATION_COLORS.bordeIconos,
     justifyContent: 'center',
     flexDirection: 'row',
   },
 
   durationChipActive: {
-    backgroundColor: PATIENTS_COLORS.canvas,
-    borderColor: PATIENTS_COLORS.primary,
+    backgroundColor: REGISTRATION_COLORS.iconosPerfil,
+    borderColor: REGISTRATION_COLORS.fondoBase,
   },
 
   durationChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: PATIENTS_COLORS.textSecondary,
+    color: REGISTRATION_COLORS.textoSecundario,
   },
 
   durationChipTextActive: {
-    color: PATIENTS_COLORS.primary,
+    color: REGISTRATION_COLORS.textoBlanco,
     fontWeight: '600',
   },
 
@@ -1133,7 +1103,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  //observaciones de la sesion 
   textArea: {
     minHeight: 76,
     textAlignVertical: 'top',

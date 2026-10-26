@@ -13,40 +13,10 @@ import { HabitKey } from '../types/habits';
 import { HabitPeriod, HabitReportFilters } from '../navigation/types';
 import { DatePickerModal } from './DatePickerModal';
 import { formatToChileanDate } from '../utils/date';
+import { PSYCHOLOGIST_COLORS } from '../screens/Psicologo/psychologistColors';
 
-const COLORS = {
-  food: '#D97706',
-  foodSoft: '#FEF3C7',
-  exercise: '#16A34A',
-  greenSoft: '#DCFCE7',
-  hydration: '#0284C7',
-  blueSoft: '#E0F2FE',
-  sleep: '#7C3AED',
-  purpleSoft: '#EDE9FE',
-  anxiety: '#E11D48',
-  roseSoft: '#FFE4E6',
-  stress: '#2563EB',
-  bluePale: '#DBEAFE',
-  primary: '#1A7A54',
-  white: '#FFFFFF',
-  gray500: '#6B7280',
-  gray600: '#64748B',
-  gray700: '#475569',
-  gray800: '#334155',
-  slate800: '#1E293B',
-  slate900: '#0F172A',
-  slate400: '#94A3B8',
-  border: '#CBD5E1',
-  borderSoft: '#E2E8F0',
-  gray100: '#F3F4F6',
-  gray50: '#F8FAFC',
-  slate100: '#F1F5F9',
-  greenSubtle: '#E8F5EE',
-  greenSelected: '#F3FAF6',
-  overlay: 'rgba(15, 23, 42, 0.55)',
-  black: '#000',
-  red: '#DC2626',
-} as const;
+const PATIENTS_COLORS = PSYCHOLOGIST_COLORS.pacientes;
+const PROFILE_COLORS = PSYCHOLOGIST_COLORS.perfil;
 
 interface HabitFilterModalProps {
   visible: boolean;
@@ -81,12 +51,12 @@ interface HabitOption {
 }
 
 const HABIT_OPTIONS: HabitOption[] = [
-  { key: 'comida', label: 'Comida', icon: 'restaurant-outline', color: COLORS.food, bgColor: COLORS.foodSoft },
-  { key: 'ejercicio', label: 'Ejercicio', icon: 'barbell-outline', color: COLORS.exercise, bgColor: COLORS.greenSoft },
-  { key: 'hidratacion', label: 'Hidratación', icon: 'water-outline', color: COLORS.hydration, bgColor: COLORS.blueSoft },
-  { key: 'sueno', label: 'Sueño', icon: 'moon-outline', color: COLORS.sleep, bgColor: COLORS.purpleSoft },
-  { key: 'ansiedad', label: 'Ansiedad', icon: 'pulse-outline', color: COLORS.anxiety, bgColor: COLORS.roseSoft },
-  { key: 'estres', label: 'Estrés', icon: 'flash-outline', color: COLORS.stress, bgColor: COLORS.bluePale },
+  { key: 'comida', label: 'Comida', icon: 'restaurant-outline', color: PATIENTS_COLORS.habitFood, bgColor: PATIENTS_COLORS.warningSurface },
+  { key: 'ejercicio', label: 'Ejercicio', icon: 'barbell-outline', color: PATIENTS_COLORS.habitExercise, bgColor: PATIENTS_COLORS.habitExerciseSurface },
+  { key: 'hidratacion', label: 'Hidratación', icon: 'water-outline', color: PATIENTS_COLORS.habitHydration, bgColor: PATIENTS_COLORS.habitHydrationSurface },
+  { key: 'sueno', label: 'Sueño', icon: 'moon-outline', color: PATIENTS_COLORS.habitSleep, bgColor: PATIENTS_COLORS.habitSleepSurface },
+  { key: 'ansiedad', label: 'Ansiedad', icon: 'pulse-outline', color: PATIENTS_COLORS.habitAnxiety, bgColor: PATIENTS_COLORS.habitAnxietySurface },
+  { key: 'estres', label: 'Estrés', icon: 'flash-outline', color: PATIENTS_COLORS.habitStress, bgColor: PATIENTS_COLORS.habitStressSurface },
 ];
 
 const ALL_HABIT_KEYS: HabitKey[] = ['comida', 'ejercicio', 'hidratacion', 'sueno', 'ansiedad', 'estres'];
@@ -182,7 +152,7 @@ export const HabitFilterModal: React.FC<HabitFilterModalProps> = ({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerIconWrapper}>
-              <Ionicons name="analytics" size={24} color={COLORS.primary} />
+              <Ionicons name="analytics" size={24} color={PATIENTS_COLORS.iconosPerfil} />
             </View>
             <View style={styles.headerTextGroup}>
               <Text style={styles.title}>Registro de Hábitos</Text>
@@ -193,7 +163,7 @@ export const HabitFilterModal: React.FC<HabitFilterModalProps> = ({
               style={styles.closeBtn}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="close" size={22} color={COLORS.gray500} />
+              <Ionicons name="close" size={22} color={PATIENTS_COLORS.textoSecundario} />
             </TouchableOpacity>
           </View>
 
@@ -201,7 +171,7 @@ export const HabitFilterModal: React.FC<HabitFilterModalProps> = ({
             {/* Sección 1: Temporalidad */}
             <View style={styles.section}>
               <View style={styles.sectionHeaderRow}>
-                <Ionicons name="time" size={17} color={COLORS.primary} />
+                <Ionicons name="time" size={17} color={PATIENTS_COLORS.iconosPerfil} />
                 <Text style={styles.sectionTitle}>Período de tiempo</Text>
               </View>
               <Text style={styles.sectionHelper}>
@@ -225,7 +195,7 @@ export const HabitFilterModal: React.FC<HabitFilterModalProps> = ({
                         <Ionicons
                           name={item.icon}
                           size={18}
-                          color={isSelected ? COLORS.primary : COLORS.gray500}
+                          color={isSelected ? PATIENTS_COLORS.iconosPerfil : PATIENTS_COLORS.textoSecundario}
                         />
                         <View
                           style={[
@@ -262,7 +232,7 @@ export const HabitFilterModal: React.FC<HabitFilterModalProps> = ({
                         onPress={() => setActiveDatePicker('start')}
                         activeOpacity={0.8}
                       >
-                        <Ionicons name="calendar-outline" size={16} color={COLORS.primary} />
+                        <Ionicons name="calendar-outline" size={16} color={PATIENTS_COLORS.iconosPerfil} />
                         <Text style={styles.datePickerTriggerText}>
                           {formatToChileanDate(startDate)}
                         </Text>
@@ -276,7 +246,7 @@ export const HabitFilterModal: React.FC<HabitFilterModalProps> = ({
                         onPress={() => setActiveDatePicker('end')}
                         activeOpacity={0.8}
                       >
-                        <Ionicons name="calendar-sharp" size={16} color={COLORS.primary} />
+                        <Ionicons name="calendar-sharp" size={16} color={PATIENTS_COLORS.iconosPerfil} />
                         <Text style={styles.datePickerTriggerText}>
                           {formatToChileanDate(endDate)}
                         </Text>
@@ -295,7 +265,7 @@ export const HabitFilterModal: React.FC<HabitFilterModalProps> = ({
             {/* Sección 2: Hábitos a evaluar */}
             <View style={styles.section}>
               <View style={styles.sectionHeaderRow}>
-                <Ionicons name="heart" size={17} color={COLORS.primary} />
+                <Ionicons name="heart" size={17} color={PATIENTS_COLORS.iconosPerfil} />
                 <Text style={styles.sectionTitle}>Hábitos a incluir</Text>
                 <TouchableOpacity
                   style={[
@@ -347,7 +317,7 @@ export const HabitFilterModal: React.FC<HabitFilterModalProps> = ({
                         ]}
                       >
                         {isChecked && (
-                          <Ionicons name="checkmark" size={16} color={COLORS.white} />
+                          <Ionicons name="checkmark" size={16} color={PATIENTS_COLORS.textoBlanco} />
                         )}
                       </View>
                     </TouchableOpacity>
@@ -368,9 +338,9 @@ export const HabitFilterModal: React.FC<HabitFilterModalProps> = ({
               disabled={selectedHabits.length === 0}
               activeOpacity={0.85}
             >
-              <Ionicons name="bar-chart" size={20} color={COLORS.white} />
+              <Ionicons name="bar-chart" size={20} color={PATIENTS_COLORS.textoBlanco} />
               <Text style={styles.confirmBtnText}>Ver Informe Clínico</Text>
-              <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
+              <Ionicons name="arrow-forward" size={18} color={PATIENTS_COLORS.textoBlanco} />
             </TouchableOpacity>
             {selectedHabits.length === 0 && (
               <Text style={styles.warningText}>
@@ -410,7 +380,7 @@ export const HabitFilterModal: React.FC<HabitFilterModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: COLORS.overlay,
+    backgroundColor: PATIENTS_COLORS.modalBackdrop,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
@@ -422,9 +392,9 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 500,
     maxHeight: '90%',
-    backgroundColor: COLORS.white,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
     borderRadius: 24,
-    shadowColor: COLORS.black,
+    shadowColor: PROFILE_COLORS.shadow,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.15,
     shadowRadius: 24,
@@ -438,13 +408,13 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.slate100,
+    borderBottomColor: PATIENTS_COLORS.bordeIconos,
   },
   headerIconWrapper: {
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: COLORS.greenSubtle,
+    backgroundColor: PATIENTS_COLORS.surfaceGreenSoft,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -455,17 +425,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: COLORS.slate900,
+    color: PATIENTS_COLORS.textoPrincipal,
   },
   subtitle: {
     fontSize: 12,
-    color: COLORS.gray600,
+    color: PATIENTS_COLORS.textoSecundario,
     marginTop: 2,
   },
   closeBtn: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: COLORS.gray100,
+    backgroundColor: PATIENTS_COLORS.fondoiconos,
   },
   scrollArea: {
     paddingHorizontal: 20,
@@ -482,13 +452,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: COLORS.slate800,
+    color: PATIENTS_COLORS.textoPrincipal,
     marginLeft: 6,
     flex: 1,
   },
   sectionHelper: {
     fontSize: 12,
-    color: COLORS.gray600,
+    color: PATIENTS_COLORS.textoSecundario,
     marginBottom: 12,
   },
   periodsGrid: {
@@ -498,15 +468,15 @@ const styles = StyleSheet.create({
   },
   periodCard: {
     width: '48.5%',
-    backgroundColor: COLORS.gray50,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
     borderWidth: 1.5,
-    borderColor: COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.bordeIconos,
     borderRadius: 14,
     padding: 12,
   },
   periodCardSelected: {
-    backgroundColor: COLORS.greenSelected,
-    borderColor: COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.surfaceGreenSoft,
+    borderColor: PATIENTS_COLORS.iconosPerfil,
   },
   periodCardHeader: {
     flexDirection: 'row',
@@ -519,45 +489,45 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: PATIENTS_COLORS.bordeIconos,
     justifyContent: 'center',
     alignItems: 'center',
   },
   radioIndicatorSelected: {
-    borderColor: COLORS.primary,
+    borderColor: PATIENTS_COLORS.iconosPerfil,
   },
   radioDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.iconosPerfil,
   },
   periodLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.gray800,
+    color: PATIENTS_COLORS.textoPrincipal,
   },
   periodLabelSelected: {
-    color: COLORS.primary,
+    color: PATIENTS_COLORS.iconosPerfil,
     fontWeight: '700',
   },
   periodSublabel: {
     fontSize: 11,
-    color: COLORS.slate400,
+    color: PATIENTS_COLORS.textoSecundario,
     marginTop: 2,
   },
   specificDateBox: {
     marginTop: 12,
-    backgroundColor: COLORS.gray50,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.bordeIconos,
     padding: 12,
   },
   specificDateTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.gray700,
+    color: PATIENTS_COLORS.textoPrincipal,
     marginBottom: 6,
   },
   dateRangeRow: {
@@ -572,21 +542,21 @@ const styles = StyleSheet.create({
   dateRangeLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: COLORS.gray600,
+    color: PATIENTS_COLORS.textoSecundario,
     marginBottom: 4,
   },
   rangeSummaryText: {
     fontSize: 11,
-    color: COLORS.primary,
+    color: PATIENTS_COLORS.iconosPerfil,
     fontWeight: '600',
     marginTop: 2,
   },
   datePickerTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: PATIENTS_COLORS.bordeIconos,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 9,
@@ -594,7 +564,7 @@ const styles = StyleSheet.create({
   datePickerTriggerText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.slate900,
+    color: PATIENTS_COLORS.textoPrincipal,
     marginLeft: 6,
     flex: 1,
   },
@@ -602,18 +572,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: COLORS.slate100,
+    backgroundColor: PATIENTS_COLORS.fondoiconos,
   },
   selectAllBtnActive: {
-    backgroundColor: COLORS.greenSubtle,
+    backgroundColor: PATIENTS_COLORS.surfaceGreenSoft,
   },
   selectAllBtnText: {
     fontSize: 11,
     fontWeight: '600',
-    color: COLORS.gray700,
+    color: PATIENTS_COLORS.textoPrincipal,
   },
   selectAllBtnTextActive: {
-    color: COLORS.primary,
+    color: PATIENTS_COLORS.iconosPerfil,
   },
   habitsList: {
     gap: 8,
@@ -622,14 +592,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
-    backgroundColor: COLORS.gray50,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.borderSoft,
+    borderColor: PATIENTS_COLORS.bordeIconos,
   },
   habitRowChecked: {
-    backgroundColor: COLORS.white,
-    borderColor: COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
+    borderColor: PATIENTS_COLORS.iconosPerfil,
   },
   habitIconBox: {
     width: 36,
@@ -643,55 +613,55 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.slate800,
+    color: PATIENTS_COLORS.textoPrincipal,
   },
   checkbox: {
     width: 22,
     height: 22,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: PATIENTS_COLORS.bordeIconos,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
   },
   checkboxChecked: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.iconosPerfil,
+    borderColor: PATIENTS_COLORS.iconosPerfil,
   },
   footer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: COLORS.slate100,
-    backgroundColor: COLORS.white,
+    borderTopColor: PATIENTS_COLORS.bordeIconos,
+    backgroundColor: PATIENTS_COLORS.fondoBase,
   },
   confirmBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.primary,
+    backgroundColor: PATIENTS_COLORS.iconosPerfil,
     paddingVertical: 14,
     borderRadius: 14,
     gap: 8,
-    shadowColor: COLORS.primary,
+    shadowColor: PATIENTS_COLORS.iconosPerfil,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
   },
   confirmBtnDisabled: {
-    backgroundColor: COLORS.slate400,
+    backgroundColor: PATIENTS_COLORS.bordeIconos,
     shadowOpacity: 0,
     elevation: 0,
   },
   confirmBtnText: {
-    color: COLORS.white,
+    color: PATIENTS_COLORS.textoBlanco,
     fontSize: 15,
     fontWeight: '700',
   },
   warningText: {
     fontSize: 11,
-    color: COLORS.red,
+    color: PATIENTS_COLORS.danger,
     textAlign: 'center',
     marginTop: 6,
   },

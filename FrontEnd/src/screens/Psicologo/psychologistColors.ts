@@ -3,8 +3,6 @@
 const SHARED_FOUNDATION = {
   primary: '#1aca78',
   shadow: '#82bda1',
-  textPrimary: '#1F2937',
-  textMuted: '#6B7280',
   fondoBase: '#FFFFFF', //fondo general
 
   //COLORES GENERALES
@@ -27,7 +25,7 @@ const SHARED_FOUNDATION = {
 
 // Roles idénticos en Pacientes, Calendario y Perfil.
 const SHARED_CLINICAL_BASE = {
-  canvas: '#babcbc27', //fondo presencial, completada en calendario
+  
   surface: '#FFFFFF', //MODIFICAR PORQUE ES EL FONDO DE TARJETAS EN FICHA PACIENTE
   surfaceGreenSoft: '#ecf6f7f5', //fondo de iconos en perfil
   surfaceMuted: '#babcbc6c', //linea divisora en perfil 
@@ -112,38 +110,16 @@ const SHARED_AVATAR_COLORS = {
 export const PSYCHOLOGIST_COLORS = {
   inicio: {
     ...SHARED_FOUNDATION,
+    ...SHARED_CLINICAL_BASE,
     ...SHARED_BADGES,
     ...SHARED_HOME_PATIENT_BORDERS,
-    ...SHARED_GREEN_TEXT, 
 
-    //PESTAÑA INICIO 
-
-    page: '#FFFFFF', //fondo
-    textGreenBrand: '#6ca5a9', //ver calendario
-    textSubtle: '#999a9cb7',
-    iconPrimary: '#6ca5a9', //icono mas
-    activeControl: '#d4d9da9d', //fondo icono mas
-    iconAccent: '#6ca5a9', //flecha registrar nuevo paciente
-    card: '#FFFFFF', // fondo tarjeta agenda del dia
-    listItem: '#ecf6f7f5', // fondo tarjeta de pacientes inicio    
-    highlightSoft: '#ecf6f7f5', //fondo tarjeta de registrar
-    borderCard: '#599eaa42', //borde agenda del dia
-    borderAction: '#599eaa42', //borde boton registrar nuevo p
-    borderListItem: '#599eaa42', //borde tarjeta pacientes
-    
-
-
-
-    // nose
-    textGreenAccent: '#436654',
-    iconDisabled: '#c1d2ec',
-    disabledButton: '#F3F4F6',
-    highlight: '#81bcc974',
-    disabledControl: '#E5E7EB',
+    // COLORES PROPIOS DE INICIO
+    shadow: '#868888d5',
     cancelledBadge: '#FEE2E2',
+    directoryTextSubtle: '#999a9cb7',
 
-
-    //Errores
+    // ESTADOS Y ERRORES
     textError: '#991B1B',
     textErrorSecondary: '#7F1D1D',
     textInfo: '#1D4ED8',
@@ -156,8 +132,7 @@ export const PSYCHOLOGIST_COLORS = {
 
 
 
-  //---------------------------------------//
-
+  // MIS PACIENTES PESTAÑA
   pacientes: {
     ...SHARED_FOUNDATION,
     ...SHARED_CLINICAL_BASE,
@@ -166,18 +141,17 @@ export const PSYCHOLOGIST_COLORS = {
     ...SHARED_HOME_PATIENT_BORDERS,
     ...SHARED_GREEN_TEXT,
 
-    // PACIENTES PESTAÑA
-    primaryAlt: '#9fa7a8be', //icono registro habitos
-    accent: '#43dcbb', //ELIMINAR
-    brandAccent: '#3bbb8a', //ELIMINAR
+    // COLORES PROPIOS DE PACIENTES
+    primaryAlt: '#9fa7a8be',
+    accent: '#43dcbb',
+    brandAccent: '#3bbb8a',
+    avatarColors: SHARED_AVATAR_COLORS,
 
-    //nose
+    // ERRORES DE SUSCRIPCIÓN
     subscriptionErrorText: '#991B1B',
     subscriptionErrorSecondary: '#7F1D1D',
 
-    avatarColors: SHARED_AVATAR_COLORS,
-
-    // Fondos de pantalla, tarjetas, formularios, etiquetas y gráficas.
+    // FONDOS DE PANTALLA, TARJETAS, BÚSQUEDA Y GRÁFICAS
     surfaceGreen: '#E8F5E9',
     surfaceHighlight: '#E8F5EE',
     surfaceHighlightSoft: '#F3FAF6',
@@ -192,7 +166,7 @@ export const PSYCHOLOGIST_COLORS = {
     directoryHintIcon: '#bac462',
     directoryBorder: '#D9E4DE',
 
-    // Bordes de tarjetas, campos, estados y paginación.
+    // BORDES DE TARJETAS, CAMPOS, ESTADOS Y PAGINACIÓN
     borderSoft: '#E2E8F0',
     borderGreenAccent: '#A5C1B3',
     borderGreenSoft: '#E7F0EA',
@@ -201,7 +175,7 @@ export const PSYCHOLOGIST_COLORS = {
     borderSlate: '#CBD5E1',
     borderNeutral: '#F0F0F0',
 
-    // Textos de pacientes, formularios, reporte y estados.
+    // TEXTOS DE PACIENTES, FORMULARIOS, REPORTE Y ESTADOS
     textOnGreenMuted: '#D1E7DD',
     textSlate: '#64748B',
     textSlateStrong: '#475569',
@@ -217,7 +191,7 @@ export const PSYCHOLOGIST_COLORS = {
     textInfoStrong: '#1E40AF',
     textInfoDark: '#1E3A8A',
 
-    // Estados: iconos, etiquetas, mensajes y áreas de las gráficas.
+    // ESTADOS, ALERTAS Y MENSAJES
     dangerBright: '#EF4444',
     warning: '#B45309',
     warningBright: '#D97706',
@@ -229,7 +203,7 @@ export const PSYCHOLOGIST_COLORS = {
     successMint: '#A8DED3',
     successSurface: '#DCFCE7',
 
-    // Colores de las series del reporte y detalles de sus gráficas.
+    // SERIES Y DETALLES DE GRÁFICAS
     habitFood: '#D97706',
     habitExercise: '#16A34A',
     habitExerciseSurface: '#DCFCE7',
@@ -248,12 +222,37 @@ export const PSYCHOLOGIST_COLORS = {
     headerOverlay: 'rgba(255,255,255,0.2)',
   },
 
-  // Pestaña Calendario: agenda semanal, sesiones, disponibilidad y estados.
+
+  
+
+
+
+
+  // REGISTRO PACIENTE PESTAÑA
+  registroPaciente: {
+    ...SHARED_FOUNDATION,
+    ...SHARED_CLINICAL_BASE,
+    
+    shadow: '#868888d5',
+    textGreenSuccess: '#166534',
+    textInfoStrong: '#1E40AF',
+    textInfoDark: '#1E3A8A',
+    textWarningStrong: '#92400E',
+    dangerBright: '#EF4444',
+    danger: SHARED_CLINICAL_BASE.danger,
+    info: '#1D4ED8',
+    infoSurface: '#EFF6FF',
+    warningSurface: '#FEF3C7',
+    warningBright: '#D97706',
+    infoBlueBright: '#3B82F6',
+  },
+
+  // CALENDARIO PESTAÑA 
   calendario: {
     ...SHARED_FOUNDATION,
     ...SHARED_CLINICAL_BASE,
     ...SHARED_PATIENT_CALENDAR,
-    // Colores propios del calendario.
+
     shadow: '#000000',
     bordeCalendar: '#a2a2a21b',
     onlineSession: '#2563EB',
@@ -262,26 +261,20 @@ export const PSYCHOLOGIST_COLORS = {
     estadoCompletada: '#45b087',
     estadoReagendar: '#e18539',
     estadoCancelada: '#d83232',
-    
-    
-
-
   },
 
-  // PERFIL PESTAÑA TAMBIEN CONTIENE COLORES GENERALES DE TEXTO
+  // PERFIL PESTAÑA 
   perfil: {
     ...SHARED_FOUNDATION,
     ...SHARED_CLINICAL_BASE,
     shadow: '#868888d5',
-    profileBorder: '#FFFFFF', //borde icono
+    profileBorder: '#FFFFFF', 
     fondoTarjeta: '#FFFFFF',
     bordeTarjeta:  '#a2a2a21b',
     estadoActivo: '#4eb86cce',
     estadoInactivo: '#DC2626',
     textoBlanco: '#FFFFFF',
     fondoPerfil: '#6ca5a9',
-    textoSec: '#6ca5a9',
-    
-    
+    textoSec: '#6ca5a9',   
   },
 } as const;

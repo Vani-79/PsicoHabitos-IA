@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: PROFILE_COLORS.textMuted,
+    color: PROFILE_COLORS.textoSecundario,
     fontWeight: '600',
   },
 

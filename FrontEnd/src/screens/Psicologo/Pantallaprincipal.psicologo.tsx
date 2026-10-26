@@ -200,7 +200,7 @@ interface PatientsHintProps {
 const PatientsHint: React.FC<PatientsHintProps> = ({ isEmpty }) => (
   <View style={styles.patientsHint}>
     <View style={styles.patientsHintIcon}>
-      <Ionicons name="people-outline" size={26} color={PATIENTS_COLORS.directoryHintIcon} />
+      <Ionicons name="people-outline" size={26} color={PATIENTS_COLORS.iconosPerfil} />
     </View>
     <Text style={styles.patientsHintTitle}>
       {isEmpty ? 'Tu lista está vacía por ahora' : 'Tu lista crece aquí'}
@@ -287,7 +287,7 @@ const TodayAgendaRow: React.FC<TodayAgendaRowProps> = ({
       <Ionicons
         name={isSubscriptionActive ? 'chevron-forward' : 'lock-closed'}
         size={16}
-        color={HOME_COLORS.textSubtle}
+        color={HOME_COLORS.textoSecundario}
       />
     </TouchableOpacity>
   );
@@ -337,7 +337,7 @@ const PsychologistHomeTab: React.FC<PsychologistHomeTabProps> = ({
             <Ionicons
               name={isSubscriptionActive ? 'add' : 'lock-closed'}
               size={18}
-              color={isSubscriptionActive ? HOME_COLORS.iconPrimary : HOME_COLORS.textSubtle}
+              color={isSubscriptionActive ? HOME_COLORS.iconosPerfil : HOME_COLORS.textoSecundario}
             />
           </View>
 
@@ -354,7 +354,7 @@ const PsychologistHomeTab: React.FC<PsychologistHomeTabProps> = ({
           <Ionicons
             name="chevron-forward"
             size={18}
-            color={isSubscriptionActive ? HOME_COLORS.iconAccent : HOME_COLORS.iconDisabled}
+            color={isSubscriptionActive ? HOME_COLORS.iconosPerfil : HOME_COLORS.textoSecundario}
           />
         </TouchableOpacity>
       </View>
@@ -373,9 +373,9 @@ const PsychologistHomeTab: React.FC<PsychologistHomeTabProps> = ({
 
         {todayPatients.length === 0 ? (
           <View style={styles.agendaEmpty}>
-            <Ionicons name="calendar-outline" size={40} color={HOME_COLORS.textSubtle} />
+            <Ionicons name="calendar-outline" size={40} color={HOME_COLORS.textoSecundario} />
             <Text style={styles.emptyStateTitle}>Sin sesiones hoy</Text>
-            <Text style={[styles.emptyStateText, { color: HOME_COLORS.textMuted }]}>
+            <Text style={[styles.emptyStateText, { color: HOME_COLORS.textoSecundario }]}>
               No tienes consultas o citas programadas para el día de hoy.
             </Text>
           </View>
@@ -471,7 +471,7 @@ const DirectoryPatientCard: React.FC<DirectoryPatientCardProps> = ({
         <Ionicons
           name={isSubscriptionActive ? 'chevron-forward' : 'lock-closed'}
           size={16}
-          color={HOME_COLORS.textSubtle}
+          color={HOME_COLORS.directoryTextSubtle}
         />
       </TouchableOpacity>
     </React.Fragment>
@@ -564,11 +564,11 @@ const PatientDirectorySection: React.FC<PatientDirectorySectionProps> = ({
       </View>
 
       <View style={styles.searchBox}>
-        <Ionicons name="search-outline" size={17} color={HOME_COLORS.textSubtle} style={{ marginRight: 8 }} />
+        <Ionicons name="search-outline" size={17} color={HOME_COLORS.directoryTextSubtle} style={{ marginRight: 8 }} />
         <TextInput
           style={styles.searchInput}
           placeholder="Buscar por nombre o apellido"
-          placeholderTextColor={HOME_COLORS.textSubtle}
+          placeholderTextColor={HOME_COLORS.directoryTextSubtle}
           value={searchTerm}
           onChangeText={onChangeSearchTerm}
           editable={isSubscriptionActive}
@@ -657,7 +657,7 @@ export const PsychologistDashboardScreen: React.FC<
     <SafeAreaView
       style={[
         styles.container,
-        { backgroundColor: activeTab === 'inicio' ? HOME_COLORS.page : PATIENTS_COLORS.canvasSubtle },
+        { backgroundColor: activeTab === 'inicio' ? HOME_COLORS.fondoBase : PATIENTS_COLORS.canvasSubtle },
       ]}
     >
       {/* Banner de Suscripción Inactiva / Expirada */}
@@ -705,8 +705,8 @@ export const PsychologistDashboardScreen: React.FC<
   );
 };
 
-// Sombra suave para las tarjetas grandes de la pestaña Inicio.
-// En Android, elevation dibuja una sombra gris; si se ve muy marcada, se puede quitar.
+
+
 const softShadow = {
   shadowColor: HOME_COLORS.shadow,
   shadowOffset: { width: 0, height: 2 },
@@ -723,13 +723,18 @@ const patientsShadow = {
   elevation: 1,
 };
 
-// Estilos del panel de inicio y del directorio de pacientes.
+
+
+
+// ESTILOS PESTAÑA PRINCIPAL
+
 const styles = StyleSheet.create({
 
   container: {
     flex: 1,
   },
 
+  //PESTAÑA MIS PACIENTES
   searchBox: {
     height: 40,
     flexDirection: 'row',
@@ -738,24 +743,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: PATIENTS_COLORS.borderGreenSoft,
     borderRadius: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
     marginBottom: 18,
+    marginVertical: 10,
   },
 
   searchInput: {
     flex: 1,
     height: '100%',
     fontSize: 14,
-    color: PATIENTS_COLORS.textPrimary,
+    color: PATIENTS_COLORS.textoPrincipal,
   },
 
   doctorName: {
     fontSize: 22,
     fontWeight: '700',
-    color: HOME_COLORS.textPrimary,
-    marginTop: 12,
-    marginBottom: 20,
-    paddingHorizontal: 4,
+    color: HOME_COLORS.textoPrincipal,
+    marginTop: 20,
+    marginBottom: 40,
+    paddingHorizontal: 10,
   },
 
   /* =========================
@@ -765,7 +771,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 20,
     paddingBottom: 40,
   },
 
@@ -783,9 +789,9 @@ const styles = StyleSheet.create({
   },
 
   registerPatientButton: {
-    backgroundColor: HOME_COLORS.highlightSoft,
+    backgroundColor: HOME_COLORS.surfaceGreenSoft,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderAction,
+    borderColor: HOME_COLORS.bordeIconos,
     borderRadius: 14,
     paddingVertical: 18,
     paddingHorizontal: 16,
@@ -797,25 +803,25 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 11,
-    backgroundColor: HOME_COLORS.activeControl,
+    backgroundColor: HOME_COLORS.fondoiconos,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
 
   buttonIconWrapperDisabled: {
-    backgroundColor: HOME_COLORS.disabledControl,
+    backgroundColor: HOME_COLORS.fondoiconos,
   },
 
   registerButtonTitle: {
     flex: 1,
-    color: HOME_COLORS.primary,
+    color: HOME_COLORS.iconosPerfil,
     fontSize: 15,
     fontWeight: '600',
   },
 
   registerButtonTitleDisabled: {
-    color: HOME_COLORS.textSubtle,
+    color: HOME_COLORS.textoSecundario,
   },
 
   /* =========================
@@ -837,9 +843,9 @@ const styles = StyleSheet.create({
 
   agendaCard: {
     ...softShadow,
-    backgroundColor: HOME_COLORS.card,
+    backgroundColor: HOME_COLORS.fondoBase,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderCard,
+    borderColor: HOME_COLORS.bordeIconos,
     borderRadius: 16,
     padding: 12,
   },
@@ -855,13 +861,13 @@ const styles = StyleSheet.create({
   agendaTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: HOME_COLORS.textPrimary,
+    color: HOME_COLORS.textoPrincipal,
   },
 
   agendaLink: {
     fontSize: 13,
     fontWeight: '600',
-    color: HOME_COLORS.textGreenBrand,
+    color: HOME_COLORS.iconosPerfil,
   },
 
   agendaEmpty: {
@@ -875,9 +881,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 10,
-    backgroundColor: HOME_COLORS.listItem,
+    backgroundColor: HOME_COLORS.surfaceGreenSoft,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderListItem,
+    borderColor: HOME_COLORS.bordeIconos,
     borderRadius: 12,
   },
 
@@ -893,7 +899,7 @@ const styles = StyleSheet.create({
     width: 48,
     fontSize: 14,
     fontWeight: '600',
-    color: HOME_COLORS.primary,
+    color: HOME_COLORS.iconosPerfil,
   },
 
   agendaAvatar: {
@@ -908,7 +914,7 @@ const styles = StyleSheet.create({
   agendaAvatarText: {
     fontSize: 12,
     fontWeight: '700',
-    color: HOME_COLORS.textGreenAccent,
+    color: HOME_COLORS.iconosPerfil,
   },
 
   agendaInfo: {
@@ -919,12 +925,12 @@ const styles = StyleSheet.create({
   agendaName: {
     fontSize: 15,
     fontWeight: '600',
-    color: HOME_COLORS.textPrimary,
+    color: HOME_COLORS.textoPrincipal,
   },
 
   agendaMeta: {
     fontSize: 13,
-    color: HOME_COLORS.textGreenSubtle,
+    color: HOME_COLORS.textoSecundario,
     marginTop: 2,
   },
 
@@ -943,7 +949,7 @@ const styles = StyleSheet.create({
   directoryTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: PATIENTS_COLORS.textPrimary,
+    color: PATIENTS_COLORS.textoPrincipal,
   },
 
   directoryCount: {
@@ -982,7 +988,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: PATIENTS_COLORS.directoryHintBackground,
+    backgroundColor: PATIENTS_COLORS.fondoiconos,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -990,15 +996,15 @@ const styles = StyleSheet.create({
 
   patientsHintTitle: {
     fontSize: 15,
-    fontWeight: '700',
-    color: PATIENTS_COLORS.textBody,
+    fontWeight: '600',
+    color: PATIENTS_COLORS.iconosPerfil,
     textAlign: 'center',
   },
 
   patientsHintText: {
     marginTop: 4,
     fontSize: 13,
-    color: PATIENTS_COLORS.textMuted,
+    color: PATIENTS_COLORS.textoSecundario,
     textAlign: 'center',
     lineHeight: 19,
     maxWidth: 260,
@@ -1059,7 +1065,7 @@ const styles = StyleSheet.create({
   directoryName: {
     fontSize: 15,
     fontWeight: '700',
-    color: PATIENTS_COLORS.textPrimary,
+    color: PATIENTS_COLORS.textoPrincipal,
   },
 
   directoryMeta: {
@@ -1122,8 +1128,8 @@ const styles = StyleSheet.create({
   },
 
   registerButtonDisabled: {
-    backgroundColor: HOME_COLORS.disabledButton,
-    borderColor: HOME_COLORS.borderDisabled,
+    backgroundColor: HOME_COLORS.fondoiconos,
+    borderColor: HOME_COLORS.bordeIconos,
   },
 
   suplenteBadge: {
@@ -1157,7 +1163,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   agendaNameCancelled: {
-    color: HOME_COLORS.textSubtle,
+    color: HOME_COLORS.textoSecundario,
     textDecorationLine: 'line-through',
   },
 });
