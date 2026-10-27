@@ -210,6 +210,8 @@ CREATE TABLE IF NOT EXISTS recursos_paciente (
   video_url VARCHAR(255) NOT NULL,
   miniatura_url VARCHAR(255) NULL,
   duracion_segundos INT NULL,
+  segundo_inicio INT NOT NULL DEFAULT 0,
+  segundo_fin INT NULL,
   orden INT NOT NULL DEFAULT 1,
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
