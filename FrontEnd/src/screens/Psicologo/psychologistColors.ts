@@ -87,12 +87,12 @@ const SHARED_GREEN_TEXT = {
 
 // COLORES DE INICIALES E ICONO CON EL NOMBRE DE PACIENTE
 const SHARED_AVATAR_COLORS = {
-  blue: { background: '#FFFFFF', text: '#2f598aaf' },
-  sand: { background: '#FFFFFF', text: '#cb9e76bd' },
-  lavender: { background: '#FFFFFF', text: '#5a4a8aba' },
-  green: { background: '#FFFFFF', text: '#82bda1ad' },
-  rose: { background: '#FFFFFF', text: '#8a3a4fb3' },
-  turquoise: { background: '#FFFFFF', text: '#2f6f75b1' },
+  blue: { background: '#dbeafe', text: '#1e3a8a' },
+  sand: { background: '#fef3c7', text: '#78350f' },
+  lavender: { background: '#ede9fe', text: '#4c1d95' },
+  green: { background: '#bbf7d0', text: '#111827' },
+  rose: { background: '#ffe4e6', text: '#881337' },
+  turquoise: { background: '#ccfbf1', text: '#134e4a' },
 };
 
 

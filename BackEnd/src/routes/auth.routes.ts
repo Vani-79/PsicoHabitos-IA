@@ -4,9 +4,8 @@ import crypto from 'node:crypto';
 import { pool } from '../config/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { emailService } from '../services/emailService';
-import { generateToken } from '../config/jwt';
+import { generateToken, verifyToken } from '../config/jwt';
 import { authLimiter, otpVerificationLimiter } from '../middlewares/rateLimiter';
-import { authMiddleware } from '../middlewares/authMiddleware';
 
 export const authRouter = Router();
 
@@ -914,20 +913,85 @@ authRouter.post('/login', authLimiter, async (req: Request, res: Response): Prom
 });
 
 /**
+ * Valida si un rol objetivo es admisible para cambio de portal ('psicologo' o 'paciente').
+ */
+function isValidTargetRole(role: unknown): role is 'psicologo' | 'paciente' {
+  return role === 'psicologo' || role === 'paciente';
+}
+
+/**
+ * Extrae la identidad del usuario a partir del token Bearer en el encabezado Authorization.
+ */
+function extractUserFromBearerToken(authHeader?: string): { userId: number; email: string } | null {
+  if (!authHeader) {
+    return null;
+  }
+  const parts = authHeader.trim().split(' ');
+  if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
+    return null;
+  }
+  const payload = verifyToken(parts[1]);
+  if (!payload) {
+    return null;
+  }
+  return { userId: payload.userId, email: payload.email };
+}
+
+/**
+ * Busca un usuario activo en base de datos a partir de su correo electrónico.
+ */
+async function findActiveUserByEmail(email?: unknown): Promise<{ userId: number; email: string } | null> {
+  if (!email || typeof email !== 'string') {
+    return null;
+  }
+  const cleanEmail = email.trim().toLowerCase();
+  const [uRows] = await pool.query<RowDataPacket[]>(
+    'SELECT id, email, rol, activo FROM usuarios WHERE email = ? AND activo = 1 LIMIT 1',
+    [cleanEmail]
+  );
+  if (uRows.length === 0) {
+    return null;
+  }
+  return { userId: uRows[0].id, email: uRows[0].email };
+}
+
+/**
+ * Resuelve la identidad del usuario autenticado ya sea mediante token Bearer o por correo de respaldo.
+ */
+async function resolveAuthenticatedUser(
+  req: Request,
+  fallbackEmail?: unknown
+): Promise<{ userId: number; email: string } | null> {
+  const tokenUser = extractUserFromBearerToken(req.headers.authorization);
+  if (tokenUser) {
+    return tokenUser;
+  }
+  return findActiveUserByEmail(fallbackEmail);
+}
+
+/**
  * POST /api/auth/switch-role
  * Permite a un usuario con múltiples perfiles alternar entre el portal de especialista y paciente.
  */
-authRouter.post('/switch-role', authMiddleware, async (req: Request, res: Response): Promise<void> => {
+authRouter.post('/switch-role', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { targetRole } = req.body;
-    const userId = req.user!.userId;
-    const email = req.user!.email;
+    const { targetRole, email: bodyEmail } = req.body;
 
-    if (!targetRole || !['psicologo', 'paciente'].includes(targetRole)) {
+    if (!isValidTargetRole(targetRole)) {
       res.status(400).json({ success: false, error: 'targetRole inválido. Debe ser "psicologo" o "paciente".' });
       return;
     }
 
+    const authUser = await resolveAuthenticatedUser(req, bodyEmail);
+    if (!authUser) {
+      res.status(401).json({
+        success: false,
+        error: 'Sesión no autorizada o expirada. Por favor vuelve a iniciar sesión.',
+      });
+      return;
+    }
+
+    const { userId, email } = authUser;
     const availableRoles = await getUserAvailableRoles(userId);
 
     if (!availableRoles.includes(targetRole)) {
@@ -980,10 +1044,18 @@ authRouter.post('/switch-role', authMiddleware, async (req: Request, res: Respon
  * - Estado de la suscripción: Activo / Inactivo
  * - Disponibilidad de roles (para cambiar de perfil)
  */
-authRouter.get('/psychologist-profile', authMiddleware, async (req: Request, res: Response): Promise<void> => {
+authRouter.get('/psychologist-profile', async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.user!.userId;
-    const userEmail = req.user!.email;
+    const authUser = await resolveAuthenticatedUser(req, req.query.email);
+    if (!authUser) {
+      res.status(401).json({
+        success: false,
+        error: 'Sesión no autorizada o expirada. Por favor vuelve a iniciar sesión.',
+      });
+      return;
+    }
+
+    const { userId, email: userEmail } = authUser;
 
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT 

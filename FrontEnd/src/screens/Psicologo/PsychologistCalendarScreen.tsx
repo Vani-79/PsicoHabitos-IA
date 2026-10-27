@@ -377,7 +377,7 @@ export const PsychologistCalendarScreen: React.FC<PsychologistCalendarScreenProp
                           <Ionicons
                             name={apt.modalidad === 'online' ? 'videocam' : 'business'}
                             size={12}
-                            color={apt.modalidad === 'online' ? CALENDAR_COLORS.iconosPerfil : CALENDAR_COLORS.iconosPerfil}
+                            color={CALENDAR_COLORS.iconosPerfil}
                             style={{ marginRight: 4 }}
                           />
                           <Text

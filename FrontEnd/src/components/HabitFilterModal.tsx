@@ -51,12 +51,12 @@ interface HabitOption {
 }
 
 const HABIT_OPTIONS: HabitOption[] = [
-  { key: 'comida', label: 'Comida', icon: 'restaurant-outline', color: PATIENTS_COLORS.habitFood, bgColor: PATIENTS_COLORS.warningSurface },
-  { key: 'ejercicio', label: 'Ejercicio', icon: 'barbell-outline', color: PATIENTS_COLORS.habitExercise, bgColor: PATIENTS_COLORS.habitExerciseSurface },
-  { key: 'hidratacion', label: 'Hidratación', icon: 'water-outline', color: PATIENTS_COLORS.habitHydration, bgColor: PATIENTS_COLORS.habitHydrationSurface },
-  { key: 'sueno', label: 'Sueño', icon: 'moon-outline', color: PATIENTS_COLORS.habitSleep, bgColor: PATIENTS_COLORS.habitSleepSurface },
-  { key: 'ansiedad', label: 'Ansiedad', icon: 'pulse-outline', color: PATIENTS_COLORS.habitAnxiety, bgColor: PATIENTS_COLORS.habitAnxietySurface },
-  { key: 'estres', label: 'Estrés', icon: 'flash-outline', color: PATIENTS_COLORS.habitStress, bgColor: PATIENTS_COLORS.habitStressSurface },
+  { key: 'comida', label: 'Comida', icon: 'restaurant-outline', color: PATIENTS_COLORS.comida, bgColor: PATIENTS_COLORS.fondoComida },
+  { key: 'ejercicio', label: 'Ejercicio', icon: 'barbell-outline', color: PATIENTS_COLORS.ejercicio, bgColor: PATIENTS_COLORS.fondoEjercicio },
+  { key: 'hidratacion', label: 'Hidratación', icon: 'water-outline', color: PATIENTS_COLORS.hidratacion, bgColor: PATIENTS_COLORS.fondoHidratacion },
+  { key: 'sueno', label: 'Sueño', icon: 'moon-outline', color: PATIENTS_COLORS.sueño, bgColor: PATIENTS_COLORS.fondoSueño },
+  { key: 'ansiedad', label: 'Ansiedad', icon: 'pulse-outline', color: PATIENTS_COLORS.ansiedad, bgColor: PATIENTS_COLORS.fondoAnsiedad },
+  { key: 'estres', label: 'Estrés', icon: 'flash-outline', color: PATIENTS_COLORS.estres, bgColor: PATIENTS_COLORS.fondoEstres },
 ];
 
 const ALL_HABIT_KEYS: HabitKey[] = ['comida', 'ejercicio', 'hidratacion', 'sueno', 'ansiedad', 'estres'];

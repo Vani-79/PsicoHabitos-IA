@@ -1,170 +1,32 @@
-import React, { useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { UserRole } from '../constants/auth';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 const COLORS = {
   charcoal: '#1F2937',
-  white: '#FFFFFF',
-  green: '#0F613B',
   borderSoft: '#E5EEE8',
   background: '#F8FBF9',
-  overlay: 'rgba(0, 0, 0, 0.15)',
-  black: '#000',
-  border: '#E5E7EB',
-  gray700: '#374151',
 } as const;
 
-interface ProfileRoleHeaderProps {
+export interface ProfileRoleHeaderProps {
   title?: string;
-  currentRole: UserRole;
-  canSwitch: boolean;
-  onSwitchRole: (role: UserRole) => void;
 }
 
+/**
+ * Encabezado estático y limpio para la vista de perfil (sin menú desplegable duplicado).
+ * El cambio de rol se gestiona de forma única e intuitiva mediante la tarjeta de acceso en la pantalla.
+ */
 export const ProfileRoleHeader: React.FC<ProfileRoleHeaderProps> = ({
   title = 'Mi Perfil',
-  currentRole,
-  canSwitch,
-  onSwitchRole,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleSelectRole = (targetRole: UserRole) => {
-    setIsOpen(false);
-    if (targetRole === currentRole) return;
-
-    const targetLabel = targetRole === 'psicologo' ? 'Psicólogo' : 'Paciente';
-    Alert.alert(
-      'Cambiar de Perfil',
-      `¿Deseas cambiar al perfil de ${targetLabel}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Cambiar',
-          onPress: () => onSwitchRole(targetRole),
-        },
-      ]
-    );
-  };
-
   return (
     <View style={styles.header}>
-      {/* Título Superior con pequeña flechita */}
-      <TouchableOpacity
-        style={styles.titleContainer}
-        activeOpacity={canSwitch ? 0.7 : 1}
-        onPress={() => canSwitch && setIsOpen(!isOpen)}
-      >
-        <Text style={styles.headerTitle}>{title}</Text>
-        {canSwitch && (
-          <Ionicons
-            name={isOpen ? 'chevron-up' : 'chevron-down'}
-            size={18}
-            color={COLORS.charcoal}
-            style={styles.chevronIcon}
-          />
-        )}
-      </TouchableOpacity>
-
-      {/* Menú desplegable con pequeña flechita */}
-      {isOpen && (
-        <>
-          {/* Fondo para cerrar al tocar fuera */}
-          <TouchableWithoutFeedback onPress={() => setIsOpen(false)}>
-            <View style={styles.backdrop} />
-          </TouchableWithoutFeedback>
-
-          <View style={styles.popoverContainer}>
-            {/* Pequeña flechita que sale desde el título */}
-            <View style={styles.popoverArrow} />
-
-            <View style={styles.popoverCard}>
-              {/* Opción: Psicólogo */}
-              <TouchableOpacity
-                style={[
-                  styles.roleOption,
-                  currentRole === 'psicologo'
-                    ? styles.roleActiveGreen
-                    : styles.roleInactiveWhite,
-                ]}
-                activeOpacity={0.8}
-                onPress={() => handleSelectRole('psicologo')}
-              >
-                <View style={styles.roleOptionLeft}>
-                  <Ionicons
-                    name="medical"
-                    size={17}
-                    color={currentRole === 'psicologo' ? COLORS.white : COLORS.green}
-                    style={styles.roleIcon}
-                  />
-                  <Text
-                    style={[
-                      styles.roleText,
-                      currentRole === 'psicologo'
-                        ? styles.roleTextActive
-                        : styles.roleTextInactive,
-                    ]}
-                  >
-                    Psicólogo
-                  </Text>
-                </View>
-                {currentRole === 'psicologo' && (
-                  <Ionicons name="checkmark-circle" size={17} color={COLORS.white} />
-                )}
-              </TouchableOpacity>
-
-              {/* Opción: Paciente */}
-              <TouchableOpacity
-                style={[
-                  styles.roleOption,
-                  currentRole === 'paciente'
-                    ? styles.roleActiveGreen
-                    : styles.roleInactiveWhite,
-                ]}
-                activeOpacity={0.8}
-                onPress={() => handleSelectRole('paciente')}
-              >
-                <View style={styles.roleOptionLeft}>
-                  <Ionicons
-                    name="person"
-                    size={17}
-                    color={currentRole === 'paciente' ? COLORS.white : COLORS.green}
-                    style={styles.roleIcon}
-                  />
-                  <Text
-                    style={[
-                      styles.roleText,
-                      currentRole === 'paciente'
-                        ? styles.roleTextActive
-                        : styles.roleTextInactive,
-                    ]}
-                  >
-                    Paciente
-                  </Text>
-                </View>
-                {currentRole === 'paciente' && (
-                  <Ionicons name="checkmark-circle" size={17} color={COLORS.white} />
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </>
-      )}
+      <Text style={styles.headerTitle}>{title}</Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   header: {
-    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -173,97 +35,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderSoft,
     backgroundColor: COLORS.background,
-    zIndex: 999,
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: 8,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: COLORS.charcoal,
-  },
-  chevronIcon: {
-    marginLeft: 6,
-  },
-  backdrop: {
-    position: 'absolute',
-    top: 50,
-    left: -1000,
-    right: -1000,
-    bottom: -2000,
-    height: 4000,
-    backgroundColor: COLORS.overlay,
-    zIndex: 1000,
-  },
-  popoverContainer: {
-    position: 'absolute',
-    top: 48,
-    alignSelf: 'center',
-    alignItems: 'center',
-    zIndex: 1001,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  popoverArrow: {
-    width: 12,
-    height: 12,
-    backgroundColor: COLORS.white,
-    transform: [{ rotate: '45deg' }],
-    marginBottom: -6,
-    zIndex: 1002,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderColor: COLORS.border,
-  },
-  popoverCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 8,
-    width: 190,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    gap: 6,
-  },
-  roleOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  roleActiveGreen: {
-    backgroundColor: COLORS.green,
-  },
-  roleInactiveWhite: {
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  roleOptionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  roleIcon: {
-    marginRight: 8,
-  },
-  roleText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  roleTextActive: {
-    color: COLORS.white,
-  },
-  roleTextInactive: {
-    color: COLORS.gray700,
   },
 });

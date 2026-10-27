@@ -11,6 +11,8 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PatientBottomNav, PatientTab } from '../../components/Iconosbarrapaciente';
+import { ProfileRoleHeader } from '../../components/ProfileRoleHeader';
+import { useAuth } from '../../context/AuthContext';
 import { patientService } from '../../services/patientService';
 import { PatientProfileData } from '../../types/patient';
 import { formatToChileanDate } from '../../utils/date';
@@ -49,7 +51,7 @@ const COLORS = {
 const formatAge = (edad?: number | string, birthDateStr?: string): string => {
   if (birthDateStr) {
     const birthDate = new Date(birthDateStr);
-    if (!isNaN(birthDate.getTime())) {
+    if (!Number.isNaN(birthDate.getTime())) {
       const today = new Date();
       let calculatedAge = today.getFullYear() - birthDate.getFullYear();
       const m = today.getMonth() - birthDate.getMonth();
@@ -148,12 +150,156 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
     ]);
   };
 
+  const { user, switchRole } = useAuth();
+  const canSwitchToPsychologist =
+    Boolean(user?.hasMultipleRoles) ||
+    Boolean(profile?.hasMultipleRoles) ||
+    Boolean(user?.availableRoles?.includes('psicologo')) ||
+    Boolean(profile?.availableRoles?.includes('psicologo'));
+
   const fullName = profile
     ? [profile.nombre, profile.apellido_paterno, profile.apellido_materno].filter(Boolean).join(' ') || userName
     : userName;
 
+  const renderCardContent = () => {
+    if (loading) {
+      return <ActivityIndicator size="large" color={COLORS.roleTagBg} />;
+    }
+
+    if (profile) {
+      return (
+        <>
+          {/* Encabezado Perfil */}
+          <View style={styles.headerProfileRow}>
+            <View style={styles.avatarCircle}>
+              <Ionicons name="person" size={26} color={COLORS.avatarIcon} />
+            </View>
+            <View style={styles.headerTextWrapper}>
+              <Text style={styles.profileName}>{fullName}</Text>
+              <View style={styles.roleTag}>
+                <Text style={styles.roleTagText}>PACIENTE REGISTRADO</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Lista de Información */}
+          <View style={styles.infoSection}>
+            <InfoItem icon="person-outline" label="Nombre" value={fullName} />
+            <InfoItem
+              icon="hourglass-outline"
+              label="Edad"
+              value={formatAge(profile.edad, profile.fecha_nacimiento)}
+            />
+            <InfoItem
+              icon="calendar-outline"
+              label="Fecha de Nacimiento"
+              value={formatToChileanDate(profile.fecha_nacimiento)}
+            />
+            <InfoItem icon="mail-outline" label="Correo" value={profile.email || userEmail} />
+            <InfoItem
+              icon="medkit-outline"
+              label="Especialista Titular"
+              value={profile.especialista || 'Sin especialista asignado'}
+            />
+
+            {/* Caja de Suplencia */}
+            {profile.suplente && (
+              <View style={styles.suplenteBox}>
+                <View style={styles.suplenteBoxHeader}>
+                  <Ionicons name="shield-checkmark" size={18} color={COLORS.suplenteTitle} />
+                  <Text style={styles.suplenteBoxTitle}>Atención en Suplencia Activa</Text>
+                </View>
+                <Text style={styles.suplenteBoxDesc}>
+                  Has autorizado temporalmente a <Text style={styles.boldText}>{profile.suplente.nombre}</Text> hasta el{' '}
+                  <Text style={styles.boldText}>
+                    {profile.suplente.fecha_fin_suplencia ? formatToChileanDate(profile.suplente.fecha_fin_suplencia) : 'fecha límite'}
+                  </Text>.
+                </Text>
+                <TouchableOpacity
+                  style={styles.revokeSuplenteBtn}
+                  onPress={handleRevokeSuplencia}
+                  disabled={isRevoking}
+                  activeOpacity={0.8}
+                >
+                  {isRevoking ? (
+                    <ActivityIndicator size="small" color={COLORS.revokeText} />
+                  ) : (
+                    <>
+                      <Ionicons
+                        name="close-circle-outline"
+                        size={16}
+                        color={COLORS.revokeText}
+                        style={{ marginRight: 6 }}
+                      />
+                      <Text style={styles.revokeSuplenteBtnText}>Revocar acceso de suplencia</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {/* Acceso directo a cambio de perfil si el usuario tiene rol dual */}
+          {canSwitchToPsychologist && (
+            <TouchableOpacity
+              style={styles.switchRoleCard}
+              activeOpacity={0.8}
+              onPress={() => {
+                Alert.alert(
+                  'Cambiar de Perfil',
+                  '¿Deseas cambiar al perfil de Psicólogo?',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    {
+                      text: 'Cambiar',
+                      onPress: async () => {
+                        const res = await switchRole('psicologo');
+                        if (!res.success) {
+                          Alert.alert('Error al cambiar de perfil', res.error || 'No se pudo cambiar al perfil de psicólogo.');
+                        }
+                      },
+                    },
+                  ]
+                );
+              }}
+            >
+              <View style={styles.switchRoleIconWrapper}>
+                <Ionicons name="medical" size={18} color={COLORS.roleTagBg} />
+              </View>
+              <View style={styles.switchRoleTextWrapper}>
+                <Text style={styles.switchRoleTitle}>Portal Psicólogo</Text>
+                <Text style={styles.switchRoleSubtitle}>Cambiar a vista de especialista</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+            </TouchableOpacity>
+          )}
+
+          {/* Botón Cerrar Sesión */}
+          <TouchableOpacity
+            style={styles.logoutButton}
+            activeOpacity={0.8}
+            onPress={handleLogoutPress}
+          >
+            <Ionicons
+              name="log-out-outline"
+              size={20}
+              color={COLORS.textWhite}
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+          </TouchableOpacity>
+        </>
+      );
+    }
+
+    return <Text style={styles.emptyNote}>No se encontraron registros en la base de datos.</Text>;
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Encabezado limpio 'Mi Perfil' */}
+      <ProfileRoleHeader title="Mi Perfil" />
+
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -161,98 +307,7 @@ export const PatientProfileScreen: React.FC<PatientProfileScreenProps> = ({
         ]}
       >
         <View style={styles.cardBase}>
-          {loading ? (
-            <ActivityIndicator size="large" color={COLORS.roleTagBg} />
-          ) : profile ? (
-            <>
-              {/* Encabezado Perfil */}
-              <View style={styles.headerProfileRow}>
-                <View style={styles.avatarCircle}>
-                  <Ionicons name="person" size={26} color={COLORS.avatarIcon} />
-                </View>
-                <View style={styles.headerTextWrapper}>
-                  <Text style={styles.profileName}>{fullName}</Text>
-                  <View style={styles.roleTag}>
-                    <Text style={styles.roleTagText}>PACIENTE REGISTRADO</Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Lista de Información */}
-              <View style={styles.infoSection}>
-                <InfoItem icon="person-outline" label="Nombre" value={fullName} />
-                <InfoItem
-                  icon="hourglass-outline"
-                  label="Edad"
-                  value={formatAge(profile.edad, profile.fecha_nacimiento)}
-                />
-                <InfoItem
-                  icon="calendar-outline"
-                  label="Fecha de Nacimiento"
-                  value={formatToChileanDate(profile.fecha_nacimiento)}
-                />
-                <InfoItem icon="mail-outline" label="Correo" value={profile.email || userEmail} />
-                <InfoItem
-                  icon="medkit-outline"
-                  label="Especialista Titular"
-                  value={profile.especialista || 'Sin especialista asignado'}
-                />
-
-                {/* Caja de Suplencia */}
-                {profile.suplente && (
-                  <View style={styles.suplenteBox}>
-                    <View style={styles.suplenteBoxHeader}>
-                      <Ionicons name="shield-checkmark" size={18} color={COLORS.suplenteTitle} />
-                      <Text style={styles.suplenteBoxTitle}>Atención en Suplencia Activa</Text>
-                    </View>
-                    <Text style={styles.suplenteBoxDesc}>
-                      Has autorizado temporalmente a <Text style={styles.boldText}>{profile.suplente.nombre}</Text> hasta el{' '}
-                      <Text style={styles.boldText}>
-                        {profile.suplente.fecha_fin_suplencia ? formatToChileanDate(profile.suplente.fecha_fin_suplencia) : 'fecha límite'}
-                      </Text>.
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.revokeSuplenteBtn}
-                      onPress={handleRevokeSuplencia}
-                      disabled={isRevoking}
-                      activeOpacity={0.8}
-                    >
-                      {isRevoking ? (
-                        <ActivityIndicator size="small" color={COLORS.revokeText} />
-                      ) : (
-                        <>
-                          <Ionicons
-                            name="close-circle-outline"
-                            size={16}
-                            color={COLORS.revokeText}
-                            style={{ marginRight: 6 }}
-                          />
-                          <Text style={styles.revokeSuplenteBtnText}>Revocar acceso de suplencia</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-
-              {/* Botón Cerrar Sesión */}
-              <TouchableOpacity
-                style={styles.logoutButton}
-                activeOpacity={0.8}
-                onPress={handleLogoutPress}
-              >
-                <Ionicons
-                  name="log-out-outline"
-                  size={20}
-                  color={COLORS.textWhite}
-                  style={{ marginRight: 8 }}
-                />
-                <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <Text style={styles.emptyNote}>No se encontraron registros en la base de datos.</Text>
-          )}
+          {renderCardContent()}
         </View>
       </ScrollView>
 
@@ -382,6 +437,39 @@ const styles = StyleSheet.create({
   },
 
   // Acciones de cuenta
+  switchRoleCard: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.infoIconBg,
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  switchRoleIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: COLORS.cardBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  switchRoleTextWrapper: {
+    flex: 1,
+  },
+  switchRoleTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textDark,
+  },
+  switchRoleSubtitle: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
   logoutButton: {
     width: '50%',
     backgroundColor: COLORS.logoutBg,

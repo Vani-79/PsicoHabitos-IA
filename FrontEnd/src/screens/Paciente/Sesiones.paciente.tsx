@@ -64,7 +64,6 @@ const ITEMS_PER_PAGE = 3;
 
 interface PatientCalendarScreenProps {
   onNavigateTab: (tab: PatientTab) => void;
-  userName?: string;
 }
 
 const renderSpecialistBadge = (tipo?: string) => {
@@ -280,34 +279,37 @@ export const PatientCalendarScreen: React.FC<PatientCalendarScreenProps> = ({
                   {currentHistorial.map((item) => (
                     <View key={item.id} style={[styles.historyCard, getCardAccentStyle(item.tipoEspecialista)]}>
 
-                      {/* ENCABEZADO: FECHA + ESTADO */}
+                      {/* ENCABEZADO: FECHA + ESTADO + TIPO ESPECIALISTA */}
                       <View style={styles.historyCardHeader}>
-                        <View>
+                        <View style={styles.historyDateGroup}>
                           <Text style={styles.historyDateText}>{formatToChileanDate(item.fecha)}</Text>
                           <Text style={styles.historyTimeText}>
                             {item.hora}{item.horaFin ? ` - ${item.horaFin}` : ''} hrs
                           </Text>
                         </View>
 
-                        {/* Estado claro y sin saturar */}
-                        {item.estado === 'Cancelada' ? (
-                          <View style={[styles.statusBadgeBase, styles.statusBadgeCancelled]}>
-                            <Text style={[styles.statusBadgeTextBase, styles.statusBadgeTextCancelled]}>Cancelada</Text>
-                          </View>
-                        ) : (
-                          <View style={[styles.statusBadgeBase, styles.statusBadgeCompleted]}>
-                            <Text style={[styles.statusBadgeTextBase, styles.statusBadgeTextCompleted]}>Completada</Text>
-                          </View>
-                        )}
+                        {/* Badges del encabezado: Estado y Rol Especialista */}
+                        <View style={styles.historyHeaderBadges}>
+                          {item.estado === 'Cancelada' ? (
+                            <View style={[styles.statusBadgeBase, styles.statusBadgeCancelled]}>
+                              <Text style={[styles.statusBadgeTextBase, styles.statusBadgeTextCancelled]}>Cancelada</Text>
+                            </View>
+                          ) : (
+                            <View style={[styles.statusBadgeBase, styles.statusBadgeCompleted]}>
+                              <Text style={[styles.statusBadgeTextBase, styles.statusBadgeTextCompleted]}>Completada</Text>
+                            </View>
+                          )}
+                          {renderSpecialistBadge(item.tipoEspecialista)}
+                        </View>
                       </View>
 
-                      {/* CUERPO: ESPECIALISTA Y TIPO */}
+                      {/* CUERPO: ESPECIALISTA */}
                       {item.doctorNombre ? (
                         <View style={styles.historyDoctorRow}>
+                          <Ionicons name="person-outline" size={13} color={COLORS.textSecondary} style={{ marginRight: 4 }} />
                           <Text style={styles.historyDoctorText}>
                             Atendió: <Text style={styles.doctorNameBold}>{item.doctorNombre}</Text>
                           </Text>
-                          {renderSpecialistBadge(item.tipoEspecialista)}
                         </View>
                       ) : null}
 
@@ -488,6 +490,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderGray,
   },
+  historyDateGroup: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  historyHeaderBadges: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    flexShrink: 0,
+    gap: 4,
+  },
   historyDateText: {
     fontSize: 14,
     fontWeight: '700',
@@ -501,7 +513,6 @@ const styles = StyleSheet.create({
   },
   historyDoctorRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginVertical: 4,
   },

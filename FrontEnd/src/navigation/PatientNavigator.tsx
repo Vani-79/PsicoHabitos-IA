@@ -61,7 +61,6 @@ export const PatientNavigator: React.FC = () => {
       <Stack.Screen name="PatientCalendar">
         {({ navigation }) => (
           <PatientCalendarScreen
-            userName={userName}
             onNavigateTab={getTabHandler(navigation)}
           />
         )}
@@ -86,7 +85,6 @@ export const PatientNavigator: React.FC = () => {
           <HabitDetailScreen
             habitKey={route.params.habitKey}
             habitTitle={route.params.habitTitle}
-            onBack={() => navigation.goBack()}
             onNavigateTab={getTabHandler(navigation)}
           />
         )}

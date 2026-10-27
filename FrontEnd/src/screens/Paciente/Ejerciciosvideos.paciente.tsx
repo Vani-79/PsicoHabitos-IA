@@ -77,7 +77,6 @@ const HABIT_RESOURCES_BY_SECTION: Record<HabitSection, HabitResource[]> = {
 interface HabitDetailScreenProps {
   habitKey?: HabitSection;
   habitTitle?: string;
-  onBack?: () => void;
   onNavigateTab: (tab: PatientTab) => void;
 }
 

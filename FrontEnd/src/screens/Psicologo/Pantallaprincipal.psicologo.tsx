@@ -225,11 +225,39 @@ const TodayAgendaRow: React.FC<TodayAgendaRowProps> = ({
   isSubscriptionActive,
   onPress,
 }) => {
-  const hora = patient.hora_cita;
-  const avatar = getAvatarColor(patient);
   const isCancelled = patient.estado_cita === 'cancelada';
   const isSuplente = patient.rol_cita === 'suplente' || patient.tipo_relacion === 'suplente';
   const isEnSuplencia = patient.tipo_relacion === 'titular' && Boolean(patient.suplente_activo);
+
+  const fullName = [patient.nombre, patient.apellido_paterno, patient.apellido_materno]
+    .filter(Boolean)
+    .join(' ');
+
+  const formatTimeRange = () => {
+    let start = '09:00';
+    if (patient.hora_cita) {
+      start = patient.hora_cita.slice(0, 5);
+    } else if (patient.hora_primera_sesion) {
+      start = patient.hora_primera_sesion.slice(0, 5);
+    }
+
+    if (patient.hora_fin_cita) {
+      return `${start} - ${patient.hora_fin_cita.slice(0, 5)} hrs`;
+    }
+
+    const durMin = patient.duracion_primera_sesion || 60;
+    const [h, m] = start.split(':').map(Number);
+    if (!Number.isNaN(h) && !Number.isNaN(m)) {
+      const totalMin = h * 60 + m + durMin;
+      const endH = String(Math.floor(totalMin / 60) % 24).padStart(2, '0');
+      const endM = String(totalMin % 60).padStart(2, '0');
+      return `${start} - ${endH}:${endM} hrs`;
+    }
+    return `${start} hrs`;
+  };
+
+  const modalidad = (patient.modalidad_cita || patient.modalidad_primera_sesion || 'presencial').toLowerCase();
+  const isOnline = modalidad === 'online';
 
   return (
     <TouchableOpacity
@@ -241,18 +269,16 @@ const TodayAgendaRow: React.FC<TodayAgendaRowProps> = ({
       onPress={onPress}
       activeOpacity={isSubscriptionActive ? 0.7 : 0.6}
     >
-      <Text style={styles.agendaTime}>
-        {hora ? hora.slice(0, 5) : 'Hoy'}
-      </Text>
-
-      <View style={[styles.agendaAvatar, { backgroundColor: avatar.bg }]}>
-        <Text style={[styles.agendaAvatarText, { color: avatar.fg }]}>
+      {/* Icono con las iniciales del paciente: Fondo verde, letras negras */}
+      <View style={styles.agendaAvatar}>
+        <Text style={styles.agendaAvatarText}>
           {getInitials(patient)}
         </Text>
       </View>
 
+      {/* Información del paciente fuera del icono */}
       <View style={styles.agendaInfo}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <View style={styles.agendaNameRow}>
           <Text
             style={[
               styles.agendaName,
@@ -260,7 +286,7 @@ const TodayAgendaRow: React.FC<TodayAgendaRowProps> = ({
             ]}
             numberOfLines={1}
           >
-            {patient.nombre} {patient.apellido_paterno} {patient.apellido_materno || ''}
+            {fullName || 'Paciente'}
           </Text>
           {isSuplente && (
             <View style={[styles.suplenteBadge, { backgroundColor: HOME_COLORS.substituteBadge, borderColor: HOME_COLORS.borderInfo }]}>
@@ -278,18 +304,34 @@ const TodayAgendaRow: React.FC<TodayAgendaRowProps> = ({
             </View>
           )}
         </View>
-        <Text style={styles.agendaMeta} numberOfLines={1}>
-          {patient.edad} años · {patient.genero}
-          {isCancelled ? ' · Cita cancelada' : ''}
-        </Text>
+
+        {/* Fila con hora (inicio y fin) y modalidad */}
+        <View style={styles.agendaMetaRow}>
+          <View style={styles.agendaTimeGroup}>
+            <Ionicons name="time-outline" size={13} color={HOME_COLORS.iconosPerfil} style={{ marginRight: 4 }} />
+            <Text style={styles.agendaTimeText}>{formatTimeRange()}</Text>
+          </View>
+
+          <Text style={styles.agendaMetaSeparator}>·</Text>
+
+          <View style={styles.agendaModalityGroup}>
+            <Ionicons
+              name={isOnline ? 'videocam-outline' : 'business-outline'}
+              size={13}
+              color={isOnline ? '#2563EB' : '#D97706'}
+              style={{ marginRight: 4 }}
+            />
+            <Text style={[styles.agendaModalityText, { color: isOnline ? '#2563EB' : '#D97706' }]}>
+              {isOnline ? 'Online' : 'Presencial'}
+            </Text>
+          </View>
+        </View>
       </View>
 
       <Ionicons
         name={isSubscriptionActive ? 'chevron-forward' : 'lock-closed'}
-        size={16}
-        color={HOME_COLORS.iconosPerfil
-
-        }
+        size={18}
+        color={HOME_COLORS.iconosPerfil}
       />
     </TouchableOpacity>
   );
@@ -339,7 +381,7 @@ const PsychologistHomeTab: React.FC<PsychologistHomeTabProps> = ({
             <Ionicons
               name={isSubscriptionActive ? 'add' : 'lock-closed'}
               size={18}
-              color={isSubscriptionActive ? HOME_COLORS.iconosPerfil : HOME_COLORS.iconosPerfil}
+              color={isSubscriptionActive ? HOME_COLORS.iconosPerfil : HOME_COLORS.textoSecundario}
             />
           </View>
 
@@ -594,118 +636,118 @@ export const PsychologistDashboardScreen: React.FC<
   onRegisterPatient,
   onSelectPatient,
 }) => {
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<PsychologistTab>('inicio');
-  const [searchTerm, setSearchTerm] = useState('');
-  const todayPatients = useTodayPatients(user?.email, patients);
+    const { user } = useAuth();
+    const [activeTab, setActiveTab] = useState<PsychologistTab>('inicio');
+    const [searchTerm, setSearchTerm] = useState('');
+    const todayPatients = useTodayPatients(user?.email, patients);
 
-  // Control unificado de suscripción:
-  // Si la suscripción no está activa o ya venció, se bloquean todas las acciones clínicas
-  // permitiendo exclusivamente navegar entre pestañas, leer el aviso y cerrar sesión.
-  const isSubscriptionActive = user?.subscription?.isActive ?? true;
+    // Control unificado de suscripción:
+    // Si la suscripción no está activa o ya venció, se bloquean todas las acciones clínicas
+    // permitiendo exclusivamente navegar entre pestañas, leer el aviso y cerrar sesión.
+    const isSubscriptionActive = user?.subscription?.isActive ?? true;
 
-  const showSubscriptionAlert = () => {
-    Alert.alert(
-      'Suscripción Finalizada',
-      'Suscripción Finalizada comuníquese con el administrador para renovarla',
-      [{ text: 'Entendido', style: 'default' }]
-    );
-  };
+    const showSubscriptionAlert = () => {
+      Alert.alert(
+        'Suscripción Finalizada',
+        'Suscripción Finalizada comuníquese con el administrador para renovarla',
+        [{ text: 'Entendido', style: 'default' }]
+      );
+    };
 
-  const handleRegisterPatientPress = () => {
-    if (!isSubscriptionActive) {
-      showSubscriptionAlert();
-      return;
+    const handleRegisterPatientPress = () => {
+      if (!isSubscriptionActive) {
+        showSubscriptionAlert();
+        return;
+      }
+      onRegisterPatient();
+    };
+
+    const handlePatientPress = (patient: MySqlPatientRecord) => {
+      if (!isSubscriptionActive) {
+        showSubscriptionAlert();
+        return;
+      }
+      onSelectPatient(patient);
+    };
+
+    if (activeTab === 'perfil') {
+      return (
+        <PsychologistProfileScreen
+          doctorName={doctorName}
+          onNavigateTab={setActiveTab}
+          onLogout={onLogout}
+        />
+      );
     }
-    onRegisterPatient();
-  };
 
-  const handlePatientPress = (patient: MySqlPatientRecord) => {
-    if (!isSubscriptionActive) {
-      showSubscriptionAlert();
-      return;
+    if (activeTab === 'calendario') {
+      return (
+        <PsychologistCalendarScreen
+          doctorName={doctorName}
+          onNavigateTab={setActiveTab}
+          onSelectPatientById={(patientId) => {
+            const found = patients.find((p) => Number(p.id) === Number(patientId));
+            if (found) {
+              onSelectPatient(found);
+            }
+          }}
+        />
+      );
     }
-    onSelectPatient(patient);
-  };
 
-  if (activeTab === 'perfil') {
+    const todayEmails = new Set(todayPatients.map((p) => p.email));
+
     return (
-      <PsychologistProfileScreen
-        doctorName={doctorName}
-        onNavigateTab={setActiveTab}
-        onLogout={onLogout}
-      />
-    );
-  }
-
-  if (activeTab === 'calendario') {
-    return (
-      <PsychologistCalendarScreen
-        doctorName={doctorName}
-        onNavigateTab={setActiveTab}
-        onSelectPatientById={(patientId) => {
-          const found = patients.find((p) => Number(p.id) === Number(patientId));
-          if (found) {
-            onSelectPatient(found);
-          }
-        }}
-      />
-    );
-  }
-
-  const todayEmails = new Set(todayPatients.map((p) => p.email));
-
-  return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        { backgroundColor: activeTab === 'inicio' ? HOME_COLORS.fondoBase : PATIENTS_COLORS.canvasSubtle },
-      ]}
-    >
-      {/* Banner de Suscripción Inactiva / Expirada */}
-      {!isSubscriptionActive && <SubscriptionBanner isPatientsTab={activeTab === 'pacientes'} />}
-
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          activeTab === 'pacientes' && styles.scrollContentPatients,
+      <SafeAreaView
+        style={[
+          styles.container,
+          { backgroundColor: activeTab === 'inicio' ? HOME_COLORS.fondoBase : PATIENTS_COLORS.canvasSubtle },
         ]}
-        showsVerticalScrollIndicator={false}
       >
-        {/* PESTAÑA 1: INICIO */}
-        {activeTab === 'inicio' && (
-          <PsychologistHomeTab
-            doctorName={doctorName}
-            isSubscriptionActive={isSubscriptionActive}
-            todayPatients={todayPatients}
-            onRegisterPatient={handleRegisterPatientPress}
-            onSelectPatient={handlePatientPress}
-            onOpenCalendar={() => setActiveTab('calendario')}
-          />
-        )}
+        {/* Banner de Suscripción Inactiva / Expirada */}
+        {!isSubscriptionActive && <SubscriptionBanner isPatientsTab={activeTab === 'pacientes'} />}
 
-        {/* PESTAÑA 2: PACIENTES */}
-        {activeTab === 'pacientes' && (
-          <PatientDirectorySection
-            patients={patients}
-            todayEmails={todayEmails}
-            searchTerm={searchTerm}
-            onChangeSearchTerm={setSearchTerm}
-            isSubscriptionActive={isSubscriptionActive}
-            onSelectPatient={handlePatientPress}
-            onShowSubscriptionAlert={showSubscriptionAlert}
-          />
-        )}
-      </ScrollView>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            activeTab === 'pacientes' && styles.scrollContentPatients,
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* PESTAÑA 1: INICIO */}
+          {activeTab === 'inicio' && (
+            <PsychologistHomeTab
+              doctorName={doctorName}
+              isSubscriptionActive={isSubscriptionActive}
+              todayPatients={todayPatients}
+              onRegisterPatient={handleRegisterPatientPress}
+              onSelectPatient={handlePatientPress}
+              onOpenCalendar={() => setActiveTab('calendario')}
+            />
+          )}
 
-      {/* Navegación inferior con pestañas (siempre disponible) */}
-      <PsychologistBottomNav
-        activeTab={activeTab}
-        onChangeTab={setActiveTab}
-      />
-    </SafeAreaView>
-  );
-};
+          {/* PESTAÑA 2: PACIENTES */}
+          {activeTab === 'pacientes' && (
+            <PatientDirectorySection
+              patients={patients}
+              todayEmails={todayEmails}
+              searchTerm={searchTerm}
+              onChangeSearchTerm={setSearchTerm}
+              isSubscriptionActive={isSubscriptionActive}
+              onSelectPatient={handlePatientPress}
+              onShowSubscriptionAlert={showSubscriptionAlert}
+            />
+          )}
+        </ScrollView>
+
+        {/* Navegación inferior con pestañas (siempre disponible) */}
+        <PsychologistBottomNav
+          activeTab={activeTab}
+          onChangeTab={setActiveTab}
+        />
+      </SafeAreaView>
+    );
+  };
 
 
 
@@ -847,24 +889,22 @@ const styles = StyleSheet.create({
     backgroundColor: HOME_COLORS.fondoBase,
     borderWidth: 1,
     borderColor: HOME_COLORS.bordeIconos,
-    borderRadius: 12,
-    padding: 20,
-    marginTop: 40,
-    paddingVertical: 130,
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 20,
   },
 
   agendaHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: -110,
-    marginBottom: 0,
+    marginBottom: 14,
     paddingHorizontal: 2,
   },
 
   agendaTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
     color: HOME_COLORS.textoPrincipal,
   },
 
@@ -876,66 +916,96 @@ const styles = StyleSheet.create({
 
   agendaEmpty: {
     alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 12,
+    paddingVertical: 28,
+    paddingHorizontal: 16,
   },
 
   agendaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     backgroundColor: HOME_COLORS.fondoBase,
     borderWidth: 1,
     borderColor: HOME_COLORS.bordeIconos,
-    borderRadius: 12,
+    borderRadius: 14,
   },
 
   agendaRowSpacing: {
-    marginBottom: 8,
+    marginBottom: 10,
   },
 
   agendaRowDisabled: {
     opacity: 0.6,
   },
 
-  agendaTime: {
-    width: 48,
-    fontSize: 14,
-    fontWeight: '600',
-    color: HOME_COLORS.iconosPerfil,
-  },
-
   agendaAvatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#bbf7d0',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 12,
   },
 
   agendaAvatarText: {
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: '700',
-    color: HOME_COLORS.iconosPerfil,
+    color: '#111827',
   },
 
   agendaInfo: {
     flex: 1,
+    justifyContent: 'center',
     marginRight: 8,
+  },
+
+  agendaNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+    marginBottom: 4,
   },
 
   agendaName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
     color: HOME_COLORS.textoPrincipal,
   },
 
-  agendaMeta: {
-    fontSize: 13,
+  agendaMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+
+  agendaTimeGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  agendaTimeText: {
+    fontSize: 12.5,
+    fontWeight: '600',
     color: HOME_COLORS.textoSecundario,
-    marginTop: 2,
+  },
+
+  agendaMetaSeparator: {
+    fontSize: 12,
+    color: HOME_COLORS.textoSecundario,
+  },
+
+  agendaModalityGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  agendaModalityText: {
+    fontSize: 12.5,
+    fontWeight: '600',
   },
 
   /* =========================
@@ -954,7 +1024,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: PATIENTS_COLORS.textoPrincipal,
-    letterSpacing: 0.6 
+    letterSpacing: 0.6
   },
 
   directoryCount: {

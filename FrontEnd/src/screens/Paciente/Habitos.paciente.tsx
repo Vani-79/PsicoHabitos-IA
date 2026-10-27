@@ -478,6 +478,16 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
     return renderRatingSection();
   };
 
+  const getSectionSubText = () => {
+    if (isLockedToday) {
+      return 'Registro completado por hoy';
+    }
+    if (registeredCount < 6) {
+      return `Te faltan ${6 - registeredCount} por completar`;
+    }
+    return 'Todos los hábitos evaluados';
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -516,11 +526,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
               <View>
                 <Text style={styles.sectionTitle}>Hábitos diarios</Text>
                 <Text style={styles.sectionSubText}>
-                  {isLockedToday
-                    ? 'Registro completado por hoy'
-                    : !isLockedToday && registeredCount < 6
-                    ? `Te faltan ${6 - registeredCount} por completar`
-                    : 'Todos los hábitos evaluados'}
+                  {getSectionSubText()}
                 </Text>
               </View>
             </View>

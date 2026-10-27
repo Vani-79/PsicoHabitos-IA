@@ -257,86 +257,89 @@ const SessionItemCard: React.FC<SessionItemCardProps> = ({ session, onEdit }) =>
 
   return (
     <View style={[styles.sessionCard, isCancelada && styles.sessionCardCancelled]}>
-      <View style={{ flex: 1 }}>
+      {/* Fila superior: Fecha, Hora y Modalidad (con flex: 1 para salto de línea seguro) + Estado a la derecha */}
+      <View style={styles.sessionCardHeaderRow}>
         <Text style={[styles.sessionDate, isCancelada && styles.sessionDateCancelled]}>
           {formatToChileanDate(session.fecha)} · {session.hora}{' '}
           {session.horaFin ? `- ${session.horaFin}` : ''} ·{' '}
           {session.modalidad === 'presencial' ? 'Presencial' : 'Online'}
         </Text>
 
-        {session.doctorNombre && (
-          <View style={styles.doctorBadgeRow}>
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={12}
-              color={PATIENTS_COLORS.textoSecundario}
-              style={{ marginRight: 4 }}
-            />
-            <Text style={styles.doctorBadgeText}>
-              {session.doctorNombre}
-              {doctorSuffix}
-            </Text>
-          </View>
-        )}
-
-        {session.observaciones ? (
-          <Text style={[styles.sessionMotivo, isCancelada && styles.sessionMotivoCancelled]}>
-            {session.observaciones}
-          </Text>
-        ) : (
-          <Text style={[styles.sessionMotivo, { fontStyle: 'italic', color: PATIENTS_COLORS.textoSecundario }]}>
-            Sin observaciones registradas
-          </Text>
-        )}
-      </View>
-
-      <View style={styles.sessionCardRightCol}>
-        <View
-          style={[
-            styles.statusBadge,
-            isCompletada && styles.statusBadgeCompleted,
-            isCancelada && styles.statusBadgeCancelled,
-          ]}
-        >
-          <Text
+        <View style={styles.sessionCardRightCol}>
+          <View
             style={[
-              styles.statusBadgeText,
-              isCompletada && styles.statusBadgeTextCompleted,
-              isCancelada && styles.statusBadgeTextCancelled,
+              styles.statusBadge,
+              isCompletada && styles.statusBadgeCompleted,
+              isCancelada && styles.statusBadgeCancelled,
             ]}
           >
-            {statusLabel}
+            <Text
+              style={[
+                styles.statusBadgeText,
+                isCompletada && styles.statusBadgeTextCompleted,
+                isCancelada && styles.statusBadgeTextCancelled,
+              ]}
+            >
+              {statusLabel}
+            </Text>
+          </View>
+
+          {isProgramada && (
+            session.esPropia !== false ? (
+              <TouchableOpacity
+                style={styles.manageButton}
+                onPress={() => onEdit(session)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="create-outline"
+                  size={13}
+                  color={PATIENTS_COLORS.iconosPerfil}
+                  style={{ marginRight: 3 }}
+                />
+                <Text style={styles.manageButtonText}>Modificar</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.readOnlyBadge}>
+                <Ionicons
+                  name="lock-closed"
+                  size={11}
+                  color={PATIENTS_COLORS.textoSecundario}
+                  style={{ marginRight: 3 }}
+                />
+                <Text style={styles.readOnlyBadgeText}>Solo lectura</Text>
+              </View>
+            )
+          )}
+        </View>
+      </View>
+
+      {/* Fila del especialista: Ancho completo sin colisiones */}
+      {session.doctorNombre && (
+        <View style={styles.doctorBadgeRow}>
+          <Ionicons
+            name="shield-checkmark-outline"
+            size={12}
+            color={PATIENTS_COLORS.textoSecundario}
+            style={{ marginRight: 4 }}
+          />
+          <Text style={styles.doctorBadgeText}>
+            {session.doctorNombre}
+            {doctorSuffix}
           </Text>
         </View>
+      )}
 
-        {isProgramada && (
-          session.esPropia !== false ? (
-            <TouchableOpacity
-              style={styles.manageButton}
-              onPress={() => onEdit(session)}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="create-outline"
-                size={13}
-                color={PATIENTS_COLORS.iconosPerfil}
-                style={{ marginRight: 3 }}
-              />
-              <Text style={styles.manageButtonText}>Modificar</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.readOnlyBadge}>
-              <Ionicons
-                name="lock-closed"
-                size={11}
-                color={PATIENTS_COLORS.textoSecundario}
-                style={{ marginRight: 3 }}
-              />
-              <Text style={styles.readOnlyBadgeText}>Solo lectura</Text>
-            </View>
-          )
-        )}
-      </View>
+      {/* Observaciones: Ancho completo */}
+      {session.observaciones ? (
+        <Text style={[styles.sessionMotivo, isCancelada && styles.sessionMotivoCancelled]}>
+          {session.observaciones}
+        </Text>
+      ) : (
+        <Text style={[styles.sessionMotivo, { fontStyle: 'italic', color: PATIENTS_COLORS.textoSecundario }]}>
+          Sin observaciones registradas
+        </Text>
+      )}
     </View>
   );
 };
@@ -1631,16 +1634,22 @@ const styles = StyleSheet.create({
     borderColor: PATIENTS_COLORS.bordeHistorial,
     padding: 14,
     marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
   
+  sessionCardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 6,
+  },
+
   sessionDate: { 
+    flex: 1,
     fontSize: 13, 
     fontWeight: '600', 
-    color: PATIENTS_COLORS.textoHora
-
+    color: PATIENTS_COLORS.textoHora,
+    lineHeight: 18,
   },
 
   sessionMotivo: { 
@@ -1799,8 +1808,9 @@ const styles = StyleSheet.create({
 
   sessionCardRightCol: {
     alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: 8,
+    justifyContent: 'flex-start',
+    flexShrink: 0,
+    gap: 6,
   },
 
   manageButton: {
@@ -1912,6 +1922,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   doctorBadgeText: {
+    flex: 1,
     fontSize: 11,
     color: PATIENTS_COLORS.textoSecundario,
     fontWeight: '600',

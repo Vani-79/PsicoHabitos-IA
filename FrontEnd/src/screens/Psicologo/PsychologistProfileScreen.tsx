@@ -33,7 +33,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
     const fetchProfile = async () => {
       setLoading(true);
       try {
-        const data = await authService.getPsychologistProfile();
+        const data = await authService.getPsychologistProfile(user?.email);
         if (isMounted && data) {
           setProfile(data);
         }
@@ -53,7 +53,8 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
     };
   }, []);
 
-  const fullName = profile?.nombre || user?.name || doctorName;
+  const rawFullName = profile?.nombre || user?.name || doctorName;
+  const cleanFullName = rawFullName.replace(/^Ps\.\s*/i, '').trim();
   const emailDisplay = profile?.email || user?.email || 'No registrado';
 
   const canSwitchToPatient =
@@ -115,7 +116,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
 
       //NOMBRE DE ESPECIALISTA
       <View style={styles.profileCard}>      
-        <Text style={styles.profileName}>Ps. {fullName}</Text>
+        <Text style={styles.profileName}>Ps. {cleanFullName}</Text>
         <View style={styles.roleTag}>
           <Text style={styles.roleTagText}>ESPECIALISTA REGISTRADO</Text>
         </View>
@@ -129,7 +130,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
             </View>
             <View style={styles.infoTextWrapper}>
               <Text style={styles.infoLabel}>Nombre completo</Text>
-              <Text style={styles.infoValue}>{fullName}</Text>
+              <Text style={styles.infoValue}>{cleanFullName}</Text>
             </View>
           </View>
 
@@ -183,7 +184,7 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
               <Ionicons
                 name={isActivo ? 'shield-checkmark-outline' : 'alert-circle-outline'}
                 size={18}
-                color={isActivo ? PROFILE_COLORS.iconosPerfil : PROFILE_COLORS.iconosPerfil}
+                color={PROFILE_COLORS.iconosPerfil}
               />
             </View>
             <View style={styles.infoTextWrapper}>
@@ -201,6 +202,41 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
             </View>
           </View>
         </View>
+
+        {/* Acceso directo a cambio de perfil si el usuario tiene rol dual */}
+        {canSwitchToPatient && (
+          <TouchableOpacity
+            style={styles.switchRoleCard}
+            activeOpacity={0.8}
+            onPress={() => {
+              Alert.alert(
+                'Cambiar de Perfil',
+                '¿Deseas cambiar al perfil de Paciente?',
+                [
+                  { text: 'Cancelar', style: 'cancel' },
+                  {
+                    text: 'Cambiar',
+                    onPress: async () => {
+                      const res = await switchRole('paciente');
+                      if (!res.success) {
+                        Alert.alert('Error al cambiar de perfil', res.error || 'No se pudo cambiar al perfil de paciente.');
+                      }
+                    },
+                  },
+                ]
+              );
+            }}
+          >
+            <View style={styles.switchRoleIconWrapper}>
+              <Ionicons name="person" size={18} color={PROFILE_COLORS.iconosPerfil} />
+            </View>
+            <View style={styles.switchRoleTextWrapper}>
+              <Text style={styles.switchRoleTitle}>Portal Paciente</Text>
+              <Text style={styles.switchRoleSubtitle}>Cambiar a vista de paciente</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={PROFILE_COLORS.textoSecundario} />
+          </TouchableOpacity>
+        )}
 
         {/* Botón rojo de Cerrar Sesión */}
         <TouchableOpacity
@@ -220,18 +256,8 @@ export const PsychologistProfileScreen: React.FC<PsychologistProfileScreenProps>
   //PENDIENTE DE VER
   return (
     <SafeAreaView style={styles.container}>
-      {/* Encabezado con selector de rol desplegable desde 'Mi Perfil' */}
-      <ProfileRoleHeader
-        title="Mi Perfil"
-        currentRole="psicologo"
-        canSwitch={canSwitchToPatient}
-        onSwitchRole={async (targetRole) => {
-          const success = await switchRole(targetRole);
-          if (!success) {
-            Alert.alert('Error', 'No se pudo cambiar al perfil de paciente.');
-          }
-        }}
-      />
+      {/* Encabezado limpio 'Mi Perfil' */}
+      <ProfileRoleHeader title="Mi Perfil" />
 
       <ScrollView
         contentContainerStyle={[
@@ -393,5 +419,39 @@ const styles = StyleSheet.create({
     color: PROFILE_COLORS.textoBlanco,
     fontSize: 13,
     fontWeight: '600',
+  },
+
+  switchRoleCard: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: PROFILE_COLORS.fondoiconos,
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 18,
+    borderWidth: 1,
+    borderColor: PROFILE_COLORS.bordeTarjeta,
+  },
+  switchRoleIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: PROFILE_COLORS.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  switchRoleTextWrapper: {
+    flex: 1,
+  },
+  switchRoleTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: PROFILE_COLORS.textoPrincipal,
+  },
+  switchRoleSubtitle: {
+    fontSize: 12,
+    color: PROFILE_COLORS.textoSecundario,
+    marginTop: 2,
   },
 });

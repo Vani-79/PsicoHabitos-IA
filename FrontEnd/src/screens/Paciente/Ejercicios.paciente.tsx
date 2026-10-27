@@ -214,17 +214,17 @@ export const PatientExercisesScreen: React.FC<PatientExercisesScreenProps> = ({
         {/* Contenedor de Áreas para trabajar */}
         <View style={styles.gridContainer}>
           <View style={styles.sectionHeader}>
-            <View style={styles.titleGroup}>
-              <View style={styles.iconBadge}>
-                <PlantIcon size={18} color={COLORS.textDark} />
-              </View>
-              <View>
-                <Text style={styles.sectionTitle}>Áreas para trabajar</Text>
-                <Text style={styles.sectionSubText}>Selecciona una opción para comenzar</Text>
-              </View>
+            <View style={styles.iconBadge}>
+              <PlantIcon size={18} color={COLORS.textDark} />
             </View>
-            <View style={styles.countBadge}>
-              <Text style={styles.countText}>{HABIT_CARDS.length} áreas</Text>
+            <View style={styles.headerTextGroup}>
+              <View style={styles.titleRow}>
+                <Text style={styles.sectionTitle}>Áreas para trabajar</Text>
+                <View style={styles.countBadge}>
+                  <Text style={styles.countText}>{HABIT_CARDS.length} áreas</Text>
+                </View>
+              </View>
+              <Text style={styles.sectionSubText}>Selecciona una opción para comenzar</Text>
             </View>
           </View>
 
@@ -284,13 +284,15 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
   },
-  titleGroup: {
+  headerTextGroup: {
+    flex: 1,
+  },
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    flex: 1,
+    justifyContent: 'space-between',
   },
   iconBadge: {
     width: 36,
@@ -308,12 +310,12 @@ const styles = StyleSheet.create({
   sectionSubText: {
     fontSize: 11,
     color: COLORS.textMuted,
-    marginTop: 1,
+    marginTop: 2,
   },
   countBadge: {
     backgroundColor: COLORS.screenBg,
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: 12,
   },
   countText: {

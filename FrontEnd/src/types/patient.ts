@@ -53,6 +53,8 @@ export interface MySqlPatientRecord {
     fecha_fin_suplencia: string;
   } | null;
   hora_cita?: string;
+  hora_fin_cita?: string;
+  modalidad_cita?: string;
   estado_cita?: string;
   rol_cita?: string;
 }

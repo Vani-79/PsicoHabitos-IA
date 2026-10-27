@@ -3,6 +3,7 @@
  */
 
 import { API_CONFIG, ApiResponse, authSession, fetchWithAuth } from './api';
+import { storageService } from './storageService';
 import { MOCK_USERS, TestUser, UserRole, PsychologistProfileData } from '../constants/auth';
 
 export interface RoleOptionInfo {
@@ -175,15 +176,27 @@ export const authService = {
   /**
    * Cambia el portal activo (especialista <-> paciente) sin cerrar sesión.
    */
-  async switchRole(targetRole: UserRole): Promise<AuthLoginResponse> {
+  async switchRole(targetRole: UserRole, email?: string): Promise<AuthLoginResponse> {
     try {
+      let token = authSession.getToken();
+      if (!token) {
+        const saved = await storageService.getUserSession();
+        if (saved?.token) {
+          token = saved.token;
+          authSession.setToken(token);
+        }
+      }
+
       const response = await fetch(`${API_CONFIG.BASE_URL}/auth/switch-role`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(authSession.getToken() ? { Authorization: `Bearer ${authSession.getToken()}` } : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ targetRole }),
+        body: JSON.stringify({
+          targetRole,
+          ...(email ? { email: email.trim().toLowerCase() } : {}),
+        }),
       });
 
       const json = await response.json().catch(() => null);
@@ -448,9 +461,18 @@ export const authService = {
   /**
    * Obtiene la información del perfil del psicólogo autenticado desde MySQL.
    */
-  async getPsychologistProfile(): Promise<PsychologistProfileData | null> {
+  async getPsychologistProfile(email?: string): Promise<PsychologistProfileData | null> {
     try {
-      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/auth/psychologist-profile`);
+      let token = authSession.getToken();
+      if (!token) {
+        const saved = await storageService.getUserSession();
+        if (saved?.token) {
+          token = saved.token;
+          authSession.setToken(token);
+        }
+      }
+      const queryParam = email ? `?email=${encodeURIComponent(email.trim().toLowerCase())}` : '';
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/auth/psychologist-profile${queryParam}`);
       if (response.ok) {
         const json = await response.json();
         if (json.success && json.data) {
