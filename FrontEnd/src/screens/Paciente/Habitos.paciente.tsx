@@ -26,7 +26,7 @@ import {
 } from '../../constants/habits';
 import { PatientBottomNav, PatientTab } from '../../components/Iconosbarrapaciente';
 import { formatToChileanDate, formatToMySqlDate, formatToMySqlDateTime, } from '../../utils/date';
-import { habitService } from '../../services';
+import { habitService, habitNotificationService } from '../../services';
 import { s, vs, ms } from '../../utils/responsive';
 
 interface DailyCheckInScreenProps {
@@ -152,6 +152,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
         // Activar bloqueo y confirmación si ya completó el día
         setIsLockedToday(true);
         setIsConfirmed(true);
+        void habitNotificationService.onHabitsCompletedToday(status.serverDate);
         setHabits({
           comida: status.record.comida ?? null,
           ejercicio: status.record.ejercicio ?? null,
@@ -162,9 +163,10 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
           estres: status.record.estres ?? null,
         });
       } else {
-        // Si no ha registrado hoy, mantener desbloqueado
+        // Si no ha registrado hoy, mantener desbloqueado y programar recordatorios
         setIsLockedToday(false);
         setIsConfirmed(false);
+        void habitNotificationService.syncHabitReminders(targetUser, 'paciente');
       }
     }
 
@@ -304,6 +306,8 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
       }
       setIsConfirmed(true);
       setIsLockedToday(true);
+      // Cancela inmediatamente todos los recordatorios restantes del día (20:00, 21:00, 22:00, etc.)
+      void habitNotificationService.onHabitsCompletedToday(recordDate);
       Alert.alert(
         '¡Hábitos Registrados!',
         'Tus hábitos del día han sido guardados exitosamente. Podrás volver a registrar a partir de mañana.',
@@ -314,6 +318,7 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
       if (response.isLocked) {
         setIsLockedToday(true);
         setIsConfirmed(true);
+        void habitNotificationService.onHabitsCompletedToday(recordDate);
       }
     }
   };
@@ -505,9 +510,29 @@ export const DailyCheckInScreen: React.FC<DailyCheckInScreenProps> = ({
         ]}
       >
         <View style={styles.headerSpacer}>
-          <Text style={styles.greeting}>Hola, {userName}!</Text>
-          <Text style={styles.subGreeting}>Comienza tus hábitos de hoy</Text>
-          
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.greeting}>Hola, {userName}!</Text>
+              <Text style={styles.subGreeting}>Comienza tus hábitos de hoy</Text>
+            </View>
+            {__DEV__ && (
+              <TouchableOpacity
+                style={styles.testNotificationPill}
+                onPress={async () => {
+                  await habitNotificationService.sendTestNotificationNow(3);
+                  Alert.alert(
+                    'Recordatorio en camino 🔔',
+                    'Te llegará una notificación nativa en 3 segundos. Puedes minimizar la app o dejarla en pantalla para verla llegar.',
+                    [{ text: '¡Genial!' }]
+                  );
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="notifications-outline" size={ms(14)} color={COLORS.primary} />
+                <Text style={styles.testNotificationPillText}>Probar aviso (3s)</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {isLoadingStatus && (
@@ -693,6 +718,27 @@ const styles = StyleSheet.create({
     marginBottom: vs(32),
     paddingHorizontal: s(4),
     justifyContent: 'center',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  testNotificationPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E2F3E7',
+    paddingVertical: vs(6),
+    paddingHorizontal: s(10),
+    borderRadius: ms(20),
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    gap: s(4),
+  },
+  testNotificationPillText: {
+    fontSize: ms(11),
+    fontWeight: '600',
+    color: '#0F613B',
   },
   greeting: { fontSize: ms(21), fontWeight: '600', color: COLORS.textPrimary },
   subGreeting: { fontSize: ms(14), fontWeight: '500', color: COLORS.textSecondary, marginLeft: vs(5), marginTop: vs(6)},

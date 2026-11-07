@@ -15,6 +15,7 @@ import {
   storageService,
   authSession,
   ApiResponse,
+  habitNotificationService,
 } from '../services';
 
 export interface AuthContextType {
@@ -62,6 +63,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (saved.role === 'psicologo') {
             const list = await patientService.getRecentPatients(5, saved.email);
             if (isMounted) setPatients(list);
+          } else if (saved.role === 'paciente') {
+            void habitNotificationService.syncHabitReminders(saved.email || saved.name, 'paciente');
           }
         }
       } catch (err) {
@@ -107,6 +110,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (userData.role === 'psicologo') {
         const list = await patientService.getRecentPatients(5, userData.email);
         setPatients(list);
+      } else if (userData.role === 'paciente') {
+        void habitNotificationService.syncHabitReminders(userData.email || userData.name, 'paciente');
       }
     },
     []
@@ -116,6 +121,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       authService.logout();
       await storageService.clearAll();
+      await habitNotificationService.cancelHabitReminders();
     } catch (e) {
       console.warn('[AuthContext] Error cerrando sesión:', e);
     } finally {

@@ -7,6 +7,8 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "test:hope": "node scripts/test-hope-100.js",
+    "test:hope:full": "node scripts/test-hope-100.js --full",
     "register:psychologist": "node scripts/register-psychologist.js",
     "setup:env": "node scripts/setup-env.js"
   },

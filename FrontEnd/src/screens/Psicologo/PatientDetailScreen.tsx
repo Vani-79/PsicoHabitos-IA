@@ -10,6 +10,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,7 @@ import { formatToChileanDate } from '../../utils/date';
 import { useNavigation } from '@react-navigation/native';
 import { PsychologistNavigationProp, HabitReportFilters } from '../../navigation/types';
 import { HabitFilterModal } from '../../components/HabitFilterModal';
+import { HopeSessionsModal } from './components/HopeSessionsModal';
 import { PSYCHOLOGIST_COLORS } from './psychologistColors';
 
 const PATIENTS_COLORS = PSYCHOLOGIST_COLORS.pacientes;
@@ -1330,6 +1332,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
   const [editingSession, setEditingSession] = useState<AppointmentSession | null>(null);
   const [showHabitFilterModal, setShowHabitFilterModal] = useState(false);
+  const [showHopeHistoryModal, setShowHopeHistoryModal] = useState(false);
   const navigation = useNavigation<PsychologistNavigationProp>();
 
   const handleConfirmHabitReport = (filters: HabitReportFilters) => {
@@ -1383,6 +1386,28 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
             <Text style={styles.habitsReportTitle}>Registro de Hábitos</Text>
             <Text style={styles.habitsReportSubtitle}>
               Consultar informe visual con gráficas y promedios
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color={PATIENTS_COLORS.iconosPerfil} />
+        </TouchableOpacity>
+
+        {/* Botón de acceso al Historial de Acompañamiento H.o.p.e (IA) */}
+        <TouchableOpacity
+          style={styles.hopeReportButton}
+          onPress={() => setShowHopeHistoryModal(true)}
+          activeOpacity={0.85}
+        >
+          <View style={styles.hopeReportIconWrapper}>
+            <Image
+              source={require('../../../assets/h.o.p.e.png')}
+              style={styles.hopeReportAvatar}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={styles.habitsReportTextContainer}>
+            <Text style={styles.habitsReportTitle}>Historial H.o.p.e (IA)</Text>
+            <Text style={styles.habitsReportSubtitle}>
+              Revisa las conversaciones con día, hora y cierre de sesión
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={22} color={PATIENTS_COLORS.iconosPerfil} />
@@ -1461,6 +1486,13 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
         onClose={() => setShowHabitFilterModal(false)}
         onConfirm={handleConfirmHabitReport}
       />
+
+      <HopeSessionsModal
+        visible={showHopeHistoryModal}
+        patientId={currentPatient.id}
+        patientName={`${currentPatient.nombre} ${currentPatient.apellido_paterno}`}
+        onClose={() => setShowHopeHistoryModal(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -1533,6 +1565,35 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: PATIENTS_COLORS.bordeIconos,
     marginBottom: 16,
+  },
+
+  hopeReportButton: {
+    backgroundColor: PATIENTS_COLORS.fondoClaro,
+    borderRadius: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+    marginBottom: 16,
+  },
+
+  hopeReportIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+
+  hopeReportAvatar: {
+    width: 28,
+    height: 28,
   },
 
   habitsReportIconWrapper: {

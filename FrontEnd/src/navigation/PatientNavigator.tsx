@@ -95,9 +95,11 @@ export const PatientNavigator: React.FC = () => {
           <PatientChatbotScreen
             userName={userName}
             onNavigateTab={getTabHandler(navigation)}
+            onOpenExerciseDetail={(habitKey, habitTitle) => {
+              navigation.navigate('PatientExerciseDetail', { habitKey, habitTitle });
+            }}
           />
         )}
-        
       </Stack.Screen>
 
       

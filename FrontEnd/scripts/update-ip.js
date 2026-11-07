@@ -24,9 +24,73 @@ function getLocalIp() {
 }
 
 /**
+ * Parchea automáticamente expo-notifications para evitar que crashee en Expo Go Android
+ * por el módulo nativo ausente 'ExpoTopicSubscriptionModule'.
+ */
+function patchExpoNotifications() {
+  const targetBuild = path.join(__dirname, '..', 'node_modules', 'expo-notifications', 'build', 'TopicSubscriptionModule.android.js');
+  if (fs.existsSync(targetBuild)) {
+    try {
+      const content = fs.readFileSync(targetBuild, 'utf8');
+      if (content.includes("requireNativeModule('ExpoTopicSubscriptionModule')")) {
+        const patched = content.replace(
+          "import { requireNativeModule } from 'expo-modules-core';\nexport default requireNativeModule('ExpoTopicSubscriptionModule');",
+          "import { requireOptionalNativeModule } from 'expo-modules-core';\nconst nativeModule = requireOptionalNativeModule('ExpoTopicSubscriptionModule');\nconst fallbackModule = { addListener: () => {}, removeListeners: () => {}, subscribeToTopicAsync: () => Promise.resolve(null), unsubscribeFromTopicAsync: () => Promise.resolve(null) };\nexport default nativeModule || fallbackModule;"
+        );
+        fs.writeFileSync(targetBuild, patched, 'utf8');
+        console.log('🩹 [Expo Go Patch] TopicSubscriptionModule parchado para compatibilidad con Expo Go.');
+      }
+    } catch (e) {
+      console.warn('⚠️ [Expo Go Patch] No se pudo aplicar parche a expo-notifications:', e);
+    }
+  }
+
+  const channelBuild = path.join(__dirname, '..', 'node_modules', 'expo-notifications', 'build', 'setNotificationChannelAsync.android.js');
+  if (fs.existsSync(channelBuild)) {
+    try {
+      const content = fs.readFileSync(channelBuild, 'utf8');
+      if (content.includes('return await NotificationChannelManager.setNotificationChannelAsync(channelId, channel);') && !content.includes('catch {')) {
+        const patched = content.replace(
+          'return await NotificationChannelManager.setNotificationChannelAsync(channelId, channel);',
+          'try { return await NotificationChannelManager.setNotificationChannelAsync(channelId, channel); } catch { return null; }'
+        );
+        fs.writeFileSync(channelBuild, patched, 'utf8');
+        console.log('🩹 [Expo Go Patch] setNotificationChannelAsync protegido contra NPE en Expo Go.');
+      }
+    } catch (e) {
+      console.warn('⚠️ [Expo Go Patch] No se pudo aplicar parche a setNotificationChannelAsync:', e);
+    }
+  }
+
+  // Elimina tsconfig.json residuales dentro de expo-notifications para que VS Code no los indexe como proyectos
+  const strayTsconfigs = [
+    path.join(__dirname, '..', 'node_modules', 'expo-notifications', 'tsconfig.json'),
+    path.join(__dirname, '..', 'node_modules', 'expo-notifications', 'plugin', 'tsconfig.json'),
+  ];
+  for (const file of strayTsconfigs) {
+    if (fs.existsSync(file)) {
+      try {
+        fs.unlinkSync(file);
+      } catch {}
+    }
+  }
+
+  // Previene advertencias de VS Code por herencia de tsconfig en node_modules
+  const moduleScriptsDir = path.join(__dirname, '..', 'node_modules', 'expo-module-scripts');
+  if (!fs.existsSync(moduleScriptsDir)) {
+    try {
+      fs.mkdirSync(moduleScriptsDir, { recursive: true });
+      fs.writeFileSync(path.join(moduleScriptsDir, 'package.json'), JSON.stringify({ name: 'expo-module-scripts', version: '1.0.0', main: 'tsconfig.base.json' }, null, 2));
+      fs.writeFileSync(path.join(moduleScriptsDir, 'tsconfig.base.json'), JSON.stringify({ compilerOptions: { skipLibCheck: true } }, null, 2));
+    } catch {}
+  }
+}
+
+/**
  * Punto de entrada del script de detección automática de IP local.
  */
 function main() {
+  patchExpoNotifications();
   const envPath = path.join(__dirname, '..', '.env');
   let currentEnv = '';
 

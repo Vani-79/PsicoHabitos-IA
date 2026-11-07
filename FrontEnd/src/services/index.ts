@@ -9,4 +9,6 @@ export * from './habitService';
 export * from './appointmentService';
 export * from './storageService';
 export * from './resourceService';
+export * from './hopeService';
+export * from './habitNotificationService';
 

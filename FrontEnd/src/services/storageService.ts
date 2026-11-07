@@ -4,6 +4,7 @@ import { UserRole, SubscriptionInfo } from '../constants/auth';
 
 const KEY_REMEMBERED_EMAIL = 'psicohabitos_remembered_email';
 const KEY_USER_SESSION = 'psicohabitos_user_session';
+const KEY_LAST_COMPLETED_HABITS_DATE = 'psicohabitos_last_completed_habits_date';
 
 export interface StoredSession {
   id?: number;
@@ -125,6 +126,28 @@ export const storageService = {
   async clearAll(): Promise<void> {
     await deleteItem(KEY_REMEMBERED_EMAIL);
     await deleteItem(KEY_USER_SESSION);
+    await deleteItem(KEY_LAST_COMPLETED_HABITS_DATE);
+  },
+
+  /**
+   * Guarda la fecha del último registro de hábitos completado para validación instantánea de notificaciones.
+   */
+  async saveLastCompletedHabitsDate(date: string): Promise<void> {
+    await setItem(KEY_LAST_COMPLETED_HABITS_DATE, date.trim());
+  },
+
+  /**
+   * Obtiene la fecha del último registro de hábitos completado.
+   */
+  async getLastCompletedHabitsDate(): Promise<string | null> {
+    return await getItem(KEY_LAST_COMPLETED_HABITS_DATE);
+  },
+
+  /**
+   * Limpia la fecha guardada de hábitos completados.
+   */
+  async clearLastCompletedHabitsDate(): Promise<void> {
+    await deleteItem(KEY_LAST_COMPLETED_HABITS_DATE);
   },
 };
 
