@@ -8,7 +8,6 @@
     "userInterfaceStyle": "light",
     "android": {
       "package": "com.psicohabitos.app",
-      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png"
