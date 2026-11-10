@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,8 +11,11 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Keyboard,
+  Platform,
+  useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { MySqlPatientRecord, AppointmentSession } from '../../types/patient';
 import { DatePickerModal } from '../../components/DatePickerModal';
@@ -494,6 +497,12 @@ const ScheduleSessionModal: React.FC<ScheduleSessionModalProps> = ({
   onClose,
   onSessionCreated,
 }) => {
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+
   const [isSaving, setIsSaving] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -504,6 +513,35 @@ const ScheduleSessionModal: React.FC<ScheduleSessionModalProps> = ({
   const [modalidad, setModalidad] = useState<Modalidad | ''>('');
   const [observaciones, setObservaciones] = useState('');
   const [busySessions, setBusySessions] = useState<{ hora: string; duracion: number }[]>([]);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setIsKeyboardVisible(true);
+        setKeyboardHeight(e.endCoordinates.height);
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setIsKeyboardVisible(false);
+        setKeyboardHeight(0);
+      }
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleOverlayPress = () => {
+    if (isKeyboardVisible) {
+      Keyboard.dismiss();
+      return;
+    }
+    handleCloseModal();
+  };
 
   const resetForm = () => {
     setFecha('');
@@ -663,6 +701,10 @@ const ScheduleSessionModal: React.FC<ScheduleSessionModalProps> = ({
     }
   };
 
+  const maxModalHeight = isKeyboardVisible
+    ? Math.max(windowHeight - keyboardHeight - insets.top - 36, 260)
+    : '85%';
+
   return (
     <>
       <Modal
@@ -671,9 +713,26 @@ const ScheduleSessionModal: React.FC<ScheduleSessionModalProps> = ({
         visible={visible}
         onRequestClose={handleCloseModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={handleCloseModal}>
-          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
-            <ScrollView showsVerticalScrollIndicator={false}>
+        <Pressable
+          style={[
+            styles.modalOverlay,
+            isKeyboardVisible && {
+              justifyContent: 'flex-start',
+              paddingTop: Math.max(insets.top, 24) + 12,
+            },
+          ]}
+          onPress={handleOverlayPress}
+        >
+          <Pressable
+            style={[styles.modalContent, { maxHeight: maxModalHeight }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <ScrollView
+              ref={scrollViewRef}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: isKeyboardVisible ? 28 : 8 }}
+            >
               <Text style={styles.modalTitle}>Agendar nueva sesión</Text>
 
               {patient.tipo_relacion === 'titular' && patient.suplente_activo && (
@@ -789,6 +848,11 @@ const ScheduleSessionModal: React.FC<ScheduleSessionModalProps> = ({
                 value={observaciones}
                 onChangeText={setObservaciones}
                 multiline
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, 150);
+                }}
               />
 
               <TouchableOpacity
@@ -856,6 +920,12 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
   onClose,
   onSessionUpdated,
 }) => {
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const editScrollViewRef = useRef<ScrollView>(null);
+
   const [editFecha, setEditFecha] = useState('');
   const [editHora, setEditHora] = useState('');
   const [editModalidad, setEditModalidad] = useState<Modalidad>('presencial');
@@ -868,6 +938,35 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
   const [busySessionsForEdit, setBusySessionsForEdit] = useState<
     { hora: string; duracion: number }[]
   >([]);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setIsKeyboardVisible(true);
+        setKeyboardHeight(e.endCoordinates.height);
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setIsKeyboardVisible(false);
+        setKeyboardHeight(0);
+      }
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleEditOverlayPress = () => {
+    if (isKeyboardVisible) {
+      Keyboard.dismiss();
+      return;
+    }
+    handleClose();
+  };
 
   const loadBusySessionsForEditDate = async (dateStr: string, currentSessionId?: string) => {
     if (!dateStr) {
@@ -1055,6 +1154,10 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
     );
   };
 
+  const maxEditModalHeight = isKeyboardVisible
+    ? Math.max(windowHeight - keyboardHeight - insets.top - 36, 260)
+    : '85%';
+
   return (
     <>
       <Modal
@@ -1063,9 +1166,26 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
         visible={visible && Boolean(session)}
         onRequestClose={handleClose}
       >
-        <Pressable style={styles.modalOverlay} onPress={handleClose}>
-          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
-            <ScrollView showsVerticalScrollIndicator={false}>
+        <Pressable
+          style={[
+            styles.modalOverlay,
+            isKeyboardVisible && {
+              justifyContent: 'flex-start',
+              paddingTop: Math.max(insets.top, 24) + 12,
+            },
+          ]}
+          onPress={handleEditOverlayPress}
+        >
+          <Pressable
+            style={[styles.modalContent, { maxHeight: maxEditModalHeight }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <ScrollView
+              ref={editScrollViewRef}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: isKeyboardVisible ? 28 : 8 }}
+            >
               <View style={styles.modalHeaderRow}>
                 <Text style={styles.modalHeaderTitle}>Modificar Cita paciente</Text>
                 <TouchableOpacity
@@ -1200,6 +1320,11 @@ const EditSessionModal: React.FC<EditSessionModalProps> = ({
                 value={editObservaciones}
                 onChangeText={setEditObservaciones}
                 multiline
+                onFocus={() => {
+                  setTimeout(() => {
+                    editScrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, 150);
+                }}
               />
 
               {/* Botón Guardar Modificaciones */}

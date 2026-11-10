@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "psicohabitos-app",
+    "name": "Psicohábitos-IA",
     "slug": "psicohabitos-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "android": {
+      "package": "com.psicohabitos.app",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -28,6 +28,12 @@
           "color": "#0F613B"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b27c32e1-9abf-4ba1-b273-8c511a3bf254"
+      }
+    },
+    "owner": "vani_3d2y"
   }
 }

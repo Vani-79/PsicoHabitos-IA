@@ -8,7 +8,9 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { hopeService, HopeSession, HopeMessage } from '../../../services/hopeService';
 import { PSYCHOLOGIST_COLORS } from '../psychologistColors';
@@ -76,9 +78,13 @@ export const HopeSessionsModal: React.FC<HopeSessionsModalProps> = ({
   patientName,
   onClose,
 }) => {
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState<HopeSession[]>([]);
   const [expandedSessionId, setExpandedSessionId] = useState<number | null>(null);
+
+  // Margen de seguridad inferior para garantizar que el botón quede sobre la barra de navegación de Android
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16);
 
   useEffect(() => {
     if (visible && patientId) {
@@ -158,7 +164,11 @@ export const HopeSessionsModal: React.FC<HopeSessionsModalProps> = ({
     }
 
     return (
-      <ScrollView contentContainerStyle={styles.scrollList} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollListContainer}
+        contentContainerStyle={styles.scrollList}
+        showsVerticalScrollIndicator={false}
+      >
         {sessions.map((session) => {
           const isExpanded = expandedSessionId === session.id;
           const duration = calculateDurationMinutes(session.iniciada_en, session.finalizada_en);
@@ -310,13 +320,17 @@ export const HopeSessionsModal: React.FC<HopeSessionsModalProps> = ({
             </Text>
           </View>
 
-          {/* Contenido principal */}
-          {renderContent()}
+          {/* Contenido principal scrolleable con flex: 1 */}
+          <View style={styles.bodyContainer}>
+            {renderContent()}
+          </View>
 
-          {/* Botón Inferior de Cerrar */}
-          <TouchableOpacity style={styles.footerCloseBtn} onPress={onClose} activeOpacity={0.85}>
-            <Text style={styles.footerCloseText}>Cerrar Historial</Text>
-          </TouchableOpacity>
+          {/* Botón Inferior de Cerrar: FIJO y elevado sobre los botones nativos de Android */}
+          <View style={[styles.footerContainer, { paddingBottom: bottomInset + 8 }]}>
+            <TouchableOpacity style={styles.footerCloseBtn} onPress={onClose} activeOpacity={0.85}>
+              <Text style={styles.footerCloseText}>Cerrar Historial</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -333,9 +347,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '90%',
-    minHeight: '60%',
-    paddingBottom: 24,
+    height: '88%',
+    maxHeight: '92%',
+    overflow: 'hidden',
+  },
+  bodyContainer: {
+    flex: 1,
+  },
+  scrollListContainer: {
+    flex: 1,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -588,13 +608,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 8,
   },
+  footerContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
   footerCloseBtn: {
     backgroundColor: COLORS.iconosPerfil,
-    marginHorizontal: 16,
     paddingVertical: 13,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 10,
   },
   footerCloseText: {
     color: '#FFFFFF',

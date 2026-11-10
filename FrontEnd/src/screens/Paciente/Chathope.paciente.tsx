@@ -283,10 +283,14 @@ function isAffirmativeOrVideoRequest(text: string): boolean {
   }
 
   const aff = [
-    'si', 'si por favor', 'dale', 'bueno', 'ok', 'okay', 'claro', 'vamos', 'por favor', 'porfa',
-    'quiero', 'me gustaria', 'hagamoslo', 'de acuerdo', 'seguro', 'perfecto', 'listo'
+    'si', 'si por favor', 'si porfa', 'dale', 'bueno', 'buenisimo', 'buenísimo',
+    'ok', 'okay', 'claro', 'vamos', 'por favor', 'porfa', 'por fa',
+    'quiero', 'me gustaria', 'me gustaría', 'hagamoslo', 'hagámoslo',
+    'de acuerdo', 'seguro', 'perfecto', 'listo', 'excelente', 'genial',
+    'seria genial', 'sería genial', 'me parece bien', 'me parece genial',
+    'super', 'súper', 'de una', 'hagamos la prueba', 'probemos'
   ];
-  return aff.some((w) => norm === w || norm === `${w} por favor` || norm === `${w} gracias`);
+  return aff.some((w) => norm === w || norm.startsWith(`${w} `) || norm.endsWith(` ${w}`));
 }
 
 /**
@@ -340,8 +344,8 @@ function getExercisesForMessage(
     detected = [EXERCISE_CATALOG['478']];
   }
 
-  const previouslyShown = getPreviouslyShownExerciseIds(index, allMessages);
-  return detected.filter((ex) => !previouslyShown.has(ex.id));
+  // Si Hope confirma la entrega o el paciente aceptó, siempre entregamos el ejercicio detectado
+  return detected;
 }
 
 interface ExerciseSuggestionCardProps {
@@ -627,6 +631,26 @@ export const PatientChatbotScreen: React.FC<PatientChatbotScreenProps> = ({
     if (norm.includes('sueño') || norm.includes('sueno') || norm.includes('dormir') || norm.includes('descanso')) {
       return EXERCISE_CATALOG['sueno'];
     }
+    if (norm.includes('4-7-8') || norm.includes('478') || norm.includes('diafragm')) {
+      return EXERCISE_CATALOG['478'];
+    }
+
+    // Si el texto actual no contiene el nombre de la técnica, buscar en mensajes previos de Hope
+    const earlierBotMsg = messages.findLast((m) =>
+      m.sender === 'hope' &&
+      (m.text.includes('4-7-8') ||
+       m.text.includes('478') ||
+       m.text.includes('4-4-4') ||
+       m.text.includes('grounding') ||
+       m.text.includes('jacobson') ||
+       m.text.includes('stop') ||
+       m.text.includes('sueño') ||
+       m.text.includes('sueno'))
+    );
+    if (earlierBotMsg) {
+      return resolveExerciseFromHistory(earlierBotMsg.text);
+    }
+
     return EXERCISE_CATALOG['478'];
   };
 
@@ -659,11 +683,15 @@ export const PatientChatbotScreen: React.FC<PatientChatbotScreenProps> = ({
       normUser.includes('quiero ver el video');
 
     const affirmativeExact = [
-      'si', 'si por favor', 'dale', 'bueno', 'ok', 'okay', 'claro', 'vamos', 'por favor', 'porfa',
-      'de acuerdo', 'quiero', 'me gustaria', 'hagamoslo', 'seguro', 'perfecto', 'listo',
+      'si', 'si por favor', 'si porfa', 'dale', 'bueno', 'buenisimo', 'buenísimo',
+      'ok', 'okay', 'claro', 'vamos', 'por favor', 'porfa', 'por fa',
+      'quiero', 'me gustaria', 'me gustaría', 'hagamoslo', 'hagámoslo',
+      'de acuerdo', 'seguro', 'perfecto', 'listo', 'excelente', 'genial',
+      'seria genial', 'sería genial', 'me parece bien', 'me parece genial',
+      'super', 'súper', 'de una', 'hagamos la prueba', 'probemos'
     ];
     const isAffirmative = affirmativeExact.some(
-      (aff) => normUser === aff || normUser === `${aff} por favor` || normUser === `${aff} gracias`
+      (aff) => normUser === aff || normUser.startsWith(`${aff} `) || normUser.endsWith(` ${aff}`)
     );
 
     if (!isExplicitVideo && !isAffirmative) return;
@@ -735,6 +763,23 @@ export const PatientChatbotScreen: React.FC<PatientChatbotScreenProps> = ({
       if (isEmergency) {
         setHasCrisisAlert(true);
         promptEmergencyCallOptions();
+      }
+
+      // Si Hope confirma la entrega del video, abrir automáticamente el reproductor
+      const normReply = res.reply.toLowerCase();
+      const isVideoDelivery =
+        normReply.includes('ya tienes listo el video') ||
+        normReply.includes('ya te abri') ||
+        normReply.includes('ya te abrí') ||
+        normReply.includes('aqui tienes el video') ||
+        normReply.includes('aquí tienes el video') ||
+        normReply.includes('excelente decision') ||
+        normReply.includes('excelente decisión') ||
+        normReply.includes('video guiado');
+
+      if (isVideoDelivery) {
+        const exerciseToOpen = resolveExerciseFromHistory(res.reply);
+        setActiveVideoModal(exerciseToOpen);
       }
     } else {
       Alert.alert('Aviso', res.error || 'No se pudo conectar con H.o.p.e en este momento.');

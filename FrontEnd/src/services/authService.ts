@@ -50,7 +50,7 @@ export const authService = {
     }
 
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/check-email`, {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/auth/check-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: targetEmail }),
@@ -104,7 +104,7 @@ export const authService = {
     }
 
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/login`, {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: targetEmail, password: cleanPassword, selectedRole }),
@@ -187,7 +187,7 @@ export const authService = {
         }
       }
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/switch-role`, {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/auth/switch-role`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -233,7 +233,7 @@ export const authService = {
     const cleanPassword = password.trim();
 
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/create-initial-password`, {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/auth/create-initial-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -275,7 +275,7 @@ export const authService = {
     }
 
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/forgot-password/send-code`, {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/auth/forgot-password/send-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: targetEmail }),
@@ -318,7 +318,7 @@ export const authService = {
     }
 
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/forgot-password/verify-code`, {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/auth/forgot-password/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: targetEmail, code: cleanCode }),
@@ -357,7 +357,7 @@ export const authService = {
     const cleanPassword = newPassword.trim();
 
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/forgot-password/reset-password`, {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/auth/forgot-password/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -397,7 +397,7 @@ export const authService = {
     }
 
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/activation/send-code`, {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/auth/activation/send-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: targetEmail }),
@@ -432,7 +432,7 @@ export const authService = {
     }
 
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/activation/verify-code`, {
+      const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/auth/activation/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: targetEmail, code: cleanCode }),

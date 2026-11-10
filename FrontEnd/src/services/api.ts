@@ -123,9 +123,9 @@ export function getApiBaseUrl(): string {
     return envUrl;
   }
 
-  // 2. Modo producción
+  // 2. Modo producción (APK instalada o build independiente)
   if (process.env.NODE_ENV === 'production') {
-    return envUrl || 'https://api.psicohabitos.com/api';
+    return envUrl || 'https://commode-mop-foothold.ngrok-free.dev/api';
   }
 
   // 3. Web en desarrollo: sincronizar dinámicamente con el hostname del navegador
@@ -171,6 +171,11 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
 
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
+  }
+
+  // Omitir pantalla de advertencia intermedia de ngrok para peticiones REST
+  if (!headers.has('ngrok-skip-browser-warning')) {
+    headers.set('ngrok-skip-browser-warning', 'true');
   }
 
   const token = authSession.getToken();
