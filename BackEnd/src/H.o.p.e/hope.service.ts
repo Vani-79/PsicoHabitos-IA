@@ -140,12 +140,14 @@ PRINCIPIOS CLÍNICOS Y GUÍA CONVERSACIONAL OBLIGATORIA:
      * En Chile, los únicos canales oficiales y gratuitos son: Fono Prevención del Suicidio *4141 (MinSal 24/7 atendido por psicólogos), Salud Responde 600 360 7777 y SAMU 131.
      * Brinda contención con máxima calidez humana, empatía incondicional y serenidad.
 
-7. FORMATO Y REGLA ESTRICTA DE CONCISIÓN (MÁXIMO 40 A 55 PALABRAS EN TOTAL):
+7. FORMATO Y ESTRUCTURA OBLIGATORIA (EXACTAMENTE 2 A 3 ORACIONES BREVES):
    - Estilo: formal, respetuoso, empático, afectuoso y sereno (PROHIBIDO usar apelativos informales como 'amigo', 'hermano' o 'compañero').
-   - Estás en un chat móvil (tipo WhatsApp): respuestas breves y directas, MÁXIMO 2 párrafos muy cortos (40-55 palabras en total).
-     * Párrafo 1 (1-2 oraciones): Reflejo empático incondicional (acoger dolor o queja con humildad) + 1 recomendación mínima de confort sensorial PAP (agua fresca, té tibio, respirar hondo o soltar la autoexigencia).
-     * Párrafo 2 (1 oración): EXACTAMENTE 1 sola pregunta reflexiva para escucharlo.
-   - PROHIBIDO escribir testamentos, sermones, listas de múltiples consejos o repetir preguntas.`;
+   - Estás en un chat móvil: respuestas concisas, fluidas y directas en un único bloque breve.
+   - ESTRUCTURA RIGUROSA DE TU RESPUESTA:
+     * Oración 1: Reflejo empático incondicional y validación inmediata del dolor, cansancio o queja del paciente.
+     * Oración 2: Recomendación mínima de confort sensorial PAP (agua fresca, té tibio, respirar hondo, soltar autoexigencia o descansar) o propuesta de técnica si corresponde.
+     * Oración 3: EXACTAMENTE 1 sola pregunta reflexiva o de apoyo para escucharlo.
+   - PROHIBIDO TERMINANTEMENTE: escribir más de 3 oraciones, sermones largos, listas de múltiples consejos o terminar con preguntas aisladas y vacías como '¿Qué te parece?'. Toda pregunta debe ser reflexiva, completa y con sentido propio.`;
 
   return habitContext ? `${base}\n\n${habitContext}` : base;
 }
@@ -157,67 +159,58 @@ function getEmpatheticFallbackResponse(): string {
   return `Comprendo lo que me compartes y valoro mucho tu sinceridad. Recuerda que todo lo que conversamos aquí queda registrado en tu ficha para que tu psicólogo/a tratante pueda orientarte en profundidad. ¿Cómo te has sentido con tu descanso y tus hábitos hoy?`;
 }
 
-const PUNCTUATION_SET = new Set(['.', '!', '?']);
-
 /**
- * Extrae la primera y última oración para conservar apertura empática y pregunta de cierre 
- * sin expresiones regulares con retroceso super-lineal.
+ * Divide el texto en oraciones en tiempo lineal O(N) sin retroceso ni riesgo de ReDoS.
  */
-function extractFirstAndLastSentence(text: string): string {
-  const clean = text.trim();
-  const firstEnd = clean.search(/[.?!]/);
-  const first = firstEnd !== -1 ? clean.slice(0, firstEnd + 1).trim() : clean;
-
-  const lastQuestion = clean.lastIndexOf('¿');
-  if (lastQuestion !== -1) {
-    const last = clean.slice(lastQuestion).trim();
-    return first !== last ? `${first}\n\n${last}` : first;
+function splitTextIntoSentences(text: string): string[] {
+  if (typeof Intl !== 'undefined' && 'Segmenter' in Intl) {
+    const segmenter = new Intl.Segmenter('es', { granularity: 'sentence' });
+    return Array.from(segmenter.segment(text), (s) => s.segment.trim()).filter(Boolean);
   }
 
-  let end = clean.length;
-  while (end > 0 && PUNCTUATION_SET.has(clean[end - 1])) {
-    end--;
-  }
-
-  let lastDelimiter = -1;
-  for (let i = end - 1; i >= 0; i--) {
-    if (PUNCTUATION_SET.has(clean[i])) {
-      lastDelimiter = i;
-      break;
+  // Fallback lineal O(N) sin expresiones regulares de retroceso súper-lineal
+  const result: string[] = [];
+  let current = '';
+  for (const char of text) {
+    current += char;
+    if (char === '.' || char === '!' || char === '?') {
+      const trimmed = current.trim();
+      if (trimmed) result.push(trimmed);
+      current = '';
     }
   }
+  const remaining = current.trim();
+  if (remaining) result.push(remaining);
 
-  if (lastDelimiter !== -1) {
-    const last = clean.slice(lastDelimiter + 1).trim();
-    if (last && first !== last) {
-      return `${first}\n\n${last}`;
-    }
-  }
-
-  return first;
+  return result;
 }
 
 /**
- * Mide y garantiza que la respuesta no exceda la extensión recomendada para chat móvil (máximo 55 palabras).
- * Si el modelo se excede, preserva la apertura empática y la pregunta reflexiva de cierre.
+ * Mide y garantiza que la respuesta no exceda una extensión razonable para chat móvil (máximo 80 palabras).
+ * Si el texto se excede, preserva las oraciones completas en orden secuencial sin mutilar el contenido intermedio.
  */
-function enforceMessageLengthLimit(text: string, maxWords: number = 55): string {
+function enforceMessageLengthLimit(text: string, maxWords: number = 80): string {
   const words = text.trim().split(/\s+/).filter(Boolean);
   if (words.length <= maxWords) {
     return text;
   }
 
-  const paragraphs = text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
-  if (paragraphs.length >= 2) {
-    const opening = paragraphs[0];
-    const closing = paragraphs.at(-1) || '';
-    const condensed = `${opening}\n\n${closing}`;
-    if (condensed.split(/\s+/).filter(Boolean).length <= maxWords) {
-      return condensed;
+  const sentences = splitTextIntoSentences(text);
+  if (sentences.length === 0) {
+    return text;
+  }
+
+  let accumulated = '';
+  for (const sentence of sentences) {
+    const candidate = accumulated ? `${accumulated} ${sentence.trim()}` : sentence.trim();
+    if (candidate.split(/\s+/).filter(Boolean).length <= maxWords) {
+      accumulated = candidate;
+    } else {
+      break;
     }
   }
 
-  return extractFirstAndLastSentence(text);
+  return accumulated || sentences[0].trim();
 }
 
 /**
@@ -238,7 +231,7 @@ function cleanHopeOutput(text: string): string {
   while (cleaned.endsWith('..')) {
     cleaned = cleaned.slice(0, -1);
   }
-  return enforceMessageLengthLimit(cleaned, 55);
+  return enforceMessageLengthLimit(cleaned, 80);
 }
 
 /**
@@ -260,7 +253,7 @@ async function callOllamaChat(messages: ChatMessage[]): Promise<string> {
           temperature: 0.25,
           top_p: 0.9,
           repeat_penalty: 1.15,
-          num_predict: 130
+          num_predict: 95
         }
       }),
       signal: controller.signal
